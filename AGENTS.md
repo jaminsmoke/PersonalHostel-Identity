@@ -25,7 +25,7 @@ Si eres el agente que continúa aquí: lee este archivo entero antes de escribir
 | Repo | Oficio | Red |
 |---|---|---|
 | **PersonalHosteleriaServer** (este) | Identidad de profesionales (y luego org/establecimiento) | Internet / VPS |
-| Personal Bar | Expo barra + **nodo LAN** (mapa, rondas, tickets) | LAN del local |
+| Personal Bar | Expo barra + **nodo LAN** (mapa, rondas, tickets) | LAN del local. Scaffold: `../PersonalBar/AGENTS.md` |
 | Personal Comander | Puesto de sala: mapa, tomar comanda, recoger | Cliente LAN de Bar; login contra este servidor |
 | Personal Kitchen (futuro) | Tickets de comida | Cliente del nodo; login aquí |
 | Personal TPV (futuro) | Cobro / contabilidad; puede heredar el nodo LAN | Login aquí |
