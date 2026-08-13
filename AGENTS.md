@@ -56,49 +56,59 @@ Kanban de producto (Commander): ítem Detectado *Sala LAN: Personal Bar como nod
 
 PII: nombre, foto, identificador. GDPR, retención y borrado hay que pensarlo antes de producción. En Docker local no hay autenticación dura ni HTTPS.
 
-## Qué hay ahora (scaffold)
+## Qué hay ahora (v0.1)
 
 ```
 PersonalHosteleriaServer/
 ├── AGENTS.md                 # este archivo (léelo primero)
-├── README.md                 # cómo levantar Docker
+├── README.md                 # cómo levantar Docker y contrato /v1
 ├── docker-compose.yml
 ├── .env.example
 ├── .gitignore
 ├── .kanbanrc.json.template
-├── services/identity/        # API mínima (health + meta)
+├── docs/
+│   ├── changelog.md          # changelog v0.1
+│   └── openapi.json          # spec OpenAPI versionada
+├── .github/workflows/        # CI anti-drift del OpenAPI
+├── services/identity/        # API FastAPI (identidad, QR, foto, OpenAPI)
 │   ├── Dockerfile
 │   ├── requirements.txt
-│   └── app/main.py
+│   ├── alembic/              # migraciones (camareros, credenciales, foto)
+│   ├── app/                  # main, auth, models, schemas, routes, storage, images
+│   ├── scripts/              # export_openapi.py
+│   └── tests/
 └── tools/
     ├── README.md
     ├── kanban-cli/
     └── agent-skills/
 ```
 
-`docker compose up --build` debe levantar Postgres 16 + API en `:8080`.
+`docker compose up --build` levanta Postgres 16 + API en `:8080`.
 
 - `GET /health` → `{ "ok": true }`
-- `GET /v1/meta` → servicio, rol `identity`, `status: scaffold`
+- `GET /v1/meta` → servicio, rol `identity`, `status: schema`
+- `GET /openapi.json` y `/docs` → spec del contrato `/v1`
+- La API registra camareros, emite QR, hace login y gestiona la foto de perfil (ver `README.md`).
 
-La API **no** registra camareros todavía.
+## Contrato API (implementado en v0.1)
 
-## Contrato API (intención, no implementado)
+Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores llevan además un `code` estable (`identity.*`).
 
-Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps.
-
-| Método | Ruta | Intención |
+| Método | Ruta | Qué hace |
 |---|---|---|
-| POST | `/v1/camareros/registro` | Alta: nombre, apellidos, foto, datos. Devuelve `id` + representación del QR/clave |
-| POST | `/v1/auth/login` | Recupera sesión (y el QR) tras reinstalar |
-| GET | `/v1/camareros/me` | Perfil de la sesión |
-| GET | `/v1/camareros/me/qr` | Payload para pintar el QR permanente |
-| POST | `/v1/camareros/me/revocar` | Invalida la clave; emitir renovación |
-| POST | `/v1/camareros/me/renovar` | Nueva clave; la anterior deja de valer |
+| POST | `/v1/camareros/registro` | Alta: nombre, apellidos, email, password. Devuelve `id` + `qr` (payload firmado `phid1:...`) |
+| POST | `/v1/auth/login` | Recupera sesión (JWT), perfil y el QR tras reinstalar |
+| GET | `/v1/camareros/me` | Perfil de la sesión (incluye `foto_url`) |
+| GET | `/v1/camareros/me/qr` | Payload del QR permanente |
+| POST | `/v1/camareros/me/renovar` | Nueva credencial; la anterior deja de valer |
+| POST | `/v1/camareros/me/revocar` | Invalida la credencial activa |
+| POST | `/v1/camareros/me/foto` | Sube/reemplaza la foto de perfil (multipart) |
+| GET | `/v1/camareros/me/foto` | Sirve la foto (WebP) |
+| DELETE | `/v1/camareros/me/foto` | Borra la foto |
 
-Fuera de v1 de este scaffold: establecimientos, invitaciones a un Bar concreto, rankings.
+El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>`, **estable** entre reinstalaciones. La foto no viaja en el QR.
 
-El formato exacto del QR (UUID firmado, URL, etc.) lo decide este equipo; debe ser **estable** entre reinstalaciones.
+Fuera de v1: establecimientos, invitaciones a un Bar concreto, rankings.
 
 Bar y Commander **no** copian usuarios a SQLite como fuente de verdad. Cachean la sesión. La verdad está aquí.
 
@@ -210,7 +220,7 @@ Con la decisión ya tomada y acordada en la fase anterior, detallar **mucho más
 **Checklist obligatorio** (siempre ejecutar TODO lo aplicable):
 
 1. **Compose**: `docker compose up --build` — API en `:8080`, Postgres healthy
-2. **Health**: `GET /health` → `{"ok": true}`; `GET /v1/meta` sigue siendo coherente (actualizar `status` cuando deje de ser scaffold)
+2. **Health**: `GET /health` → `{"ok": true}`; `GET /v1/meta` → `status: schema` coherente
 3. **Tests**: pytest (o el runner que Debate acuerde) — todos deben pasar. Crear tests para rutas nuevas (registro, login, QR, revocar)
 4. **Contrato**: las rutas nuevas responden JSON documentado; errores de cara a apps en español
 5. **Secretos**: `.env` no está en git; no hay fotos reales ni dumps con PII
@@ -369,22 +379,20 @@ Después, comprobar que ningún ítem perdió el valor del campo modificado, rep
 por nombre si fuera necesario y actualizar `.kanbanrc.json.template` con los IDs
 nuevos. Nunca ejecutar `convert-draft` mientras `repoId` sea `REPLACE_ME`.
 
-## Backlog Detectado (deriva de arranque)
+## Backlog (deriva de arranque — completado en v0.1)
 
-Ítems ya creados en el Project #10. Están en **Detectado** (drafts). El equipo los mueve a Debate, investiga, presenta las 4 alternativas y **para a preguntar**. No empieces código en un ítem que siga en Detectado.
+El backlog de arranque quedó **completo y cerrado** en la release **v0.1** (2026-08-13). Los 6 ítems recorrieron el ciclo completo (Detectado → … → Changelog) y sus issues están cerrados:
 
-Deriva sugerida: esquema Postgres → registro + QR → login. Luego revocar/renovar, foto, OpenAPI.
-
-| Pri | Área | Título | Item ID |
+| Pri | Área | Título | Issue |
 |---|---|---|---|
-| Alta | Datos | Esquema Postgres: camareros, credenciales/QR y revocaciones | `PVTI_lAHOBM87Yc4BgQqZzg2aLgE` |
-| Alta | API | Registro de profesional y emisión de QR/clave permanente | `PVTI_lAHOBM87Yc4BgQqZzg2aLco` |
-| Alta | API | Login que recupera la misma identidad y el mismo QR tras reinstalar | `PVTI_lAHOBM87Yc4BgQqZzg2aLZ4` |
-| Media | API | Revocar y renovar la clave/QR permanente | `PVTI_lAHOBM87Yc4BgQqZzg2aLXs` |
-| Media | Datos | Foto de perfil del profesional (almacenamiento Docker local) | `PVTI_lAHOBM87Yc4BgQqZzg2aLU0` |
-| Media | Docs | OpenAPI de /v1 cuando el scaffold deje de ser health/meta | `PVTI_lAHOBM87Yc4BgQqZzg2aLSk` |
+| Alta | Datos | Esquema Postgres: camareros, credenciales/QR y revocaciones | [#1](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/1) |
+| Alta | API | Registro de profesional y emisión de QR/clave permanente | [#2](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/2) |
+| Alta | API | Login que recupera la misma identidad y el mismo QR tras reinstalar | [#3](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/3) |
+| Media | API | Revocar y renovar la clave/QR permanente | [#4](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/4) |
+| Media | Docs | OpenAPI de /v1: spec versionada y códigos de error estables | [#5](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/5) |
+| Media | Datos | Foto de perfil del profesional (almacenamiento Docker local) | [#6](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/6) |
 
-`$KANBAN show <itemId>` y `$KANBAN body <itemId>` para el texto completo (preguntas de Debate ya van en cada body).
+Detalle en [`docs/changelog.md`](docs/changelog.md). Los ítems nuevos entran por `Detectado` en el Project #10, con la misma regla: investigar, presentar las 4 alternativas y **parar a preguntar**.
 
 ## Code conventions
 
