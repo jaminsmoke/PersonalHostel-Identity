@@ -10,7 +10,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Camarero
+from app.models import Camarero, Credencial, CredencialEstado
 from app.security import get_session_secret
 
 TTL_DAYS_ENV = "SESSION_TTL_DAYS"
@@ -59,6 +59,15 @@ def decode_access_token(token: str, secret: str) -> uuid.UUID | None:
         return uuid.UUID(payload["sub"])
     except (jwt.PyJWTError, KeyError, ValueError):
         return None
+
+
+def get_credencial_activa(db: Session, camarero_id: uuid.UUID) -> Credencial | None:
+    return (
+        db.query(Credencial)
+        .filter_by(camarero_id=camarero_id, estado=CredencialEstado.activa)
+        .order_by(Credencial.creada_en.desc())
+        .first()
+    )
 
 
 def get_current_camarero(

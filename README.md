@@ -42,12 +42,12 @@ docker compose up --build
 ```json
 {
   "id": "<uuid del camarero>",
-  "qr": "phid1:<uuid>:<firma-ed25519>"
+  "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"
 }
 ```
 
 - `409` si el email ya está registrado; `422` con mensajes en español si hay campos inválidos.
-- El `qr` es el payload permanente para pintar el QR: formato `phid1` (versionado), firmado con Ed25519. El servidor verifica offline (Bar) usando la clave pública; el secreto real de la credencial vive en Postgres (`credenciales.secreto`), no en el QR.
+- El `qr` se liga a la **credencial activa**: formato `phid1` (versionado), firmado con Ed25519 sobre `phid1:<camarero_id>:<credencial_id>`. Bar verifica offline con la clave pública; el secreto real de la credencial vive en Postgres (`credenciales.secreto`), no en el QR.
 - Clave de firma: `QR_SIGNING_KEY` (base64) si existe; si no, se genera y persiste en `app_config` (local).
 
 ### Login (recupera la misma identidad y el mismo QR)
@@ -73,19 +73,28 @@ Respuesta `200`:
     "email": "ana@example.com",
     "telefono": "+34600000000"
   },
-  "qr": "phid1:<uuid>:<firma-ed25519>"
+  "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"
 }
 ```
 
-- El `qr` es **idéntico** al del registro: tras reinstalar, login → misma identidad y mismo QR.
+- El `qr` es el de la **credencial activa**: tras reinstalar (sin renovar), login → misma identidad y mismo QR.
 - `401` con `Email o contraseña incorrectos` si el email no existe, la password no cuadra o el camarero aún no tiene password (creados antes de la migración `0003`).
+- `409` con `Clave revocada. Renueva la clave` si la cuenta no tiene credencial activa (hay que renovar desde una sesión con Bearer válido).
 - JWT HS256, TTL 30 días por defecto (`SESSION_TTL_DAYS`); secreto `SESSION_SECRET` (env) o generado y persistido en `app_config` (local).
 
 ### Perfil y QR de la sesión
 
 - `GET /v1/camareros/me` → perfil del camarero (`Authorization: Bearer <token>`).
-- `GET /v1/camareros/me/qr` → `{ "qr": "phid1:<uuid>:<firma-ed25519>" }` (mismo QR permanente).
+- `GET /v1/camareros/me/qr` → `{ "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>" }` (QR de la credencial activa).
 - Ambos devuelven `401` en español si falta el token o es inválido/caducado.
+- `/me/qr` devuelve `409` si no hay credencial activa.
+
+### Renovar y revocar la clave/QR
+
+- `POST /v1/camareros/me/renovar` (`Authorization: Bearer <token>`) → revoca las credenciales activas y crea una nueva. Respuesta `200`: `{ "qr": "phid1:..." }` (payload **nuevo**; el `id` del camarero no cambia). Tras renovar, Bar debe volver a dar de alta el QR.
+- `POST /v1/camareros/me/revocar` (`Authorization: Bearer <token>`, body opcional `{ "motivo": "..." }`) → revoca la credencial activa **sin** crear otra. Respuesta `200`: `{ "status": "revocada" }`. La cuenta queda viva; login y `/me/qr` devuelven `409` hasta que se renueve.
+- Ambos requieren Bearer. Si no hay credencial activa, `revocar` devuelve `409`. La sesión JWT sigue válida tras revocar, así se puede llamar a `renovar` sin deadlock.
+- Recuperación sin sesión (reset por admin) queda fuera de v0.1.
 
 ## Tests
 
@@ -96,4 +105,4 @@ docker compose exec identity pip install -r /app/requirements-dev.txt
 docker compose exec identity python -m pytest /app/tests -v
 ```
 
-Hay health, esquema Postgres (camareros + credenciales + app_config), registro (`POST /v1/camareros/registro`), login (`POST /v1/auth/login`) y perfil/QR (`/me`, `/me/qr`).
+Hay health, esquema Postgres (camareros + credenciales + app_config), registro, login, perfil/QR (`/me`, `/me/qr`), renovar y revocar.

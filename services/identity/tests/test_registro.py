@@ -100,7 +100,8 @@ def test_qr_rechaza_firma_manipulada(db_ready):
         vk = get_verify_key(session)
 
     partes = qr.split(":")
-    sig = partes[2]
+    assert len(partes) == 4
+    sig = partes[3]
     primer_char = "A" if sig[0] != "A" else "B"
-    manipulada = f"{partes[0]}:{partes[1]}:{primer_char}{sig[1:]}"
+    manipulada = f"{partes[0]}:{partes[1]}:{partes[2]}:{primer_char}{sig[1:]}"
     assert not verify_qr_payload(manipulada, vk)

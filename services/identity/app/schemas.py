@@ -41,3 +41,11 @@ class LoginResponse(BaseModel):
 
 class QrResponse(BaseModel):
     qr: str
+
+
+class RevocarRequest(BaseModel):
+    motivo: str | None = Field(default=None, max_length=500)
+
+
+class RevocarResponse(BaseModel):
+    status: str
