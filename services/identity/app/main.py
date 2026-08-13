@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.db import engine
+from app.errors import VALIDATION_ERROR, ApiError
 from app.routes.auth import router as auth_router
 from app.routes.camareros import router as camareros_router
 
@@ -44,7 +45,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Personal Hostelería — Identity",
-    version="0.0.0",
+    version="0.1.0",
     description="Registro, QR permanente y login: ver AGENTS.md.",
     lifespan=lifespan,
 )
@@ -53,12 +54,21 @@ app.include_router(camareros_router)
 app.include_router(auth_router)
 
 
+@app.exception_handler(ApiError)
+async def api_error_handler(request: Request, exc: ApiError):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "code": exc.code},
+        headers=exc.headers,
+    )
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     mensajes = [_msg_espanol(err) for err in exc.errors()]
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": mensajes},
+        content={"detail": mensajes, "code": VALIDATION_ERROR},
     )
 
 

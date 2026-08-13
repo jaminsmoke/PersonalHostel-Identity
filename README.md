@@ -23,6 +23,35 @@ docker compose up --build
 
 ## API v1
 
+### OpenAPI y contrato versionado
+
+- Documentación interactiva: http://localhost:8080/docs (Swagger UI) y http://localhost:8080/redoc.
+- Spec vivo: http://localhost:8080/openapi.json (`info.version` = `0.1.0`).
+- Spec versionado en git: [`docs/openapi.json`](docs/openapi.json). Se regenera con:
+
+  ```bash
+  python services/identity/scripts/export_openapi.py          # escribe docs/openapi.json
+  python services/identity/scripts/export_openapi.py --check  # falla si difiere del vivo
+  ```
+
+- El workflow `.github/workflows/openapi-check.yml` falla si el spec commiteado no coincide con el generado (anti-drift).
+
+### Errores y códigos estables
+
+Toda respuesta de error lleva `detail` (mensaje en español) y `code` (código estable para que los clientes ramifiquen sin parsear el mensaje):
+
+```json
+{ "detail": "Clave revocada. Renueva la clave", "code": "identity.credential_revoked" }
+```
+
+| HTTP | `code` | Cuándo |
+|---|---|---|
+| 401 | `identity.credenciales_invalidas` | Login con email/password incorrectos |
+| 401 | `identity.token_invalido` | Bearer faltante, inválido o caducado |
+| 409 | `identity.email_ya_registrado` | Registro con email ya existente |
+| 409 | `identity.credential_revoked` | Cuenta sin credencial activa |
+| 422 | `identity.validation_error` | Cuerpo inválido (`detail` es lista de mensajes) |
+
 ### Registro de profesional
 
 `POST /v1/camareros/registro`
@@ -105,4 +134,4 @@ docker compose exec identity pip install -r /app/requirements-dev.txt
 docker compose exec identity python -m pytest /app/tests -v
 ```
 
-Hay health, esquema Postgres (camareros + credenciales + app_config), registro, login, perfil/QR (`/me`, `/me/qr`), renovar y revocar.
+Hay health, esquema Postgres (camareros + credenciales + app_config), registro, login, perfil/QR (`/me`, `/me/qr`), renovar, revocar y OpenAPI.

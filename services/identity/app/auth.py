@@ -5,11 +5,12 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.errors import INVALID_TOKEN, ApiError
 from app.models import Camarero, Credencial, CredencialEstado
 from app.security import get_session_secret
 
@@ -75,20 +76,23 @@ def get_current_camarero(
     db: Session = Depends(get_db),
 ) -> Camarero:
     if credentials is None or credentials.scheme.lower() != "bearer":
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_401_UNAUTHORIZED,
+            code=INVALID_TOKEN,
             detail="Token de sesión inválido o caducado",
         )
     camarero_id = decode_access_token(credentials.credentials, get_session_secret(db))
     if camarero_id is None:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_401_UNAUTHORIZED,
+            code=INVALID_TOKEN,
             detail="Token de sesión inválido o caducado",
         )
     camarero = db.get(Camarero, camarero_id)
     if camarero is None:
-        raise HTTPException(
+        raise ApiError(
             status_code=status.HTTP_401_UNAUTHORIZED,
+            code=INVALID_TOKEN,
             detail="Token de sesión inválido o caducado",
         )
     return camarero
