@@ -1,15 +1,63 @@
 {
-  "projectId": "REPLACE_ME",
-  "repoId": "REPLACE_ME",
+  "projectId": "PVT_kwHOBM87Yc4BgQqZ",
+  "repoId": "R_kgDOT3ZYEg",
   "repo": "jaminsmoke/PersonalHostel-Identity",
-  "fields": {},
+  "fields": {
+    "Status": "PVTSSF_lAHOBM87Yc4BgQqZzhadpJE",
+    "Created": "PVTF_lAHOBM87Yc4BgQqZzhadpJs",
+    "Updated": "PVTF_lAHOBM87Yc4BgQqZzhadpJ0",
+    "Closed": "PVTF_lAHOBM87Yc4BgQqZzhadpJ8",
+    "Prioridad": "PVTSSF_lAHOBM87Yc4BgQqZzhadqBE",
+    "Tipo": "PVTSSF_lAHOBM87Yc4BgQqZzhadqBI",
+    "Área principal": "PVTSSF_lAHOBM87Yc4BgQqZzhadqB0",
+    "Versión": "PVTSSF_lAHOBM87Yc4BgQqZzhadqCI",
+    "Decision": "PVTSSF_lAHOBM87Yc4BgQqZzhadqCM",
+    "HighLighted": "PVTSSF_lAHOBM87Yc4BgQqZzhadqCQ",
+    "Inicio": "PVTF_lAHOBM87Yc4BgQqZzhadqCU",
+    "Completado": "PVTF_lAHOBM87Yc4BgQqZzhadqCY",
+    "Inicio exacto": "PVTF_lAHOBM87Yc4BgQqZzhadqDE",
+    "Completado exacto": "PVTF_lAHOBM87Yc4BgQqZzhadqDU"
+  },
   "options": {
-    "status": {},
-    "version": {},
-    "priority": {},
-    "decision": {},
-    "tipo": {},
-    "area": {},
-    "highlighted": {}
+    "status": {
+      "Detectado": "506af7ac",
+      "Debate": "fb3b99ad",
+      "Roadmap": "10e476b2",
+      "Ejecutando": "4e4dd03f",
+      "Verificando": "e28f0de5",
+      "Changelog": "0c57525f"
+    },
+    "version": {
+      "Sin asignar": "7d83be93",
+      "v0.1": "a1c42879"
+    },
+    "priority": {
+      "Alta": "7db19d12",
+      "Media": "9b8b82f1",
+      "Baja": "c40d44ef"
+    },
+    "decision": {
+      "Pendiente": "0f08728c",
+      "Aprobado": "303dcc0d",
+      "Diferido": "31f78f92",
+      "Cancelado": "6af6066f"
+    },
+    "tipo": {
+      "Bug": "3df9beed",
+      "Feature": "09090a62",
+      "Mejora": "b13514c9",
+      "Tarea": "c3789228"
+    },
+    "area": {
+      "API": "5b387d64",
+      "Datos": "9db060a9",
+      "Build/CI": "fd37cd72",
+      "Docs": "715849ea",
+      "Infra": "a4f31021"
+    },
+    "highlighted": {
+      "Yes": "2dee9fc7",
+      "No": "7bdfce2c"
+    }
   }
 }
