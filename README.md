@@ -6,7 +6,7 @@ Carpeta local: `PersonalHosteleriaServer`
 
 No es el nodo de sala: eso es [Personal Bar](https://github.com/jaminsmoke/PersonalBar).
 
-Mapa: [`AGENTS.md`](AGENTS.md). Kanban: [`tools/README.md`](tools/README.md).
+Mapa de producto y **flujo kanban completo** (Detectado → Changelog, Debate, CLI): [`AGENTS.md`](AGENTS.md). Setup corto de la CLI: [`tools/README.md`](tools/README.md).
 
 ## Levantar en local (Docker)
 
