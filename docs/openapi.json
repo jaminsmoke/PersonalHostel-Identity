@@ -1,6 +1,20 @@
 {
   "components": {
     "schemas": {
+      "Body_subir_foto_v1_camareros_me_foto_post": {
+        "properties": {
+          "foto": {
+            "format": "binary",
+            "title": "Foto",
+            "type": "string"
+          }
+        },
+        "required": [
+          "foto"
+        ],
+        "title": "Body_subir_foto_v1_camareros_me_foto_post",
+        "type": "object"
+      },
       "CamareroPerfil": {
         "description": "Perfil público del camarero para la sesión.",
         "properties": {
@@ -17,6 +31,20 @@
             ],
             "title": "Email",
             "type": "string"
+          },
+          "foto_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "/v1/camareros/me/foto"
+            ],
+            "title": "Foto Url"
           },
           "id": {
             "examples": [
@@ -90,6 +118,27 @@
           "detail"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "FotoResponse": {
+        "description": "Estado de la foto de perfil tras subirla o borrarla.",
+        "properties": {
+          "foto_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "/v1/camareros/me/foto"
+            ],
+            "title": "Foto Url"
+          }
+        },
+        "title": "FotoResponse",
         "type": "object"
       },
       "LoginRequest": {
@@ -421,6 +470,139 @@
           }
         ],
         "summary": "Me",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/me/foto": {
+      "delete": {
+        "operationId": "borrar_foto_v1_camareros_me_foto_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FotoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Borrar Foto",
+        "tags": [
+          "camareros"
+        ]
+      },
+      "get": {
+        "operationId": "obtener_foto_v1_camareros_me_foto_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Imagen de perfil (WebP)."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "El camarero no tiene foto de perfil."
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Foto",
+        "tags": [
+          "camareros"
+        ]
+      },
+      "post": {
+        "operationId": "subir_foto_v1_camareros_me_foto_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_subir_foto_v1_camareros_me_foto_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FotoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Cuerpo de la petición inválido."
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Subir Foto",
         "tags": [
           "camareros"
         ]

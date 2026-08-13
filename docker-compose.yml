@@ -21,9 +21,13 @@ services:
       - "${IDENTITY_PORT:-8080}:8080"
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/${POSTGRES_DB:-identity}
+      FOTOS_DIR: /app/data/fotos
+    volumes:
+      - fotos:/app/data/fotos
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   pgdata:
+  fotos:

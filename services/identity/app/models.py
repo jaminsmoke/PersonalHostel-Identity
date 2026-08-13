@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,6 +38,10 @@ class Camarero(Base):
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
     telefono: Mapped[str | None] = mapped_column(String(32), unique=True)
     password_hash: Mapped[str | None] = mapped_column(String(255))
+    foto_clave: Mapped[str | None] = mapped_column(String(255))
+    foto_mimetype: Mapped[str | None] = mapped_column(String(64))
+    foto_size: Mapped[int | None] = mapped_column(Integer)
+    foto_actualizada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -48,6 +52,13 @@ class Camarero(Base):
     credenciales: Mapped[list["Credencial"]] = relationship(
         back_populates="camarero", cascade="all, delete-orphan"
     )
+
+    @property
+    def foto_url(self) -> str | None:
+        """URL relativa de la foto de perfil, o None si no hay."""
+        if not self.foto_clave:
+            return None
+        return "/v1/camareros/me/foto"
 
 
 class Credencial(Base):

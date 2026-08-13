@@ -118,6 +118,17 @@ Respuesta `200`:
 - Ambos devuelven `401` en español si falta el token o es inválido/caducado.
 - `/me/qr` devuelve `409` si no hay credencial activa.
 
+### Foto de perfil
+
+La foto se guarda normalizada a un único avatar **256×256 WebP** (se descarta el original) en un volumen Docker (`fotos`), con la metadata (clave, mimetype, tamaño, fecha) en `camareros`.
+
+- `POST /v1/camareros/me/foto` (`Authorization: Bearer <token>`, `multipart/form-data`, campo `foto`) → sube/reemplaza la foto. Acepta JPEG/PNG/WebP, máx. 2 MB. Respuesta `200`: `{ "foto_url": "/v1/camareros/me/foto" }`. `422` con `identity.foto_invalida` si el formato/tamaño no es válido.
+- `GET /v1/camareros/me/foto` (`Authorization: Bearer <token>`) → sirve la imagen WebP con `Content-Type: image/webp`, `Cache-Control: private` y `ETag`. `404` con `identity.foto_inexistente` si no hay foto.
+- `DELETE /v1/camareros/me/foto` (`Authorization: Bearer <token>`) → borra la foto (fichero + metadata). Respuesta `200`: `{ "foto_url": null }`. Idempotente.
+- `GET /v1/camareros/me` y el login incluyen ahora `foto_url` (o `null`).
+- Reemplazar o borrar elimina el fichero anterior. **Revocar el QR no borra la foto**; el borrado real es `DELETE` (y el futuro derecho de supresión GDPR).
+- La foto **no** viaja en el QR.
+
 ### Renovar y revocar la clave/QR
 
 - `POST /v1/camareros/me/renovar` (`Authorization: Bearer <token>`) → revoca las credenciales activas y crea una nueva. Respuesta `200`: `{ "qr": "phid1:..." }` (payload **nuevo**; el `id` del camarero no cambia). Tras renovar, Bar debe volver a dar de alta el QR.
@@ -134,4 +145,4 @@ docker compose exec identity pip install -r /app/requirements-dev.txt
 docker compose exec identity python -m pytest /app/tests -v
 ```
 
-Hay health, esquema Postgres (camareros + credenciales + app_config), registro, login, perfil/QR (`/me`, `/me/qr`), renovar, revocar y OpenAPI.
+Hay health, esquema Postgres (camareros + credenciales + app_config), registro, login, perfil/QR (`/me`, `/me/qr`), foto de perfil, renovar, revocar y OpenAPI.

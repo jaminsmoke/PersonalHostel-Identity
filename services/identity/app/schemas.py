@@ -32,6 +32,7 @@ class CamareroPerfil(BaseModel):
     apellidos: str = Field(..., examples=["García"])
     email: str = Field(..., examples=["ana@example.com"])
     telefono: str | None = Field(default=None, examples=["+34600000000"])
+    foto_url: str | None = Field(default=None, examples=["/v1/camareros/me/foto"])
 
 
 class LoginRequest(BaseModel):
@@ -72,3 +73,9 @@ class ErrorResponse(BaseModel):
 
     code: str = Field(..., examples=["identity.credential_revoked"])
     detail: str | list[str] = Field(..., examples=["Clave revocada. Renueva la clave"])
+
+
+class FotoResponse(BaseModel):
+    """Estado de la foto de perfil tras subirla o borrarla."""
+
+    foto_url: str | None = Field(default=None, examples=["/v1/camareros/me/foto"])
