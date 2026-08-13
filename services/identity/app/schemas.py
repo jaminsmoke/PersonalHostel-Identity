@@ -91,3 +91,63 @@ class SupresionResponse(BaseModel):
     """Resultado del borrado de la cuenta."""
 
     status: str = Field(..., examples=["borrada"])
+
+
+class CuentaNegocioPerfil(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    email: str
+    nombre_mostrar: str
+    camarero_vinculado_id: uuid.UUID | None = None
+
+
+class RegistroNegocioRequest(BaseModel):
+    nombre_mostrar: str = Field(..., min_length=1, max_length=200)
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=128)
+    camarero_vinculado_id: uuid.UUID | None = None
+
+
+class RegistroNegocioResponse(BaseModel):
+    id: uuid.UUID
+
+
+class LoginNegocioResponse(BaseModel):
+    token: str
+    cuenta: CuentaNegocioPerfil
+
+
+class EstablecimientoCreateRequest(BaseModel):
+    nombre: str = Field(..., min_length=1, max_length=200)
+
+
+class EstablecimientoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    nombre: str
+    cuenta_negocio_id: uuid.UUID
+
+
+class EstablecimientoMembresiaResponse(EstablecimientoResponse):
+    rol: str
+
+
+class MembresiaCreateRequest(BaseModel):
+    camarero_id: uuid.UUID
+    rol: str = Field(default="staff", pattern="^(dueno|staff)$")
+
+
+class MembresiaResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    establecimiento_id: uuid.UUID
+    camarero_id: uuid.UUID
+    rol: str
+    estado: str
+
+
+class SupresionNegocioRequest(BaseModel):
+    password: str

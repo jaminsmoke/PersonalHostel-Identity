@@ -9,6 +9,7 @@ from app.db import engine
 from app.errors import VALIDATION_ERROR, ApiError
 from app.routes.auth import router as auth_router
 from app.routes.camareros import router as camareros_router
+from app.routes.establecimientos import router as establecimientos_router
 
 CAMPOS_LEGIBLES = {
     "nombre": "nombre",
@@ -45,13 +46,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Personal Hostelería — Identity",
-    version="0.1.0",
-    description="Registro, QR permanente y login: ver AGENTS.md.",
+    version="0.2.0",
+    description="Identidad profesional y cuentas de negocio: ver AGENTS.md.",
     lifespan=lifespan,
 )
 
 app.include_router(camareros_router)
 app.include_router(auth_router)
+app.include_router(establecimientos_router)
 
 
 @app.exception_handler(ApiError)

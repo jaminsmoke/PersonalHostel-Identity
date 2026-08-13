@@ -37,7 +37,7 @@ def test_openapi_documenta_rutas_y_version():
     resp = client.get("/openapi.json")
     assert resp.status_code == 200
     spec = resp.json()
-    assert spec["info"]["version"] == "0.1.0"
+    assert spec["info"]["version"] == "0.2.0"
     paths = spec["paths"]
     for ruta in RUTAS:
         assert ruta in paths, f"Falta {ruta} en el spec"

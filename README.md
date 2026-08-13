@@ -19,14 +19,14 @@ docker compose up --build
 - API: http://localhost:8080/health
 - Meta: http://localhost:8080/v1/meta
 - Postgres: `localhost:5432` (usuario `hosteleria`, base `identity`)
-- Esquema: aplicado por Alembic al arrancar (`alembic upgrade head`), tablas `camareros`, `credenciales` y `app_config`
+- Esquema: aplicado por Alembic al arrancar (`alembic upgrade head`), tablas de profesionales y organización (`camareros`, `credenciales`, `cuentas_negocio`, `establecimientos`, `membresias` y `app_config`)
 
 ## API v1
 
 ### OpenAPI y contrato versionado
 
 - Documentación interactiva: http://localhost:8080/docs (Swagger UI) y http://localhost:8080/redoc.
-- Spec vivo: http://localhost:8080/openapi.json (`info.version` = `0.1.0`).
+- Spec vivo: http://localhost:8080/openapi.json (`info.version` = `0.2.0`).
 - Spec versionado en git: [`docs/openapi.json`](docs/openapi.json). Se regenera con:
 
   ```bash
@@ -143,13 +143,32 @@ La foto se guarda normalizada a un único avatar **256×256 WebP** (se descarta 
 - Tras borrar, el JWT viejo queda inútil (el `sub` ya no resuelve → `401 identity.token_invalido`) y el login deja de funcionar.
 - Las claves globales (`app_config`) no se tocan: el QR de los demás camareros sigue válido.
 
+### Cuentas de negocio y establecimientos (v0.2)
+
+Identity mantiene separadas tres entidades:
+
+- `cuentas_negocio`: credencial de acceso y titular de la ficha del negocio.
+- `establecimientos`: UUID canónico estable para que Bar y Comander identifiquen el negocio.
+- `membresias`: relación N:N entre camareros y establecimientos, con rol `dueno` o `staff`.
+
+La cuenta de negocio usa JWT con tipo `negocio`, independiente del JWT de camarero. Una cuenta puede vincularse opcionalmente a un camarero; al crear un establecimiento se genera automáticamente su membresía `dueno`.
+
+Rutas principales:
+
+- `POST /v1/auth/negocio/registro` y `POST /v1/auth/negocio/login` → alta y sesión de la cuenta de negocio.
+- `DELETE /v1/auth/negocio/me` → supresión de cuenta y establecimientos, sin borrar camareros.
+- `POST /v1/establecimientos` y `GET /v1/establecimientos/mios` → crear y listar establecimientos propios.
+- `GET /v1/establecimientos/{id}` → consulta para la cuenta titular o un miembro activo.
+- `POST/GET/DELETE /v1/establecimientos/{id}/miembros...` → gestionar membresías.
+- `GET /v1/camareros/me/establecimientos` → establecimientos activos del profesional.
+
+El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar; las invitaciones y rankings quedan fuera de este incremento.
+
 ## Tests
 
 ```bash
-docker cp services/identity/requirements-dev.txt personalhosteleriaserver-identity-1:/app/
-docker cp services/identity/tests personalhosteleriaserver-identity-1:/app/tests
-docker compose exec identity pip install -r /app/requirements-dev.txt
+docker compose up --build -d
 docker compose exec identity python -m pytest /app/tests -v
 ```
 
-Hay health, esquema Postgres (camareros + credenciales + app_config), registro, login, perfil/QR (`/me`, `/me/qr`), foto de perfil, renovar, revocar y OpenAPI.
+Hay health, esquema Postgres, registro/login de camarero, perfil/QR (`/me`, `/me/qr`), foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías y OpenAPI.

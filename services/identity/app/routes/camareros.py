@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import uuid
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 import secrets
@@ -21,7 +22,14 @@ from app.errors import (
     ApiError,
 )
 from app.images import MAX_INPUT_BYTES, FotoInvalida, normalizar_foto
-from app.models import Camarero, Credencial, CredencialEstado
+from app.models import (
+    Camarero,
+    Credencial,
+    CredencialEstado,
+    Establecimiento,
+    Membresia,
+    MembresiaEstado,
+)
 from app.schemas import (
     CamareroPerfil,
     ErrorResponse,
@@ -33,6 +41,8 @@ from app.schemas import (
     RevocarResponse,
     SupresionRequest,
     SupresionResponse,
+    EstablecimientoResponse,
+    EstablecimientoMembresiaResponse,
 )
 from app.security import build_qr_payload, get_signing_key
 from app.storage import get_foto_storage
@@ -110,6 +120,35 @@ def registrar_camarero(payload: RegistroRequest, db: Session = Depends(get_db)) 
 )
 def me(camarero: Camarero = Depends(get_current_camarero)) -> Camarero:
     return camarero
+
+
+@router.get(
+    "/me/establecimientos",
+    response_model=list[EstablecimientoMembresiaResponse],
+    responses={status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED},
+)
+def mis_establecimientos(
+    camarero: Camarero = Depends(get_current_camarero),
+    db: Session = Depends(get_db),
+) -> list[EstablecimientoMembresiaResponse]:
+    rows = (
+        db.query(Establecimiento, Membresia.rol)
+        .join(Membresia, Membresia.establecimiento_id == Establecimiento.id)
+        .filter(
+            Membresia.camarero_id == camarero.id,
+            Membresia.estado == MembresiaEstado.activa,
+        )
+        .all()
+    )
+    return [
+        EstablecimientoMembresiaResponse(
+            id=establecimiento.id,
+            nombre=establecimiento.nombre,
+            cuenta_negocio_id=establecimiento.cuenta_negocio_id,
+            rol=rol.value,
+        )
+        for establecimiento, rol in rows
+    ]
 
 
 @router.get(
