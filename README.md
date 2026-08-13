@@ -136,6 +136,13 @@ La foto se guarda normalizada a un único avatar **256×256 WebP** (se descarta 
 - Ambos requieren Bearer. Si no hay credencial activa, `revocar` devuelve `409`. La sesión JWT sigue válida tras revocar, así se puede llamar a `renovar` sin deadlock.
 - Recuperación sin sesión (reset por admin) queda fuera de v0.1.
 
+### Borrar cuenta (derecho de supresión)
+
+- `DELETE /v1/camareros/me` (`Authorization: Bearer <token>`, body `{ "password": "..." }`) → borra la cuenta de forma **irreversible**: camarero + credenciales (cascada) + foto del volumen + hash de password. Respuesta `200`: `{ "status": "borrada" }`.
+- Requiere re-autenticación: `401` con `identity.password_incorrecta` si la password no cuadra (la cuenta queda intacta).
+- Tras borrar, el JWT viejo queda inútil (el `sub` ya no resuelve → `401 identity.token_invalido`) y el login deja de funcionar.
+- Las claves globales (`app_config`) no se tocan: el QR de los demás camareros sigue válido.
+
 ## Tests
 
 ```bash

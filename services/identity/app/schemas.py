@@ -79,3 +79,15 @@ class FotoResponse(BaseModel):
     """Estado de la foto de perfil tras subirla o borrarla."""
 
     foto_url: str | None = Field(default=None, examples=["/v1/camareros/me/foto"])
+
+
+class SupresionRequest(BaseModel):
+    """Confirmación (password) para ejercer el derecho de supresión."""
+
+    password: str = Field(..., examples=["contraseña-mín-8"])
+
+
+class SupresionResponse(BaseModel):
+    """Resultado del borrado de la cuenta."""
+
+    status: str = Field(..., examples=["borrada"])

@@ -5,13 +5,19 @@ import secrets
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.auth import get_credencial_activa, get_current_camarero, hash_password
+from app.auth import (
+    get_credencial_activa,
+    get_current_camarero,
+    hash_password,
+    verify_password,
+)
 from app.db import get_db
 from app.errors import (
     CREDENTIAL_REVOKED,
     EMAIL_ALREADY_REGISTERED,
     FOTO_INEXISTENTE,
     FOTO_INVALIDA,
+    PASSWORD_INCORRECTA,
     ApiError,
 )
 from app.images import MAX_INPUT_BYTES, FotoInvalida, normalizar_foto
@@ -25,6 +31,8 @@ from app.schemas import (
     RegistroResponse,
     RevocarRequest,
     RevocarResponse,
+    SupresionRequest,
+    SupresionResponse,
 )
 from app.security import build_qr_payload, get_signing_key
 from app.storage import get_foto_storage
@@ -288,3 +296,34 @@ def borrar_foto(
     camarero.foto_actualizada_en = None
     db.commit()
     return FotoResponse(foto_url=None)
+
+
+@router.delete(
+    "/me",
+    response_model=SupresionResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
+    },
+)
+def suprimir_cuenta(
+    payload: SupresionRequest,
+    camarero: Camarero = Depends(get_current_camarero),
+    db: Session = Depends(get_db),
+) -> SupresionResponse:
+    if camarero.password_hash is None or not verify_password(
+        payload.password, camarero.password_hash
+    ):
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code=PASSWORD_INCORRECTA,
+            detail="Contraseña incorrecta",
+        )
+
+    foto_clave = camarero.foto_clave
+    if foto_clave:
+        get_foto_storage().borrar(foto_clave)
+
+    db.delete(camarero)
+    db.commit()
+    return SupresionResponse(status="borrada")

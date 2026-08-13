@@ -340,6 +340,40 @@
         ],
         "title": "RevocarResponse",
         "type": "object"
+      },
+      "SupresionRequest": {
+        "description": "Confirmación (password) para ejercer el derecho de supresión.",
+        "properties": {
+          "password": {
+            "examples": [
+              "contraseña-mín-8"
+            ],
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "SupresionRequest",
+        "type": "object"
+      },
+      "SupresionResponse": {
+        "description": "Resultado del borrado de la cuenta.",
+        "properties": {
+          "status": {
+            "examples": [
+              "borrada"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "SupresionResponse",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -440,6 +474,60 @@
       }
     },
     "/v1/camareros/me": {
+      "delete": {
+        "operationId": "suprimir_cuenta_v1_camareros_me_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupresionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupresionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Cuerpo de la petición inválido."
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Suprimir Cuenta",
+        "tags": [
+          "camareros"
+        ]
+      },
       "get": {
         "operationId": "me_v1_camareros_me_get",
         "responses": {
