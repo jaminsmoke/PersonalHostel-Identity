@@ -1,0 +1,22 @@
+{
+  "name": "@jaminsmoke/kanban-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "bin": {
+    "kanban": "cli.ts"
+  },
+  "description": "CLI toolkit for managing GitHub Projects kanban boards. Create, move, audit, and generate changelogs from your Kanban items.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@octokit/graphql": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}

@@ -1,15 +1,18 @@
-# Personal Hostelería Server
+# PersonalHostel Identity
 
-Servidor de **identidad** de la familia Personal (Comander, Bar, Kitchen, TPV).  
-No es el nodo de sala: eso es Personal Bar.
+Servidor de **identidad** de la familia **PersonalHostel**.  
+Repo: https://github.com/jaminsmoke/PersonalHostel-Identity  
+Carpeta local: `PersonalHosteleriaServer`
 
-Mapa de intenciones para agentes: [`AGENTS.md`](AGENTS.md).
+No es el nodo de sala: eso es [Personal Bar](https://github.com/jaminsmoke/PersonalBar).
+
+Mapa: [`AGENTS.md`](AGENTS.md). Kanban: [`tools/README.md`](tools/README.md).
 
 ## Levantar en local (Docker)
 
 ```bash
 cd PersonalHosteleriaServer
-copy .env.example .env   # Windows; o: cp .env.example .env
+copy .env.example .env
 docker compose up --build
 ```
 
@@ -17,10 +20,4 @@ docker compose up --build
 - Meta: http://localhost:8080/v1/meta
 - Postgres: `localhost:5432` (usuario `hosteleria`, base `identity`)
 
-Parar: `Ctrl+C` o `docker compose down`. Datos de Postgres: volumen `pgdata`.
-
-## Qué hay / qué no hay
-
-Hay un proceso Docker que responde health. **No hay** registro de camareros, QR ni login: lo implementa el equipo de este repo.
-
-Producción (VPS) no está en este scaffold.
+Hay health. **No hay** registro/QR/login todavía.

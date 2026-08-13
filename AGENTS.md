@@ -1,4 +1,14 @@
-# AGENTS.md — Personal Hostelería Server
+# AGENTS.md — PersonalHostel Identity
+
+Familia **PersonalHostel** (Comander, Bar, Kitchen, TPV, este servidor de identidad).
+
+- Repo GitHub: `jaminsmoke/PersonalHostel-Identity`
+- Carpeta local: `PersonalHosteleriaServer`
+- Kanban: GitHub Project de **este** repo (no el de Commander)
+- CLI: `bun run tools/kanban-cli/cli.ts`  (ver `tools/README.md`)
+- Skills: `tools/agent-skills/jarvis-github-kanban` y `jarvis-github-agentuse`
+
+Al crear, mover o cerrar ítems: leer esas skills. Ciclo Detectado → Debate → Roadmap → Ejecutando → Verificando → Changelog. En Debate, 4 opciones y **parar a preguntar**. Convertir draft→issue solo al entrar en Ejecutando. Labels: 1 `tipo:*` + 1 `area:*`.
 
 ## Qué es esto
 

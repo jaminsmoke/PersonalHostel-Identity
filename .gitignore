@@ -6,3 +6,8 @@ __pycache__/
 .idea/
 .vscode/
 *.log
+.kanbanrc.json
+.agents/
+.claude/
+skills-lock.json
+tools/kanban-cli/node_modules/
