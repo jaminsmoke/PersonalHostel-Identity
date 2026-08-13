@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.db import engine
+from app.routes.auth import router as auth_router
 from app.routes.camareros import router as camareros_router
 
 CAMPOS_LEGIBLES = {
@@ -13,6 +14,7 @@ CAMPOS_LEGIBLES = {
     "apellidos": "apellidos",
     "email": "email",
     "telefono": "telefono",
+    "password": "contraseña",
     "body": "cuerpo de la petición",
 }
 
@@ -48,6 +50,7 @@ app = FastAPI(
 )
 
 app.include_router(camareros_router)
+app.include_router(auth_router)
 
 
 @app.exception_handler(RequestValidationError)

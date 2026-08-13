@@ -29,11 +29,15 @@ def _email() -> str:
     return f"prueba-{uuid.uuid4()}@example.com"
 
 
+def _payload(email: str) -> dict:
+    return {"nombre": "Ana", "apellidos": "García", "email": email, "password": "pass-12345678"}
+
+
 def test_registro_ok(db_ready):
     email = _email()
     resp = client.post(
         "/v1/camareros/registro",
-        json={"nombre": "Ana", "apellidos": "García", "email": email},
+        json=_payload(email),
     )
     assert resp.status_code == 201
     body = resp.json()
@@ -56,7 +60,7 @@ def test_registro_qr_verifica(db_ready):
     email = _email()
     resp = client.post(
         "/v1/camareros/registro",
-        json={"nombre": "Luis", "apellidos": "Pérez", "email": email},
+        json=_payload(email),
     )
     assert resp.status_code == 201
     qr = resp.json()["qr"]
@@ -67,7 +71,7 @@ def test_registro_qr_verifica(db_ready):
 
 def test_registro_email_duplicado(db_ready):
     email = _email()
-    data = {"nombre": "Ana", "apellidos": "García", "email": email}
+    data = _payload(email)
     assert client.post("/v1/camareros/registro", json=data).status_code == 201
     resp = client.post("/v1/camareros/registro", json=data)
     assert resp.status_code == 409
@@ -77,7 +81,7 @@ def test_registro_email_duplicado(db_ready):
 def test_registro_email_invalido(db_ready):
     resp = client.post(
         "/v1/camareros/registro",
-        json={"nombre": "Ana", "apellidos": "García", "email": "no-es-email"},
+        json={"nombre": "Ana", "apellidos": "García", "email": "no-es-email", "password": "pass-12345678"},
     )
     assert resp.status_code == 422
     detail = resp.json()["detail"]
@@ -89,7 +93,7 @@ def test_qr_rechaza_firma_manipulada(db_ready):
     email = _email()
     resp = client.post(
         "/v1/camareros/registro",
-        json={"nombre": "Carlos", "apellidos": "Ruiz", "email": email},
+        json=_payload(email),
     )
     qr = resp.json()["qr"]
     with SessionLocal() as session:

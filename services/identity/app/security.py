@@ -1,5 +1,6 @@
 import base64
 import os
+import secrets
 import uuid
 
 import nacl.signing
@@ -9,8 +10,10 @@ from app.models import AppConfig
 
 QR_PREFIX = "phid1"
 CONFIG_KEY_SIGNING = "qr_signing_key_ed25519"
+CONFIG_KEY_SESSION = "session_secret"
 
 SIGNING_KEY_ENV = "QR_SIGNING_KEY"
+SESSION_SECRET_ENV = "SESSION_SECRET"
 
 
 def _load_signing_key(encoded: str) -> nacl.signing.SigningKey:
@@ -39,6 +42,21 @@ def get_signing_key(db: Session) -> nacl.signing.SigningKey:
 
 def get_verify_key(db: Session) -> nacl.signing.VerifyKey:
     return get_signing_key(db).verify_key
+
+
+def get_session_secret(db: Session) -> str:
+    env = os.environ.get(SESSION_SECRET_ENV)
+    if env:
+        return env
+
+    row = db.get(AppConfig, CONFIG_KEY_SESSION)
+    if row is not None:
+        return row.valor
+
+    secret = secrets.token_urlsafe(48)
+    db.add(AppConfig(clave=CONFIG_KEY_SESSION, valor=secret))
+    db.commit()
+    return secret
 
 
 def build_qr_payload(camarero_id: uuid.UUID, signing_key: nacl.signing.SigningKey) -> str:
