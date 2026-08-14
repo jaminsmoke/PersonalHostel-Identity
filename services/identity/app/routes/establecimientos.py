@@ -1,36 +1,70 @@
+from datetime import datetime, timedelta, timezone
 from typing import cast
+import hashlib
+import os
+import secrets
 import uuid
 
 from fastapi import APIRouter, Depends, status
+from pydantic import EmailStr
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_actor, get_current_cuenta_negocio
+from app.auth import get_current_actor, get_current_camarero, get_current_cuenta_negocio
 from app.db import get_db
 from app.errors import (
     CAMARERO_NOT_FOUND,
     ESTABLECIMIENTO_NOT_FOUND,
+    CREDENTIAL_INACTIVE,
+    EMAIL_NOT_FOUND,
+    INVITACION_DUPLICATE,
+    INVITACION_EXPIRED,
+    INVITACION_NOT_FOUND,
+    INVITACION_UNAUTHORIZED,
+    INVITACION_USED,
     MEMBERSHIP_DUPLICATE,
     MEMBERSHIP_FORBIDDEN,
+    QR_INVALIDO,
     ApiError,
 )
 from app.models import (
     Camarero,
     CuentaNegocio,
+    Credencial,
+    CredencialEstado,
+    EmailOutbox,
+    EmailOutboxEstado,
     Establecimiento,
+    Invitacion,
+    InvitacionEstado,
     Membresia,
     MembresiaEstado,
     MembresiaRol,
 )
 from app.schemas import (
     ErrorResponse,
+    CamareroSearchResponse,
     EstablecimientoCreateRequest,
     EstablecimientoResponse,
+    InvitacionAcceptResponse,
+    InvitacionCreateRequest,
+    InvitacionResponse,
     MembresiaCreateRequest,
     MembresiaResponse,
+    QrMemberRequest,
+    QrPublicKeyResponse,
+)
+from app.security import (
+    get_session_secret,
+    get_verify_key,
+    parse_and_verify_qr_payload,
+    protect_invitation_token,
+    qr_public_key_payload,
 )
 
 router = APIRouter(prefix="/v1/establecimientos", tags=["establecimientos"])
+keys_router = APIRouter(prefix="/v1/keys", tags=["keys"])
+invitations_router = APIRouter(prefix="/v1/invitaciones", tags=["invitaciones"])
 
 _UNAUTHORIZED = {
     "model": ErrorResponse,
@@ -55,6 +89,60 @@ def _establecimiento_de_cuenta(
             detail="La cuenta no tiene acceso a este establecimiento",
         )
     return establecimiento
+
+
+def _add_or_reactivate_membership(
+    db: Session,
+    establecimiento: Establecimiento,
+    camarero_id: uuid.UUID,
+    rol: str,
+    allow_existing: bool = False,
+) -> Membresia:
+    if db.get(Camarero, camarero_id) is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=CAMARERO_NOT_FOUND,
+            detail="Camarero no encontrado",
+        )
+    existing = (
+        db.query(Membresia)
+        .filter_by(
+            establecimiento_id=establecimiento.id, camarero_id=camarero_id
+        )
+        .one_or_none()
+    )
+    if existing is not None:
+        if existing.estado == MembresiaEstado.revocada:
+            existing.estado = MembresiaEstado.activa
+            existing.revocada_en = None
+            existing.rol = MembresiaRol(rol)
+            return existing
+        if allow_existing:
+            return existing
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code=MEMBERSHIP_DUPLICATE,
+            detail="El camarero ya pertenece a este establecimiento",
+        )
+    membership = Membresia(
+        establecimiento_id=establecimiento.id,
+        camarero_id=camarero_id,
+        rol=MembresiaRol(rol),
+        estado=MembresiaEstado.activa,
+    )
+    db.add(membership)
+    return membership
+
+
+def _invitation_response(invitation: Invitacion) -> InvitacionResponse:
+    return InvitacionResponse(
+        id=invitation.id,
+        establecimiento_id=invitation.establecimiento_id,
+        email=invitation.email_objetivo,
+        rol=invitation.rol.value,
+        estado=invitation.estado.value,
+        expira_en=invitation.expira_en,
+    )
 
 
 @router.post(
@@ -170,39 +258,9 @@ def añadir_miembro(
     db: Session = Depends(get_db),
 ) -> Membresia:
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
-    if db.get(Camarero, payload.camarero_id) is None:
-        raise ApiError(
-            status_code=status.HTTP_404_NOT_FOUND,
-            code=CAMARERO_NOT_FOUND,
-            detail="Camarero no encontrado",
-        )
-    existing = (
-        db.query(Membresia)
-        .filter_by(
-            establecimiento_id=establecimiento.id, camarero_id=payload.camarero_id
-        )
-        .one_or_none()
+    membership = _add_or_reactivate_membership(
+        db, establecimiento, payload.camarero_id, payload.rol
     )
-    if existing is not None:
-        if existing.estado == MembresiaEstado.revocada:
-            existing.estado = MembresiaEstado.activa
-            existing.revocada_en = None
-            existing.rol = MembresiaRol(payload.rol)
-            db.commit()
-            db.refresh(existing)
-            return existing
-        raise ApiError(
-            status_code=status.HTTP_409_CONFLICT,
-            code=MEMBERSHIP_DUPLICATE,
-            detail="El camarero ya pertenece a este establecimiento",
-        )
-    membership = Membresia(
-        establecimiento_id=establecimiento.id,
-        camarero_id=payload.camarero_id,
-        rol=MembresiaRol(payload.rol),
-        estado=MembresiaEstado.activa,
-    )
-    db.add(membership)
     try:
         db.commit()
         db.refresh(membership)
@@ -214,6 +272,262 @@ def añadir_miembro(
             detail="El camarero ya pertenece a este establecimiento",
         )
     return membership
+
+
+@keys_router.get("/qr", response_model=QrPublicKeyResponse)
+def obtener_clave_publica_qr(db: Session = Depends(get_db)) -> dict[str, str]:
+    return qr_public_key_payload(db)
+
+
+@router.post(
+    "/{establecimiento_id}/miembros/qr",
+    response_model=MembresiaResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+    },
+)
+def añadir_miembro_por_qr(
+    establecimiento_id: uuid.UUID,
+    payload: QrMemberRequest,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_db),
+) -> Membresia:
+    establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    parsed = parse_and_verify_qr_payload(payload.qr, get_verify_key(db))
+    if parsed is None:
+        raise ApiError(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            code=QR_INVALIDO,
+            detail="El QR no es válido",
+        )
+    camarero_id, credencial_id = parsed
+    credencial = db.get(Credencial, credencial_id)
+    if (
+        credencial is None
+        or credencial.camarero_id != camarero_id
+        or credencial.estado != CredencialEstado.activa
+    ):
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code=CREDENTIAL_INACTIVE,
+            detail="La credencial del QR no está activa",
+        )
+    membership = _add_or_reactivate_membership(
+        db, establecimiento, camarero_id, payload.rol
+    )
+    db.commit()
+    db.refresh(membership)
+    return membership
+
+
+@router.get(
+    "/{establecimiento_id}/camareros/buscar",
+    response_model=CamareroSearchResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def buscar_camarero(
+    establecimiento_id: uuid.UUID,
+    email: EmailStr,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_db),
+) -> Camarero:
+    _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    camarero = db.query(Camarero).filter_by(email=str(email).lower()).one_or_none()
+    if camarero is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=EMAIL_NOT_FOUND,
+            detail="No hay un camarero registrado con ese email",
+        )
+    return camarero
+
+
+@router.post(
+    "/{establecimiento_id}/invitaciones",
+    response_model=InvitacionResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+    },
+)
+def crear_invitacion(
+    establecimiento_id: uuid.UUID,
+    payload: InvitacionCreateRequest,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_db),
+) -> InvitacionResponse:
+    establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    email = str(payload.email).lower()
+    camarero = db.query(Camarero).filter_by(email=email).one_or_none()
+    if camarero is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=EMAIL_NOT_FOUND,
+            detail="No hay un camarero registrado con ese email",
+        )
+    active_membership = (
+        db.query(Membresia)
+        .filter_by(
+            establecimiento_id=establecimiento.id,
+            camarero_id=camarero.id,
+            estado=MembresiaEstado.activa,
+        )
+        .one_or_none()
+    )
+    if active_membership is not None:
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code=MEMBERSHIP_DUPLICATE,
+            detail="El camarero ya pertenece a este establecimiento",
+        )
+    now = datetime.now(timezone.utc)
+    pending = (
+        db.query(Invitacion)
+        .filter(
+            Invitacion.establecimiento_id == establecimiento.id,
+            Invitacion.email_objetivo == email,
+            Invitacion.estado == InvitacionEstado.pendiente,
+            Invitacion.expira_en > now,
+        )
+        .one_or_none()
+    )
+    if pending is not None:
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code=INVITACION_DUPLICATE,
+            detail="Ya existe una invitación pendiente para ese email",
+        )
+    token = secrets.token_urlsafe(32)
+    expires = now + timedelta(hours=max(1, int(os.environ.get("INVITATION_TTL_HOURS", "72"))))
+    invitation = Invitacion(
+        establecimiento_id=establecimiento.id,
+        cuenta_negocio_id=cuenta.id,
+        email_objetivo=email,
+        token_hash=hashlib.sha256(token.encode("utf-8")).hexdigest(),
+        rol=MembresiaRol(payload.rol),
+        estado=InvitacionEstado.pendiente,
+        expira_en=expires,
+    )
+    db.add(invitation)
+    db.flush()
+    outbox = EmailOutbox(
+        invitacion_id=invitation.id,
+        tipo="invitacion_establecimiento",
+        destinatario=email,
+        payload={
+            "token_encrypted": protect_invitation_token(token, get_session_secret(db)),
+            "invitation_url_base": os.environ.get(
+                "INVITATION_URL_BASE", "http://localhost:8080/v1/invitaciones"
+            ),
+            "establishment_name": establecimiento.nombre,
+        },
+        estado=EmailOutboxEstado.pendiente,
+    )
+    db.add(outbox)
+    db.commit()
+    db.refresh(invitation)
+    return _invitation_response(invitation)
+
+
+@router.post(
+    "/{establecimiento_id}/invitaciones/{invitacion_id}/revocar",
+    response_model=InvitacionResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def revocar_invitacion(
+    establecimiento_id: uuid.UUID,
+    invitacion_id: uuid.UUID,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_db),
+) -> InvitacionResponse:
+    establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    invitation = (
+        db.query(Invitacion)
+        .filter_by(id=invitacion_id, establecimiento_id=establecimiento.id)
+        .one_or_none()
+    )
+    if invitation is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=INVITACION_NOT_FOUND,
+            detail="Invitación no encontrada",
+        )
+    if invitation.estado == InvitacionEstado.pendiente:
+        invitation.estado = InvitacionEstado.revocada
+        invitation.revocada_en = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(invitation)
+    return _invitation_response(invitation)
+
+
+@invitations_router.post(
+    "/{token}/aceptar",
+    response_model=InvitacionAcceptResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+    },
+)
+def aceptar_invitacion(
+    token: str,
+    camarero: Camarero = Depends(get_current_camarero),
+    db: Session = Depends(get_db),
+) -> InvitacionAcceptResponse:
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    invitation = db.query(Invitacion).filter_by(token_hash=token_hash).one_or_none()
+    if invitation is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=INVITACION_NOT_FOUND,
+            detail="Invitación no encontrada",
+        )
+    now = datetime.now(timezone.utc)
+    if invitation.estado != InvitacionEstado.pendiente:
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code=INVITACION_USED,
+            detail="La invitación ya no está disponible",
+        )
+    if invitation.expira_en <= now:
+        invitation.estado = InvitacionEstado.expirada
+        db.commit()
+        raise ApiError(
+            status_code=status.HTTP_410_GONE,
+            code=INVITACION_EXPIRED,
+            detail="La invitación ha expirado",
+        )
+    if camarero.email.lower() != invitation.email_objetivo:
+        raise ApiError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            code=INVITACION_UNAUTHORIZED,
+            detail="La invitación no corresponde a este camarero",
+        )
+    establecimiento = db.get(Establecimiento, invitation.establecimiento_id)
+    membership = _add_or_reactivate_membership(
+        db, establecimiento, camarero.id, invitation.rol.value, allow_existing=True
+    )
+    invitation.estado = InvitacionEstado.aceptada
+    invitation.aceptada_en = now
+    db.commit()
+    db.refresh(membership)
+    return InvitacionAcceptResponse(invitacion_id=invitation.id, membresia=membership)
 
 
 @router.get(

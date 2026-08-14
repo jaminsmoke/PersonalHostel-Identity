@@ -1,9 +1,11 @@
 import base64
+import hashlib
 import os
 import secrets
 import uuid
 
 import nacl.signing
+import nacl.secret
 from sqlalchemy.orm import Session
 
 from app.models import AppConfig
@@ -71,16 +73,47 @@ def build_qr_payload(
 
 
 def verify_qr_payload(payload: str, verify_key: nacl.signing.VerifyKey) -> bool:
+    return parse_and_verify_qr_payload(payload, verify_key) is not None
+
+
+def parse_and_verify_qr_payload(
+    payload: str, verify_key: nacl.signing.VerifyKey
+) -> tuple[uuid.UUID, uuid.UUID] | None:
     try:
         parts = payload.split(":")
         if len(parts) != 4:
-            return False
+            return None
         prefix, camarero_id, credencial_id, sig_b64 = parts
         if prefix != QR_PREFIX:
-            return False
+            return None
         signature = base64.urlsafe_b64decode(sig_b64 + "=" * (-len(sig_b64) % 4))
         message = f"{prefix}:{camarero_id}:{credencial_id}".encode("utf-8")
         verify_key.verify(message, signature)
-        return True
+        return uuid.UUID(camarero_id), uuid.UUID(credencial_id)
     except Exception:
-        return False
+        return None
+
+
+def qr_public_key_payload(db: Session) -> dict[str, str]:
+    verify_key = get_verify_key(db)
+    return {
+        "algorithm": "Ed25519",
+        "key_id": "ed25519-v1",
+        "public_key": base64.urlsafe_b64encode(bytes(verify_key)).rstrip(b"=").decode("ascii"),
+        "qr_prefix": QR_PREFIX,
+        "format": "phid1:<camarero_id>:<credencial_id>:<firma>",
+    }
+
+
+def protect_invitation_token(token: str, session_secret: str) -> str:
+    key = hashlib.sha256(session_secret.encode("utf-8")).digest()
+    box = nacl.secret.SecretBox(key)
+    encrypted = box.encrypt(token.encode("utf-8"))
+    return base64.urlsafe_b64encode(encrypted).rstrip(b"=").decode("ascii")
+
+
+def unprotect_invitation_token(value: str, session_secret: str) -> str:
+    key = hashlib.sha256(session_secret.encode("utf-8")).digest()
+    box = nacl.secret.SecretBox(key)
+    encrypted = base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+    return box.decrypt(encrypted).decode("utf-8")

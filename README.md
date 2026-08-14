@@ -161,8 +161,16 @@ Rutas principales:
 - `GET /v1/establecimientos/{id}` → consulta para la cuenta titular o un miembro activo.
 - `POST/GET/DELETE /v1/establecimientos/{id}/miembros...` → gestionar membresías.
 - `GET /v1/camareros/me/establecimientos` → establecimientos activos del profesional.
+- `GET /v1/keys/qr` → clave pública Ed25519 para verificación offline del QR.
+- `POST /v1/establecimientos/{id}/miembros/qr` → valida un QR y crea la membresía.
+- `GET /v1/establecimientos/{id}/camareros/buscar?email=...` → búsqueda exacta autorizada.
+- `POST /v1/establecimientos/{id}/invitaciones` → crea una invitación por email.
+- `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide.
+- `POST /v1/establecimientos/{id}/invitaciones/{id}/revocar` → revoca una invitación pendiente.
 
-El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar; las invitaciones y rankings quedan fuera de este incremento.
+El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar; los rankings quedan fuera de este incremento.
+
+Las invitaciones se almacenan con token hash y generan una entrada en `email_outbox`. El worker `email-worker` procesa la outbox. En Docker el proveedor por defecto es `console`; para pruebas de entrega se puede configurar `EMAIL_PROVIDER=smtp` con un relay como Brevo mediante secretos fuera de git. El free tier no es una garantía de producción: hay que verificar dominio, SPF, DKIM, DMARC, límites y GDPR.
 
 ## Tests
 
@@ -171,4 +179,4 @@ docker compose up --build -d
 docker compose exec identity python -m pytest /app/tests -v
 ```
 
-Hay health, esquema Postgres, registro/login de camarero, perfil/QR (`/me`, `/me/qr`), foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías y OpenAPI.
+Hay health, esquema Postgres, registro/login de camarero, perfil/QR (`/me`, `/me/qr`), foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías, clave pública QR, invitaciones, outbox y OpenAPI.

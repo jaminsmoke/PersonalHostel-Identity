@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -22,6 +22,20 @@ class MembresiaRol(str, enum.Enum):
 class MembresiaEstado(str, enum.Enum):
     activa = "activa"
     revocada = "revocada"
+
+
+class InvitacionEstado(str, enum.Enum):
+    pendiente = "pendiente"
+    aceptada = "aceptada"
+    revocada = "revocada"
+    expirada = "expirada"
+
+
+class EmailOutboxEstado(str, enum.Enum):
+    pendiente = "pendiente"
+    enviando = "enviando"
+    enviado = "enviado"
+    fallido = "fallido"
 
 
 class AppConfig(Base):
@@ -130,6 +144,9 @@ class CuentaNegocio(Base):
     establecimientos: Mapped[list["Establecimiento"]] = relationship(
         back_populates="cuenta_negocio", cascade="all, delete-orphan"
     )
+    invitaciones: Mapped[list["Invitacion"]] = relationship(
+        back_populates="cuenta_negocio", cascade="all, delete-orphan"
+    )
 
 
 class Establecimiento(Base):
@@ -154,6 +171,9 @@ class Establecimiento(Base):
 
     cuenta_negocio: Mapped[CuentaNegocio] = relationship(back_populates="establecimientos")
     membresias: Mapped[list["Membresia"]] = relationship(
+        back_populates="establecimiento", cascade="all, delete-orphan"
+    )
+    invitaciones: Mapped[list["Invitacion"]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
 
@@ -194,3 +214,71 @@ class Membresia(Base):
 
     establecimiento: Mapped[Establecimiento] = relationship(back_populates="membresias")
     camarero: Mapped[Camarero] = relationship(back_populates="membresias")
+
+
+class Invitacion(Base):
+    __tablename__ = "invitaciones"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cuenta_negocio_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("cuentas_negocio.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    email_objetivo: Mapped[str] = mapped_column(String(320), nullable=False, index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    rol: Mapped[MembresiaRol] = mapped_column(
+        Enum(MembresiaRol, name="membresia_rol"), nullable=False
+    )
+    estado: Mapped[InvitacionEstado] = mapped_column(
+        Enum(InvitacionEstado, name="invitacion_estado"), nullable=False
+    )
+    expira_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    creada_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    aceptada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    establecimiento: Mapped[Establecimiento] = relationship(back_populates="invitaciones")
+    cuenta_negocio: Mapped[CuentaNegocio] = relationship(back_populates="invitaciones")
+    outbox: Mapped[list["EmailOutbox"]] = relationship(
+        back_populates="invitacion", cascade="all, delete-orphan"
+    )
+
+
+class EmailOutbox(Base):
+    __tablename__ = "email_outbox"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    invitacion_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("invitaciones.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    tipo: Mapped[str] = mapped_column(String(80), nullable=False)
+    destinatario: Mapped[str] = mapped_column(String(320), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    estado: Mapped[EmailOutboxEstado] = mapped_column(
+        Enum(EmailOutboxEstado, name="email_outbox_estado"), nullable=False
+    )
+    intentos: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    ultimo_error: Mapped[str | None] = mapped_column(String(1000))
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    enviado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    invitacion: Mapped[Invitacion | None] = relationship(back_populates="outbox")

@@ -108,7 +108,7 @@ Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores l
 
 El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>`, **estable** entre reinstalaciones. La foto no viaja en el QR.
 
-Fuera de v1: invitaciones a un Bar concreto y rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio y membresías; el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar.
+Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones; el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar.
 
 Bar y Commander **no** copian usuarios a SQLite como fuente de verdad. Cachean la sesión. La verdad está aquí.
 

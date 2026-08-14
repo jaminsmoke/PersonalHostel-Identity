@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -151,3 +152,42 @@ class MembresiaResponse(BaseModel):
 
 class SupresionNegocioRequest(BaseModel):
     password: str
+
+
+class QrPublicKeyResponse(BaseModel):
+    algorithm: str
+    key_id: str
+    public_key: str
+    qr_prefix: str
+    format: str
+
+
+class QrMemberRequest(BaseModel):
+    qr: str = Field(..., min_length=20, max_length=500)
+    rol: str = Field(default="staff", pattern="^(dueno|staff)$")
+
+
+class CamareroSearchResponse(BaseModel):
+    id: uuid.UUID
+    nombre: str
+    apellidos: str
+    email: str
+
+
+class InvitacionCreateRequest(BaseModel):
+    email: EmailStr
+    rol: str = Field(default="staff", pattern="^(dueno|staff)$")
+
+
+class InvitacionResponse(BaseModel):
+    id: uuid.UUID
+    establecimiento_id: uuid.UUID
+    email: str
+    rol: str
+    estado: str
+    expira_en: datetime
+
+
+class InvitacionAcceptResponse(BaseModel):
+    invitacion_id: uuid.UUID
+    membresia: MembresiaResponse

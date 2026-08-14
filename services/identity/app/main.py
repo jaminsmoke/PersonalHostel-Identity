@@ -9,7 +9,11 @@ from app.db import engine
 from app.errors import VALIDATION_ERROR, ApiError
 from app.routes.auth import router as auth_router
 from app.routes.camareros import router as camareros_router
-from app.routes.establecimientos import router as establecimientos_router
+from app.routes.establecimientos import (
+    invitations_router,
+    keys_router,
+    router as establecimientos_router,
+)
 
 CAMPOS_LEGIBLES = {
     "nombre": "nombre",
@@ -54,6 +58,8 @@ app = FastAPI(
 app.include_router(camareros_router)
 app.include_router(auth_router)
 app.include_router(establecimientos_router)
+app.include_router(keys_router)
+app.include_router(invitations_router)
 
 
 @app.exception_handler(ApiError)

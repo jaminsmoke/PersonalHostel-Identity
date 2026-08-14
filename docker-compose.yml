@@ -27,6 +27,28 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  email-worker:
+    build: ./services/identity
+    command: ["python", "-m", "app.email_worker"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/${POSTGRES_DB:-identity}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USERNAME: ${EMAIL_USERNAME:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.test}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-true}
+      INVITATION_URL_BASE: ${INVITATION_URL_BASE:-http://localhost:8080/v1/invitaciones}
+    depends_on:
+      identity:
+        condition: service_healthy
 
 volumes:
   pgdata:

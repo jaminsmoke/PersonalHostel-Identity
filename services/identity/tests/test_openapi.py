@@ -21,6 +21,11 @@ RUTAS = [
     "/v1/camareros/me/qr",
     "/v1/camareros/me/renovar",
     "/v1/camareros/me/revocar",
+    "/v1/keys/qr",
+    "/v1/establecimientos/{establecimiento_id}/miembros/qr",
+    "/v1/establecimientos/{establecimiento_id}/camareros/buscar",
+    "/v1/establecimientos/{establecimiento_id}/invitaciones",
+    "/v1/invitaciones/{token}/aceptar",
 ]
 
 
