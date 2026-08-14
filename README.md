@@ -190,9 +190,19 @@ El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanc
 
 ## Tests
 
+Los tests corren contra **bases de datos de prueba separadas** (`identity_camareros_test` y `identity_negocio_test`, creadas por `db-init`), no contra las de desarrollo.
+
 ```bash
 docker compose up --build -d
 docker compose exec identity-camareros python -m pytest tests -v
 ```
 
 Hay health, esquema Postgres (dos BD), registro/login de camarero, perfil/QR, foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías, clave pública QR, invitaciones (magic-link + CORS), espejo del layout, outbox y OpenAPI (dos specs).
+
+## Reset de datos de desarrollo
+
+```bash
+sh services/identity/scripts/reset-dev.sh
+```
+
+Trunca las dos BD de desarrollo y elimina la BD legacy `identity` (huérfana tras el split). No toca las BD de prueba.
