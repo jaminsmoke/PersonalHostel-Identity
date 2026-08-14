@@ -15,6 +15,20 @@
         "title": "Body_subir_foto_v1_camareros_me_foto_post",
         "type": "object"
       },
+      "Body_subir_logo_v1_auth_negocio_me_logo_post": {
+        "properties": {
+          "logo": {
+            "format": "binary",
+            "title": "Logo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "logo"
+        ],
+        "title": "Body_subir_logo_v1_auth_negocio_me_logo_post",
+        "type": "object"
+      },
       "CamareroPerfil": {
         "description": "Perfil público del camarero para la sesión.",
         "properties": {
@@ -162,9 +176,31 @@
             "title": "Id",
             "type": "string"
           },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
           "nombre_mostrar": {
             "title": "Nombre Mostrar",
             "type": "string"
+          },
+          "tipo_establecimiento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo Establecimiento"
           }
         },
         "required": [
@@ -526,6 +562,26 @@
         "title": "LoginResponse",
         "type": "object"
       },
+      "LogoNegocioResponse": {
+        "properties": {
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          }
+        },
+        "required": [
+          "logo_url"
+        ],
+        "title": "LogoNegocioResponse",
+        "type": "object"
+      },
       "MembresiaCreateRequest": {
         "properties": {
           "camarero_id": {
@@ -702,6 +758,19 @@
             "minLength": 8,
             "title": "Password",
             "type": "string"
+          },
+          "tipo_establecimiento": {
+            "anyOf": [
+              {
+                "pattern": "^(bar|restaurante|cafeteria|pub|copas)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tipo de establecimiento del catálogo canónico.",
+            "title": "Tipo Establecimiento"
           }
         },
         "required": [
@@ -1130,6 +1199,139 @@
           }
         ],
         "summary": "Suprimir Negocio",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/negocio/me/logo": {
+      "delete": {
+        "operationId": "borrar_logo_v1_auth_negocio_me_logo_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoNegocioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Borrar Logo",
+        "tags": [
+          "auth"
+        ]
+      },
+      "get": {
+        "operationId": "obtener_logo_v1_auth_negocio_me_logo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Logo",
+        "tags": [
+          "auth"
+        ]
+      },
+      "post": {
+        "operationId": "subir_logo_v1_auth_negocio_me_logo_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_subir_logo_v1_auth_negocio_me_logo_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoNegocioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Subir Logo",
         "tags": [
           "auth"
         ]

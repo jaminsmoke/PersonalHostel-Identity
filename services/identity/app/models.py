@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,6 +29,9 @@ class InvitacionEstado(str, enum.Enum):
     aceptada = "aceptada"
     revocada = "revocada"
     expirada = "expirada"
+
+
+TIPOS_ESTABLECIMIENTO = ("bar", "restaurante", "cafeteria", "pub", "copas")
 
 
 class EmailOutboxEstado(str, enum.Enum):
@@ -119,6 +122,13 @@ class Credencial(Base):
 
 class CuentaNegocio(Base):
     __tablename__ = "cuentas_negocio"
+    __table_args__ = (
+        CheckConstraint(
+            "tipo_establecimiento IS NULL OR tipo_establecimiento IN "
+            "('bar', 'restaurante', 'cafeteria', 'pub', 'copas')",
+            name="ck_cuentas_tipo_establecimiento",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
@@ -126,6 +136,13 @@ class CuentaNegocio(Base):
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     nombre_mostrar: Mapped[str] = mapped_column(String(200), nullable=False)
+    tipo_establecimiento: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )
+    logo_clave: Mapped[str | None] = mapped_column(String(255))
+    logo_mimetype: Mapped[str | None] = mapped_column(String(64))
+    logo_size: Mapped[int | None] = mapped_column(Integer)
+    logo_actualizada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     camarero_vinculado_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("camareros.id", ondelete="SET NULL"),
@@ -148,6 +165,13 @@ class CuentaNegocio(Base):
     invitaciones: Mapped[list["Invitacion"]] = relationship(
         back_populates="cuenta_negocio", cascade="all, delete-orphan"
     )
+
+    @property
+    def logo_url(self) -> str | None:
+        """URL relativa del logo del negocio, o None si no hay."""
+        if not self.logo_clave:
+            return None
+        return "/v1/auth/negocio/me/logo"
 
 
 class Establecimiento(Base):

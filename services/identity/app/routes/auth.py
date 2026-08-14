@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -13,11 +15,14 @@ from app.db import get_db
 from app.errors import (
     CAMARERO_NOT_FOUND,
     CREDENTIAL_REVOKED,
+    FOTO_INEXISTENTE,
+    FOTO_INVALIDA,
     INVALID_CREDENTIALS,
     NEGOCIO_EMAIL_ALREADY_REGISTERED,
     NEGOCIO_INVALID_CREDENTIALS,
     ApiError,
 )
+from app.images import MAX_INPUT_BYTES, FotoInvalida, normalizar_foto
 from app.models import Camarero, CuentaNegocio
 from app.schemas import (
     CuentaNegocioPerfil,
@@ -25,6 +30,7 @@ from app.schemas import (
     LoginNegocioResponse,
     LoginRequest,
     LoginResponse,
+    LogoNegocioResponse,
     RegistroNegocioRequest,
     RegistroNegocioResponse,
     SupresionNegocioRequest,
@@ -32,6 +38,7 @@ from app.schemas import (
 )
 from sqlalchemy.exc import IntegrityError
 from app.security import build_qr_payload, get_session_secret, get_signing_key
+from app.storage import get_foto_storage
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
@@ -110,6 +117,7 @@ def registrar_negocio(
         nombre_mostrar=payload.nombre_mostrar.strip(),
         email=payload.email.lower(),
         password_hash=hash_password(payload.password),
+        tipo_establecimiento=payload.tipo_establecimiento,
         camarero_vinculado_id=payload.camarero_vinculado_id,
     )
     db.add(cuenta)
@@ -155,6 +163,98 @@ def suprimir_negocio(
             code=NEGOCIO_INVALID_CREDENTIALS,
             detail="Contraseña de negocio incorrecta",
         )
+    logo_clave = cuenta.logo_clave
+    if logo_clave:
+        get_foto_storage().borrar(logo_clave)
     db.delete(cuenta)
     db.commit()
     return SupresionResponse(status="borrada")
+
+
+@router.post(
+    "/negocio/me/logo",
+    response_model=LogoNegocioResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorResponse},
+    },
+)
+async def subir_logo(
+    logo: UploadFile = File(...),
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_db),
+) -> LogoNegocioResponse:
+    data = await logo.read(MAX_INPUT_BYTES + 1)
+    try:
+        payload, mimetype, size = normalizar_foto(data)
+    except FotoInvalida as exc:
+        raise ApiError(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            code=FOTO_INVALIDA,
+            detail=str(exc),
+        )
+
+    storage = get_foto_storage()
+    if cuenta.logo_clave:
+        storage.borrar(cuenta.logo_clave)
+
+    clave = storage.guardar(cuenta.id, payload, "webp")
+    cuenta.logo_clave = clave
+    cuenta.logo_mimetype = mimetype
+    cuenta.logo_size = size
+    cuenta.logo_actualizada_en = datetime.now(timezone.utc)
+    db.commit()
+    return LogoNegocioResponse(logo_url="/v1/auth/negocio/me/logo")
+
+
+@router.get(
+    "/negocio/me/logo",
+    responses={
+        status.HTTP_200_OK: {"content": {"image/webp": {}}},
+        status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def obtener_logo(
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+) -> Response:
+    if not cuenta.logo_clave:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=FOTO_INEXISTENTE,
+            detail="El negocio no tiene logo",
+        )
+    data = get_foto_storage().leer(cuenta.logo_clave)
+    if data is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=FOTO_INEXISTENTE,
+            detail="El logo no está disponible",
+        )
+    return Response(
+        content=data,
+        media_type=cuenta.logo_mimetype or "image/webp",
+        headers={
+            "Cache-Control": "private, max-age=86400",
+            "ETag": f'"{cuenta.logo_clave}"',
+        },
+    )
+
+
+@router.delete(
+    "/negocio/me/logo",
+    response_model=LogoNegocioResponse,
+    responses={status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse}},
+)
+def borrar_logo(
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_db),
+) -> LogoNegocioResponse:
+    if cuenta.logo_clave:
+        get_foto_storage().borrar(cuenta.logo_clave)
+    cuenta.logo_clave = None
+    cuenta.logo_mimetype = None
+    cuenta.logo_size = None
+    cuenta.logo_actualizada_en = None
+    db.commit()
+    return LogoNegocioResponse(logo_url=None)
