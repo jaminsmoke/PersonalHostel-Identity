@@ -234,3 +234,110 @@ class LayoutResponse(BaseModel):
     salas: list[Any]
     mesas: list[Any]
     updated_at: datetime
+
+
+class ProductoPayload(BaseModel):
+    nombre: str = Field(..., min_length=1, max_length=200)
+    categoria: str = Field(..., min_length=1, max_length=100)
+    destino: str = Field(..., pattern="^(barra|cocina)$")
+    precio_centimos: int = Field(..., ge=0, le=2_147_483_647)
+    moneda: str = Field(default="EUR", pattern="^[A-Z]{3}$")
+    disponible: bool = True
+
+
+class ProductoResponse(ProductoPayload):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    establecimiento_id: uuid.UUID
+    revision: int
+    created_at: datetime
+    updated_at: datetime
+    archived_at: datetime | None = None
+
+
+class CatalogoResponse(BaseModel):
+    establecimiento_id: uuid.UUID
+    revision: int
+    server_time: datetime
+    productos: list[ProductoResponse]
+
+
+class OperacionSyncRequest(BaseModel):
+    operation_id: uuid.UUID
+    device_id: str = Field(..., min_length=1, max_length=200)
+    aggregate_type: str = Field(default="producto", min_length=1, max_length=50)
+    aggregate_id: uuid.UUID
+    action: str = Field(..., pattern="^(crear|actualizar|archivar)$")
+    base_revision: int = Field(default=0, ge=0)
+    base_snapshot: dict[str, Any] | None = None
+    payload: ProductoPayload | None = None
+    client_created_at: datetime
+
+
+class OperacionSyncResponse(BaseModel):
+    operation_id: uuid.UUID
+    estado: str
+    aggregate_type: str
+    aggregate_id: uuid.UUID
+    action: str
+    base_revision: int
+    global_revision: int | None = None
+    result_snapshot: dict[str, Any] | None = None
+    conflict_id: uuid.UUID | None = None
+    client_created_at: datetime
+    server_received_at: datetime
+
+
+class CambioSyncResponse(BaseModel):
+    revision: int
+    operation_id: uuid.UUID
+    aggregate_type: str
+    aggregate_id: uuid.UUID
+    action: str
+    snapshot: dict[str, Any]
+
+
+class CambiosSyncResponse(BaseModel):
+    establecimiento_id: uuid.UUID
+    desde: int
+    revision_actual: int
+    cambios: list[CambioSyncResponse]
+
+
+class ConflictoSyncResponse(BaseModel):
+    id: uuid.UUID
+    operation_id: uuid.UUID
+    aggregate_type: str
+    aggregate_id: uuid.UUID
+    action: str
+    base_revision: int
+    canonical_revision: int
+    base_snapshot: dict[str, Any] | None = None
+    canonical_snapshot: dict[str, Any] | None = None
+    proposed_snapshot: dict[str, Any] | None = None
+    estado: str
+    device_id: str
+    client_created_at: datetime
+    server_received_at: datetime
+    created_at: datetime
+    resolved_at: datetime | None = None
+
+
+class ResolverConflictoRequest(BaseModel):
+    decision: str = Field(..., pattern="^(aceptar|rechazar)$")
+    expected_revision: int = Field(..., ge=0)
+
+
+class NotificacionNegocioResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    establecimiento_id: uuid.UUID
+    conflicto_id: uuid.UUID | None = None
+    tipo: str
+    titulo: str
+    mensaje: str
+    payload: dict[str, Any]
+    created_at: datetime
+    read_at: datetime | None = None

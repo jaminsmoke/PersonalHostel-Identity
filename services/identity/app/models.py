@@ -3,15 +3,19 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    BigInteger,
+    Boolean,
     CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -49,6 +53,29 @@ class EmailOutboxEstado(str, enum.Enum):
     enviando = "enviando"
     enviado = "enviado"
     fallido = "fallido"
+
+
+class ProductoDestino(str, enum.Enum):
+    barra = "barra"
+    cocina = "cocina"
+
+
+class SyncAccion(str, enum.Enum):
+    crear = "crear"
+    actualizar = "actualizar"
+    archivar = "archivar"
+
+
+class SyncEstado(str, enum.Enum):
+    aplicada = "aplicada"
+    conflicto = "conflicto"
+    rechazada = "rechazada"
+
+
+class ConflictoEstado(str, enum.Enum):
+    pendiente = "pendiente"
+    aceptado = "aceptado"
+    rechazado = "rechazado"
 
 
 # ── BD de profesionales ────────────────────────────────────────────────────
@@ -196,6 +223,9 @@ class Establecimiento(NegocioBase):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    sync_revision: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, default=0, server_default="0"
+    )
 
     cuenta_negocio: Mapped[CuentaNegocio] = relationship(back_populates="establecimientos")
     membresias: Mapped[list["Membresia"]] = relationship(
@@ -207,6 +237,162 @@ class Establecimiento(NegocioBase):
     layout: Mapped["LayoutEstablecimiento | None"] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
+    productos: Mapped[list["ProductoCatalogo"]] = relationship(
+        back_populates="establecimiento", cascade="all, delete-orphan"
+    )
+
+
+class ProductoCatalogo(NegocioBase):
+    __tablename__ = "productos_catalogo"
+    __table_args__ = (
+        CheckConstraint("precio_centimos >= 0", name="ck_producto_precio_no_negativo"),
+        CheckConstraint("revision > 0", name="ck_producto_revision_positiva"),
+        Index(
+            "ix_productos_catalogo_activos",
+            "establecimiento_id",
+            "destino",
+            postgresql_where=text("archived_at IS NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    nombre: Mapped[str] = mapped_column(String(200), nullable=False)
+    categoria: Mapped[str] = mapped_column(String(100), nullable=False)
+    destino: Mapped[ProductoDestino] = mapped_column(
+        Enum(ProductoDestino, name="producto_destino"), nullable=False
+    )
+    precio_centimos: Mapped[int] = mapped_column(Integer, nullable=False)
+    moneda: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
+    disponible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    establecimiento: Mapped[Establecimiento] = relationship(back_populates="productos")
+
+
+class OperacionSync(NegocioBase):
+    __tablename__ = "operaciones_sync"
+    __table_args__ = (
+        Index(
+            "ix_operaciones_sync_change_feed",
+            "establecimiento_id",
+            "global_revision",
+            postgresql_where=text("global_revision IS NOT NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    device_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    actor_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    actor_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    aggregate_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    aggregate_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    action: Mapped[SyncAccion] = mapped_column(
+        Enum(SyncAccion, name="sync_accion"), nullable=False
+    )
+    base_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    base_snapshot: Mapped[dict | None] = mapped_column(JSONB)
+    payload: Mapped[dict | None] = mapped_column(JSONB)
+    client_created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    server_received_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    estado: Mapped[SyncEstado] = mapped_column(
+        Enum(SyncEstado, name="sync_estado"), nullable=False
+    )
+    global_revision: Mapped[int | None] = mapped_column(BigInteger)
+    result_snapshot: Mapped[dict | None] = mapped_column(JSONB)
+
+
+class ConflictoSync(NegocioBase):
+    __tablename__ = "conflictos_sync"
+    __table_args__ = (
+        Index(
+            "ix_conflictos_sync_pendientes",
+            "establecimiento_id",
+            "created_at",
+            postgresql_where=text("estado = 'pendiente'"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    operacion_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("operaciones_sync.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    canonical_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    base_snapshot: Mapped[dict | None] = mapped_column(JSONB)
+    canonical_snapshot: Mapped[dict | None] = mapped_column(JSONB)
+    proposed_snapshot: Mapped[dict | None] = mapped_column(JSONB)
+    estado: Mapped[ConflictoEstado] = mapped_column(
+        Enum(ConflictoEstado, name="conflicto_estado"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+
+
+class NotificacionNegocio(NegocioBase):
+    __tablename__ = "notificaciones_negocio"
+    __table_args__ = (
+        Index(
+            "ix_notificaciones_negocio_no_leidas",
+            "establecimiento_id",
+            "created_at",
+            postgresql_where=text("read_at IS NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    conflicto_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conflictos_sync.id", ondelete="SET NULL")
+    )
+    tipo: Mapped[str] = mapped_column(String(80), nullable=False)
+    titulo: Mapped[str] = mapped_column(String(200), nullable=False)
+    mensaje: Mapped[str] = mapped_column(String(500), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class LayoutEstablecimiento(NegocioBase):

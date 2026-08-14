@@ -26,6 +26,13 @@ NEGOCIO_RUTAS = [
     "/v1/establecimientos/{establecimiento_id}/miembros/qr",
     "/v1/establecimientos/{establecimiento_id}/camareros/buscar",
     "/v1/establecimientos/{establecimiento_id}/invitaciones",
+    "/v1/establecimientos/{establecimiento_id}/catalogo",
+    "/v1/establecimientos/{establecimiento_id}/sync/cambios",
+    "/v1/establecimientos/{establecimiento_id}/sync/operaciones",
+    "/v1/establecimientos/{establecimiento_id}/sync/conflictos",
+    "/v1/establecimientos/{establecimiento_id}/sync/conflictos/{conflicto_id}/resolver",
+    "/v1/establecimientos/{establecimiento_id}/notificaciones",
+    "/v1/establecimientos/{establecimiento_id}/notificaciones/{notificacion_id}/leer",
     "/v1/invitaciones/{token}/aceptar",
 ]
 

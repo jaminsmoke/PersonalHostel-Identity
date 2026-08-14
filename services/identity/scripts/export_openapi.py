@@ -17,8 +17,11 @@ import os
 import sys
 from pathlib import Path
 
-IDENTITY_DIR = Path(__file__).resolve().parents[1]
-REPO_ROOT = Path(__file__).resolve().parents[3]
+SCRIPT_PATH = Path(__file__).resolve()
+IDENTITY_DIR = SCRIPT_PATH.parents[1]
+# En la imagen Docker el script vive en /app/scripts y no hay tres padres.
+# OPENAPI_DOCS_DIR sigue siendo la vía explícita para escribir en un bind mount.
+REPO_ROOT = SCRIPT_PATH.parents[3] if len(SCRIPT_PATH.parents) > 3 else IDENTITY_DIR
 DOCS = Path(os.environ.get("OPENAPI_DOCS_DIR", REPO_ROOT / "docs"))
 
 sys.path.insert(0, str(IDENTITY_DIR))

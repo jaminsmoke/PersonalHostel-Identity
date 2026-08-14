@@ -10,6 +10,11 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Catálogo canónico por establecimiento** con UUID estable, dinero en céntimos,
+  destino `barra|cocina`, archivado lógico y lectura para miembros activos.
+  Incluye protocolo reutilizable para mirrors offline: operaciones idempotentes,
+  revisiones globales, deltas, conflictos con decisión humana y notificaciones
+  durables. ([#19](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/19), Datos)
 - Campo **`nick`** en `camareros` (migración `0008`): mote visible en barra/colas,
   distinto del nombre legal. Opcional en `POST /v1/camareros/registro` (compatibilidad);
   Commander lo exige en el alta. `PATCH /v1/camareros/me` lo actualiza. Login, `/me`
