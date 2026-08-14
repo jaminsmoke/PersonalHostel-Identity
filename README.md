@@ -63,11 +63,12 @@ Toda respuesta de error lleva `detail` (mensaje en español) y `code` (código e
   "apellidos": "García",
   "email": "ana@example.com",
   "telefono": "+34600000000",
-  "password": "contraseña-mín-8"
+  "password": "contraseña-mín-8",
+  "nick": "Anita"
 }
 ```
 
-`telefono` es opcional. `password` es obligatoria (mín. 8 caracteres); solo se guarda su hash argon2 con salt, nunca en claro ni en las respuestas. Respuesta `201`:
+`telefono` y `nick` son opcionales (`nick`: 1–40 caracteres; mote visible en barra/colas). Commander lo exige en el alta; Bar lo consume y no lo edita. `password` es obligatoria (mín. 8 caracteres); solo se guarda su hash argon2 con salt, nunca en claro ni en las respuestas. Respuesta `201`:
 
 ```json
 {
@@ -101,7 +102,8 @@ Respuesta `200`:
     "nombre": "Ana",
     "apellidos": "García",
     "email": "ana@example.com",
-    "telefono": "+34600000000"
+    "telefono": "+34600000000",
+    "nick": "Anita"
   },
   "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"
 }
@@ -114,9 +116,10 @@ Respuesta `200`:
 
 ### Perfil y QR de la sesión
 
-- `GET /v1/camareros/me` → perfil del camarero (`Authorization: Bearer <token>`).
+- `GET /v1/camareros/me` → perfil del camarero (`Authorization: Bearer <token>`). Incluye `nick` (mote visible en barra/colas) o `null` si aún no se ha definido.
+- `PATCH /v1/camareros/me` (`Authorization: Bearer <token>`, body `{ "nick": "Anita" }`) → actualiza el nick. Solo la sesión del profesional (Commander); Bar no edita identidad. `1–40` caracteres.
 - `GET /v1/camareros/me/qr` → `{ "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>" }` (QR de la credencial activa).
-- Ambos devuelven `401` en español si falta el token o es inválido/caducado.
+- `GET`/`PATCH` de `/me` y `/me/qr` devuelven `401` en español si falta el token o es inválido/caducado.
 - `/me/qr` devuelve `409` si no hay credencial activa.
 
 ### Foto de perfil
@@ -126,7 +129,7 @@ La foto se guarda normalizada a un único avatar **256×256 WebP** (se descarta 
 - `POST /v1/camareros/me/foto` (`Authorization: Bearer <token>`, `multipart/form-data`, campo `foto`) → sube/reemplaza la foto. Acepta JPEG/PNG/WebP, máx. 2 MB. Respuesta `200`: `{ "foto_url": "/v1/camareros/me/foto" }`. `422` con `identity.foto_invalida` si el formato/tamaño no es válido.
 - `GET /v1/camareros/me/foto` (`Authorization: Bearer <token>`) → sirve la imagen WebP con `Content-Type: image/webp`, `Cache-Control: private` y `ETag`. `404` con `identity.foto_inexistente` si no hay foto.
 - `DELETE /v1/camareros/me/foto` (`Authorization: Bearer <token>`) → borra la foto (fichero + metadata). Respuesta `200`: `{ "foto_url": null }`. Idempotente.
-- `GET /v1/camareros/me` y el login incluyen ahora `foto_url` (o `null`).
+- `GET /v1/camareros/me` y el login incluyen ahora `foto_url` (o `null`) y `nick` (o `null`).
 - Reemplazar o borrar elimina el fichero anterior. **Revocar el QR no borra la foto**; el borrado real es `DELETE` (y el futuro derecho de supresión GDPR).
 - La foto **no** viaja en el QR.
 

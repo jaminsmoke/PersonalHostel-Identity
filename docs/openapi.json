@@ -54,6 +54,20 @@
             "title": "Id",
             "type": "string"
           },
+          "nick": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Anita"
+            ],
+            "title": "Nick"
+          },
           "nombre": {
             "examples": [
               "Ana"
@@ -99,6 +113,17 @@
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "nick": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nick"
           },
           "nombre": {
             "title": "Nombre",
@@ -557,6 +582,25 @@
         "title": "MembresiaResponse",
         "type": "object"
       },
+      "PerfilUpdateRequest": {
+        "description": "Campos editables de la cuenta desde Commander (no desde Bar).",
+        "properties": {
+          "nick": {
+            "examples": [
+              "Anita"
+            ],
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Nick",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nick"
+        ],
+        "title": "PerfilUpdateRequest",
+        "type": "object"
+      },
       "QrMemberRequest": {
         "properties": {
           "qr": {
@@ -701,6 +745,22 @@
             "format": "email",
             "title": "Email",
             "type": "string"
+          },
+          "nick": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Anita"
+            ],
+            "title": "Nick"
           },
           "nombre": {
             "examples": [
@@ -1201,6 +1261,60 @@
           }
         ],
         "summary": "Me",
+        "tags": [
+          "camareros"
+        ]
+      },
+      "patch": {
+        "operationId": "actualizar_me_v1_camareros_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerfilUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CamareroPerfil"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Actualizar Me",
         "tags": [
           "camareros"
         ]

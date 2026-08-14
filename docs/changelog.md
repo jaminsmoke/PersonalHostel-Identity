@@ -6,6 +6,15 @@ de la familia PersonalHostel) se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [Unreleased]
+
+### Añadido
+
+- Campo **`nick`** en `camareros` (migración `0008`): mote visible en barra/colas,
+  distinto del nombre legal. Opcional en `POST /v1/camareros/registro` (compatibilidad);
+  Commander lo exige en el alta. `PATCH /v1/camareros/me` lo actualiza. Login, `/me`
+  y búsqueda por email lo exponen.
+
 ## [v0.1] - 2026-08-13
 
 Primer entregable: identidad permanente del profesional — registro, QR firme,

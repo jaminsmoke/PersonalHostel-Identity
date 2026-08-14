@@ -30,7 +30,13 @@ def _email() -> str:
 
 
 def _payload(email: str) -> dict:
-    return {"nombre": "Ana", "apellidos": "García", "email": email, "password": "pass-12345678"}
+    return {
+        "nombre": "Ana",
+        "apellidos": "García",
+        "email": email,
+        "password": "pass-12345678",
+        "nick": "Anita",
+    }
 
 
 def test_registro_ok(db_ready):
@@ -51,6 +57,7 @@ def test_registro_ok(db_ready):
         cam = session.get(Camarero, uuid.UUID(body["id"]))
         assert cam is not None
         assert cam.email == email
+        assert cam.nick == "Anita"
         creds = session.query(Credencial).filter_by(camarero_id=cam.id).all()
         assert len(creds) == 1
         assert creds[0].estado.value == "activa"

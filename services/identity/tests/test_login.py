@@ -54,7 +54,48 @@ def test_login_devuelve_misma_identidad_y_qr(db_ready):
     assert body["token"]
     assert body["camarero"]["id"] == reg["id"]
     assert body["camarero"]["email"] == email
+    assert body["camarero"]["nick"] is None
     assert body["qr"] == reg["qr"]
+
+
+def test_login_incluye_nick_si_se_registro(db_ready):
+    email = _email()
+    resp = client.post(
+        "/v1/camareros/registro",
+        json={
+            "nombre": "Pepe",
+            "apellidos": "López",
+            "email": email,
+            "password": "pass-12345678",
+            "nick": "Pepi",
+        },
+    )
+    assert resp.status_code == 201
+    login = client.post(
+        "/v1/auth/login",
+        json={"email": email, "password": "pass-12345678"},
+    )
+    assert login.status_code == 200
+    assert login.json()["camarero"]["nick"] == "Pepi"
+
+
+def test_patch_me_actualiza_nick(db_ready):
+    email = _email()
+    _crear(email)
+    login = client.post(
+        "/v1/auth/login",
+        json={"email": email, "password": "pass-12345678"},
+    )
+    token = login.json()["token"]
+    resp = client.patch(
+        "/v1/camareros/me",
+        json={"nick": "Pepi"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["nick"] == "Pepi"
+    me = client.get("/v1/camareros/me", headers={"Authorization": f"Bearer {token}"})
+    assert me.json()["nick"] == "Pepi"
 
 
 def test_login_password_incorrecta_401(db_ready):
