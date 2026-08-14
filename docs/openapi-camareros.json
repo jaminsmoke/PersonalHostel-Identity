@@ -25,6 +25,9 @@
             "title": "Apellidos",
             "type": "string"
           },
+          "data_origin": {
+            "$ref": "#/components/schemas/DataOrigin"
+          },
           "email": {
             "examples": [
               "ana@example.com"
@@ -94,10 +97,21 @@
           "id",
           "nombre",
           "apellidos",
-          "email"
+          "email",
+          "data_origin"
         ],
         "title": "CamareroPerfil",
         "type": "object"
+      },
+      "DataOrigin": {
+        "description": "Procedencia inmutable de una entidad canónica.",
+        "enum": [
+          "real",
+          "test",
+          "demo"
+        ],
+        "title": "DataOrigin",
+        "type": "string"
       },
       "ErrorResponse": {
         "description": "Respuesta de error con código estable y mensaje en español.",
@@ -141,6 +155,9 @@
             "title": "Cuenta Negocio Id",
             "type": "string"
           },
+          "data_origin": {
+            "$ref": "#/components/schemas/DataOrigin"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -159,6 +176,7 @@
           "id",
           "nombre",
           "cuenta_negocio_id",
+          "data_origin",
           "rol"
         ],
         "title": "EstablecimientoMembresiaResponse",
@@ -349,6 +367,11 @@
             "title": "Apellidos",
             "type": "string"
           },
+          "data_origin": {
+            "$ref": "#/components/schemas/DataOrigin",
+            "default": "real",
+            "description": "Procedencia inmutable; test/demo requieren habilitación del entorno."
+          },
           "email": {
             "examples": [
               "ana@example.com"
@@ -419,6 +442,9 @@
       "RegistroResponse": {
         "description": "Resultado del alta: id del camarero y payload del QR permanente.",
         "properties": {
+          "data_origin": {
+            "$ref": "#/components/schemas/DataOrigin"
+          },
           "id": {
             "examples": [
               "3fa85f64-5717-4562-b3fc-2c963f66afa6"
@@ -437,7 +463,8 @@
         },
         "required": [
           "id",
-          "qr"
+          "qr",
+          "data_origin"
         ],
         "title": "RegistroResponse",
         "type": "object"

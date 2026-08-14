@@ -72,6 +72,8 @@ Toda respuesta de error lleva `detail` (mensaje en español) y `code` (código e
 | 409 | `identity.email_ya_registrado` | Registro con email ya existente |
 | 409 | `identity.credential_revoked` | Cuenta sin credencial activa |
 | 422 | `identity.validation_error` | Cuerpo inválido (`detail` es lista de mensajes) |
+| 422 | `identity.procedencia_no_permitida` | El entorno bloquea altas `test/demo` |
+| 422 | `identity.procedencia_incompatible` | Un vínculo mezclaría raíces de distinta procedencia |
 
 ### Registro de profesional
 
@@ -84,7 +86,8 @@ Toda respuesta de error lleva `detail` (mensaje en español) y `code` (código e
   "email": "ana@example.com",
   "telefono": "+34600000000",
   "password": "contraseña-mín-8",
-  "nick": "Anita"
+  "nick": "Anita",
+  "data_origin": "real"
 }
 ```
 
@@ -93,10 +96,14 @@ Toda respuesta de error lleva `detail` (mensaje en español) y `code` (código e
 ```json
 {
   "id": "<uuid del camarero>",
+  "data_origin": "real",
   "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"
 }
 ```
 
+- `data_origin` es opcional y vale `real` por defecto. `test` y `demo` solo se
+  admiten cuando el servidor tiene `ALLOW_NON_REAL_DATA=true`; en el VPS debe
+  permanecer `false`. Es linaje inmutable, no un rol ni una autorización.
 - `409` si el email ya está registrado; `422` con mensajes en español si hay campos inválidos.
 - El `qr` se liga a la **credencial activa**: formato `phid1` (versionado), firmado con Ed25519 sobre `phid1:<camarero_id>:<credencial_id>`. Bar verifica offline con la clave pública; el secreto real de la credencial vive en Postgres (`credenciales.secreto`), no en el QR.
 - Clave de firma: `QR_SIGNING_KEY` (base64) si existe; si no, se genera y persiste en `app_config` (local).
@@ -123,7 +130,8 @@ Respuesta `200`:
     "apellidos": "García",
     "email": "ana@example.com",
     "telefono": "+34600000000",
-    "nick": "Anita"
+    "nick": "Anita",
+    "data_origin": "real"
   },
   "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"
 }
@@ -169,7 +177,7 @@ La foto se guarda normalizada a un único avatar **256×256 WebP** en un volumen
 
 Rutas principales:
 
-- `POST /v1/auth/negocio/registro` y `POST /v1/auth/negocio/login` → alta y sesión de la cuenta de negocio. El registro acepta `tipo_establecimiento` opcional del catálogo `bar | restaurante | cafeteria | pub | copas` y `camarero_vinculado_id` (validado contra el servicio de camareros). El login devuelve `cuenta` con `tipo_establecimiento` y `logo_url`.
+- `POST /v1/auth/negocio/registro` y `POST /v1/auth/negocio/login` → alta y sesión de la cuenta de negocio. El registro acepta `tipo_establecimiento` opcional del catálogo `bar | restaurante | cafeteria | pub | copas`, `camarero_vinculado_id` (validado contra el servicio de camareros) y `data_origin` opcional (`real` por defecto). El login devuelve `cuenta` con `tipo_establecimiento`, `logo_url` y procedencia.
 - `POST /v1/auth/negocio/me/logo` (multipart, campo `logo`) → sube/reemplaza el logo (256×256 WebP, máx. 2 MB). `GET`/`DELETE` lo sirven/borran.
 - `DELETE /v1/auth/negocio/me` → supresión de cuenta y establecimientos, sin borrar camareros.
 - `POST /v1/establecimientos` y `GET /v1/establecimientos/mios` → crear y listar establecimientos propios.
@@ -212,6 +220,10 @@ no gana conflictos por sí solo porque el reloj del dispositivo puede estar
 desfasado. Los productos usan UUID estable, precio entero en céntimos, destino
 explícito `barra | cocina` y archivado lógico.
 
+La procedencia del establecimiento se hereda de su cuenta y la del producto se
+hereda del establecimiento. Los clientes no pueden contradecirla ni cambiarla:
+Bar/Commander solo declaran procedencia al crear la entidad raíz correspondiente.
+
 ### Identity Web (invitaciones por navegador)
 
 `identity-web` sirve la página de aceptación en `:8081` y llama al **servicio de negocio** (`IDENTITY_API_URL`, default `http://localhost:8082`) para `POST /v1/invitaciones/{token}/aceptar` (magic-link, sin JWT).
@@ -226,6 +238,24 @@ docker compose exec identity-camareros python -m pytest tests -v
 ```
 
 Hay health, esquema Postgres (dos BD), registro/login de camarero, perfil/QR, foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, catálogo canónico, sync/conflictos, notificaciones, membresías, clave pública QR, invitaciones (magic-link + CORS), espejo del layout, outbox y OpenAPI (dos specs).
+
+## Auditoría de procedencia (solo lectura)
+
+Identity conserva `data_origin = real|test|demo` en camareros, cuentas,
+establecimientos y productos. Las filas existentes se migran a `real`; el
+sufijo histórico `Test` se usa solo para avisar de posibles incoherencias.
+
+```bash
+docker compose exec identity-camareros python -m app.data_audit
+docker compose exec identity-camareros python -m app.data_audit --format json --fail-on-detected
+```
+
+El auditor consulta ambas BDs en transacciones read-only, redacta nombres y
+emails, cuenta datos por procedencia y detecta linaje inconsistente o referencias
+cross-DB huérfanas. Sale con `1` ante error y, con `--fail-on-detected`, con `2`
+si encuentra datos no reales o incoherencias. `--show-pii` queda reservado para
+revisión manual consciente y no se usa en CI. GitHub Actions valida el auditor
+sobre PostgreSQL efímero; no tiene acceso al volumen local ni al futuro VPS.
 
 ## Reset de datos de desarrollo
 

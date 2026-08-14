@@ -18,6 +18,7 @@ from app.auth import (
 from app.db import get_negocio_db
 from app.errors import (
     CAMARERO_NOT_FOUND,
+    DATA_ORIGIN_MISMATCH,
     ESTABLECIMIENTO_NOT_FOUND,
     LAYOUT_NOT_FOUND,
     EMAIL_NOT_FOUND,
@@ -98,11 +99,18 @@ def _add_or_reactivate_membership(
     rol: str,
     allow_existing: bool = False,
 ) -> Membresia:
-    if get_camareros_internal().perfil(camarero_id) is None:
+    waiter = get_camareros_internal().perfil(camarero_id)
+    if waiter is None:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
             code=CAMARERO_NOT_FOUND,
             detail="Camarero no encontrado",
+        )
+    if waiter["data_origin"] != establecimiento.data_origin.value:
+        raise ApiError(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            code=DATA_ORIGIN_MISMATCH,
+            detail="El camarero y el establecimiento deben tener la misma procedencia",
         )
     existing = (
         db.query(Membresia)
@@ -157,7 +165,9 @@ def crear_establecimiento(
     db: Session = Depends(get_negocio_db),
 ) -> Establecimiento:
     establecimiento = Establecimiento(
-        nombre=payload.nombre.strip(), cuenta_negocio_id=cuenta.id
+        nombre=payload.nombre.strip(),
+        cuenta_negocio_id=cuenta.id,
+        data_origin=cuenta.data_origin,
     )
     db.add(establecimiento)
     db.flush()

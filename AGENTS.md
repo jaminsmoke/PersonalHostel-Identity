@@ -73,8 +73,8 @@ PersonalHosteleriaServer/
 ├── services/identity/        # API FastAPI (identidad, QR, foto, OpenAPI)
 │   ├── Dockerfile
 │   ├── requirements.txt
-│   ├── alembic/              # migraciones BD profesionales (camareros, credenciales, app_config)
-│   ├── alembic_negocio/      # migraciones BD negocio (cuentas, catálogo/sync, membresías, invitaciones, outbox)
+│   ├── alembic/              # migraciones BD profesionales (incluye procedencia real/test/demo)
+│   ├── alembic_negocio/      # migraciones BD negocio (incluye procedencia heredada y catálogo/sync)
 │   ├── app/                  # main, auth, models, schemas, routes, storage, images
 │   ├── scripts/              # export_openapi.py
 │   └── tests/
@@ -117,6 +117,12 @@ El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>
 Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones (con Identity Web `:8081` para aceptar por magic-link sin JWT); el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar. Identity solo guarda un **espejo de respaldo** del layout de Bar (`PUT/GET /v1/establecimientos/{id}/layout`, tabla `layouts_establecimiento`) para restaurar el mapa en un dispositivo nuevo; no lo interpreta ni lo sirve a Commander.
 
 Bar y Commander **no** copian usuarios a SQLite como fuente de verdad. Cachean la sesión. La verdad está aquí.
+
+La procedencia de datos también es canónica aquí: camareros y cuentas aceptan
+`data_origin = real|test|demo` al registrarse (`real` por defecto); establecimiento
+y producto la heredan en servidor. `test/demo` requieren `ALLOW_NON_REAL_DATA=true`
+(solo desarrollo); producción/VPS usa el default seguro `false`. El auditor
+`python -m app.data_audit` es read-only y redacta PII por defecto.
 
 ### Catálogo y sincronización offline (v0.2)
 

@@ -23,6 +23,7 @@ os.environ.setdefault(
     "NEGOCIO_DATABASE_URL",
     "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity_negocio",
 )
+os.environ.setdefault("ALLOW_NON_REAL_DATA", "true")
 
 # Los tests NO tocan las BD de desarrollo: usan BD de prueba separadas.
 # Se deriva el nombre de la BD del URL base para funcionar en Docker y en host.

@@ -11,8 +11,10 @@ from app.auth import (
     verify_password,
 )
 from app.db import get_negocio_db
+from app.data_origin import ensure_data_origin_allowed
 from app.errors import (
     CAMARERO_NOT_FOUND,
+    DATA_ORIGIN_MISMATCH,
     FOTO_INEXISTENTE,
     FOTO_INVALIDA,
     NEGOCIO_EMAIL_ALREADY_REGISTERED,
@@ -46,12 +48,20 @@ router = APIRouter(prefix="/v1/auth/negocio", tags=["negocio"])
 def registrar_negocio(
     payload: RegistroNegocioRequest, db: Session = Depends(get_negocio_db)
 ) -> RegistroNegocioResponse:
+    ensure_data_origin_allowed(payload.data_origin)
     if payload.camarero_vinculado_id is not None:
-        if get_camareros_internal().perfil(payload.camarero_vinculado_id) is None:
+        linked_waiter = get_camareros_internal().perfil(payload.camarero_vinculado_id)
+        if linked_waiter is None:
             raise ApiError(
                 status_code=status.HTTP_404_NOT_FOUND,
                 code=CAMARERO_NOT_FOUND,
                 detail="Camarero no encontrado",
+            )
+        if linked_waiter["data_origin"] != payload.data_origin.value:
+            raise ApiError(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                code=DATA_ORIGIN_MISMATCH,
+                detail="La cuenta y el camarero vinculado deben tener la misma procedencia",
             )
     cuenta = CuentaNegocio(
         nombre_mostrar=payload.nombre_mostrar.strip(),
@@ -59,6 +69,7 @@ def registrar_negocio(
         password_hash=hash_password(payload.password),
         tipo_establecimiento=payload.tipo_establecimiento,
         camarero_vinculado_id=payload.camarero_vinculado_id,
+        data_origin=payload.data_origin,
     )
     db.add(cuenta)
     try:
@@ -73,7 +84,7 @@ def registrar_negocio(
                 detail="Ya existe una cuenta de negocio con ese email",
             )
         raise
-    return RegistroNegocioResponse(id=cuenta.id)
+    return RegistroNegocioResponse(id=cuenta.id, data_origin=cuenta.data_origin)
 
 
 @router.post("/login", response_model=LoginNegocioResponse)

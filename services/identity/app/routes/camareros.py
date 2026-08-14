@@ -13,6 +13,7 @@ from app.auth import (
     verify_password,
 )
 from app.db import get_camarero_db
+from app.data_origin import ensure_data_origin_allowed
 from app.errors import (
     CREDENTIAL_REVOKED,
     EMAIL_ALREADY_REGISTERED,
@@ -78,6 +79,7 @@ _VALIDATION = {
 def registrar_camarero(
     payload: RegistroRequest, db: Session = Depends(get_camarero_db)
 ) -> RegistroResponse:
+    ensure_data_origin_allowed(payload.data_origin)
     camarero = Camarero(
         nombre=payload.nombre.strip(),
         apellidos=payload.apellidos.strip(),
@@ -85,6 +87,7 @@ def registrar_camarero(
         email=payload.email.lower(),
         telefono=payload.telefono.strip() if payload.telefono else None,
         password_hash=hash_password(payload.password),
+        data_origin=payload.data_origin,
     )
     credencial = Credencial(
         secreto=secrets.token_urlsafe(32),
@@ -111,7 +114,7 @@ def registrar_camarero(
         raise
 
     qr = build_qr_payload(camarero.id, credencial.id, signing_key)
-    return RegistroResponse(id=camarero.id, qr=qr)
+    return RegistroResponse(id=camarero.id, qr=qr, data_origin=camarero.data_origin)
 
 
 @router.get(

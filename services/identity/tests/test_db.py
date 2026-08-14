@@ -10,7 +10,7 @@ os.environ.setdefault(
 )
 
 from app.db import engine, SessionLocal  # noqa: E402
-from app.models import Camarero, Credencial, CredencialEstado  # noqa: E402
+from app.models import Camarero, Credencial, CredencialEstado, DataOrigin  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -49,6 +49,7 @@ def test_credencial_insert_select(db_ready):
         fetched = session.get(Credencial, cred_id)
         assert fetched is not None
         assert fetched.estado == CredencialEstado.activa
+        assert fetched.camarero.data_origin == DataOrigin.real
 
         session.delete(camarero)
         session.commit()
