@@ -20,7 +20,7 @@ docker compose up --build
 - Meta: http://localhost:8080/v1/meta
 - Web de invitaciones: http://localhost:8081/invitaciones/<token>
 - Postgres: `localhost:5432` (usuario `hosteleria`, base `identity`)
-- Esquema: aplicado por Alembic al arrancar (`alembic upgrade head`), tablas de profesionales y organización (`camareros`, `credenciales`, `cuentas_negocio`, `establecimientos`, `membresias` y `app_config`)
+- Esquema: aplicado por Alembic al arrancar (`alembic upgrade head`), tablas de profesionales y organización (`camareros`, `credenciales`, `cuentas_negocio`, `establecimientos`, `membresias`, `invitaciones`, `email_outbox`, `layouts_establecimiento` y `app_config`)
 
 ## API v1
 
@@ -168,8 +168,9 @@ Rutas principales:
 - `POST /v1/establecimientos/{id}/invitaciones` → crea una invitación por email.
 - `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT cuando se llega desde el enlace del email (magic-link): el token del enlace es la credencial, one-time + TTL 72h. `404 identity.camarero_no_encontrado` si la cuenta del email fue suprimida.
 - `POST /v1/establecimientos/{id}/invitaciones/{id}/revocar` → revoca una invitación pendiente.
+- `PUT /v1/establecimientos/{id}/layout` y `GET /v1/establecimientos/{id}/layout` → **copia de respaldo del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la **cuenta de negocio dueña** puede leer/sobrescribir. El payload es el JSON **fiel** de Bar (`salas` + `mesas` como arrays, sin validar la estructura interna), con `version` incremental y `updated_at`. Sin snapshot → `404 identity.layout_no_encontrado`. **No es sync de mesas**: Identity no interpreta el layout ni lo expone a Commander; Bar es la fuente de verdad y el espejo es solo DR (cambio de dispositivo).
 
-El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar; los rankings quedan fuera de este incremento.
+El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar; los rankings quedan fuera de este incremento. El layout respaldado vive en `layouts_establecimiento` (una fila por establecimiento).
 
 Las invitaciones se almacenan con token hash y generan una entrada en `email_outbox`. El worker `email-worker` procesa la outbox. En Docker el proveedor por defecto es `console`; para pruebas de entrega se puede configurar `EMAIL_PROVIDER=smtp` con un relay como Brevo mediante secretos fuera de git. El free tier no es una garantía de producción: hay que verificar dominio, SPF, DKIM, DMARC, límites y GDPR.
 
@@ -190,4 +191,4 @@ docker compose up --build -d
 docker compose exec identity python -m pytest /app/tests -v
 ```
 
-Hay health, esquema Postgres, registro/login de camarero, perfil/QR (`/me`, `/me/qr`), foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías, clave pública QR, invitaciones (incluida la aceptación por magic-link y CORS de la web), outbox y OpenAPI.
+Hay health, esquema Postgres, registro/login de camarero, perfil/QR (`/me`, `/me/qr`), foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías, clave pública QR, invitaciones (incluida la aceptación por magic-link y CORS de la web), espejo del layout (`PUT/GET /v1/establecimientos/{id}/layout`), outbox y OpenAPI.

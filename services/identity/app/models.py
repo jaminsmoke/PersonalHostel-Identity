@@ -176,6 +176,32 @@ class Establecimiento(Base):
     invitaciones: Mapped[list["Invitacion"]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
+    layout: Mapped["LayoutEstablecimiento | None"] = relationship(
+        back_populates="establecimiento", cascade="all, delete-orphan"
+    )
+
+
+class LayoutEstablecimiento(Base):
+    """Copia de respaldo (DR) del layout del mapa: salas y mesas tal cual las
+    serializa Bar. Identity no interpreta el layout; solo lo guarda y lo devuelve.
+    Fuente de verdad: Bar. Una fila por establecimiento.
+    """
+
+    __tablename__ = "layouts_establecimiento"
+
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    salas: Mapped[list] = mapped_column(JSONB, nullable=False)
+    mesas: Mapped[list] = mapped_column(JSONB, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    establecimiento: Mapped[Establecimiento] = relationship(back_populates="layout")
 
 
 class Membresia(Base):

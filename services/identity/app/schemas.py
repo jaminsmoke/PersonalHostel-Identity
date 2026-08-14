@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -191,3 +192,23 @@ class InvitacionResponse(BaseModel):
 class InvitacionAcceptResponse(BaseModel):
     invitacion_id: uuid.UUID
     membresia: MembresiaResponse
+
+
+class LayoutUpdateRequest(BaseModel):
+    """Snapshot del layout que sube Bar: salas y mesas tal cual las serializa.
+    Estructura interna no validada (copia de respaldo; Bar es la fuente)."""
+
+    salas: list[Any] = Field(..., min_length=0)
+    mesas: list[Any] = Field(..., min_length=0)
+
+
+class LayoutResponse(BaseModel):
+    """Copia de respaldo del layout de un establecimiento."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    establecimiento_id: uuid.UUID
+    version: int
+    salas: list[Any]
+    mesas: list[Any]
+    updated_at: datetime
