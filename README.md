@@ -15,7 +15,7 @@ Desde el split de dominios, Identity se despliega como **dos servicios** con **b
 | Servicio | Puerto | BD | Dominio |
 |---|---|---|---|
 | `identity-camareros` | **8080** | `identity_camareros` | Identidad profesional: `camareros`, `credenciales`, `app_config` |
-| `identity-negocio` | **8082** | `identity_negocio` | Negocio: `cuentas_negocio`, `establecimientos`, `layouts_establecimiento`, `membresias`, `invitaciones`, `email_outbox` |
+| `identity-negocio` | **8082** | `identity_negocio` | Negocio: cuentas, establecimientos, catálogo, sync/conflictos, membresías, invitaciones y outbox |
 
 Ambos comparten dos secretos inyectados por la orquestación (`SESSION_SECRET` y
 `QR_SIGNING_KEY`) para que los JWT y el QR `phid1` funcionen entre servicios. Las
@@ -184,6 +184,34 @@ Rutas principales:
 
 El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar.
 
+### Catálogo canónico y mirrors offline
+
+Identity es la fuente de verdad del catálogo. Room/SQLite en Bar, Commander y
+clientes futuros son mirrors: sirven la última revisión confirmada cuando no hay
+Internet y mantienen un outbox local para las intenciones creadas offline. Una
+operación no puede aparecer en Identity hasta que el dispositivo recupere la red.
+
+- `GET /v1/establecimientos/{id}/catalogo` → snapshot de productos activos +
+  revisión global. La cuenta titular y los miembros activos pueden leerlo.
+- `GET /v1/establecimientos/{id}/sync/cambios?desde=N` → change feed ordenado
+  con snapshots y tombstones para actualizar el mirror.
+- `POST /v1/establecimientos/{id}/sync/operaciones` → entrega una intención
+  idempotente (`operation_id`, `device_id`, `base_revision`, timestamp cliente).
+  En v0.2 implementa `producto` con `crear | actualizar | archivar`; solo la
+  cuenta titular puede escribir.
+- `GET /v1/establecimientos/{id}/sync/conflictos` y `POST .../{id}/resolver` →
+  muestran estado base, estado canónico y propuesta; aceptar/rechazar vuelve a
+  comprobar la revisión para no pisar cambios posteriores.
+- `GET /v1/establecimientos/{id}/notificaciones` y `POST .../{id}/leer` → inbox
+  durable para modal/bandeja de negocio. El payload incluye un deep-link lógico;
+  FCM/APNs y la UI Android pertenecen a los repos de las apps.
+
+El orden canónico se basa en revisiones asignadas por PostgreSQL y en el tiempo
+de recepción del servidor. `client_created_at` se conserva para auditoría, pero
+no gana conflictos por sí solo porque el reloj del dispositivo puede estar
+desfasado. Los productos usan UUID estable, precio entero en céntimos, destino
+explícito `barra | cocina` y archivado lógico.
+
 ### Identity Web (invitaciones por navegador)
 
 `identity-web` sirve la página de aceptación en `:8081` y llama al **servicio de negocio** (`IDENTITY_API_URL`, default `http://localhost:8082`) para `POST /v1/invitaciones/{token}/aceptar` (magic-link, sin JWT).
@@ -197,7 +225,7 @@ docker compose up --build -d
 docker compose exec identity-camareros python -m pytest tests -v
 ```
 
-Hay health, esquema Postgres (dos BD), registro/login de camarero, perfil/QR, foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías, clave pública QR, invitaciones (magic-link + CORS), espejo del layout, outbox y OpenAPI (dos specs).
+Hay health, esquema Postgres (dos BD), registro/login de camarero, perfil/QR, foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, catálogo canónico, sync/conflictos, notificaciones, membresías, clave pública QR, invitaciones (magic-link + CORS), espejo del layout, outbox y OpenAPI (dos specs).
 
 ## Reset de datos de desarrollo
 

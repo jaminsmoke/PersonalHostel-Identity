@@ -55,6 +55,234 @@
         "title": "CamareroSearchResponse",
         "type": "object"
       },
+      "CambioSyncResponse": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "aggregate_id": {
+            "format": "uuid",
+            "title": "Aggregate Id",
+            "type": "string"
+          },
+          "aggregate_type": {
+            "title": "Aggregate Type",
+            "type": "string"
+          },
+          "operation_id": {
+            "format": "uuid",
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "snapshot": {
+            "additionalProperties": true,
+            "title": "Snapshot",
+            "type": "object"
+          }
+        },
+        "required": [
+          "revision",
+          "operation_id",
+          "aggregate_type",
+          "aggregate_id",
+          "action",
+          "snapshot"
+        ],
+        "title": "CambioSyncResponse",
+        "type": "object"
+      },
+      "CambiosSyncResponse": {
+        "properties": {
+          "cambios": {
+            "items": {
+              "$ref": "#/components/schemas/CambioSyncResponse"
+            },
+            "title": "Cambios",
+            "type": "array"
+          },
+          "desde": {
+            "title": "Desde",
+            "type": "integer"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "revision_actual": {
+            "title": "Revision Actual",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "establecimiento_id",
+          "desde",
+          "revision_actual",
+          "cambios"
+        ],
+        "title": "CambiosSyncResponse",
+        "type": "object"
+      },
+      "CatalogoResponse": {
+        "properties": {
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "productos": {
+            "items": {
+              "$ref": "#/components/schemas/ProductoResponse"
+            },
+            "title": "Productos",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "server_time": {
+            "format": "date-time",
+            "title": "Server Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "establecimiento_id",
+          "revision",
+          "server_time",
+          "productos"
+        ],
+        "title": "CatalogoResponse",
+        "type": "object"
+      },
+      "ConflictoSyncResponse": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "aggregate_id": {
+            "format": "uuid",
+            "title": "Aggregate Id",
+            "type": "string"
+          },
+          "aggregate_type": {
+            "title": "Aggregate Type",
+            "type": "string"
+          },
+          "base_revision": {
+            "title": "Base Revision",
+            "type": "integer"
+          },
+          "base_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Snapshot"
+          },
+          "canonical_revision": {
+            "title": "Canonical Revision",
+            "type": "integer"
+          },
+          "canonical_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Snapshot"
+          },
+          "client_created_at": {
+            "format": "date-time",
+            "title": "Client Created At",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "estado": {
+            "title": "Estado",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "format": "uuid",
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "proposed_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposed Snapshot"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "server_received_at": {
+            "format": "date-time",
+            "title": "Server Received At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "operation_id",
+          "aggregate_type",
+          "aggregate_id",
+          "action",
+          "base_revision",
+          "canonical_revision",
+          "estado",
+          "device_id",
+          "client_created_at",
+          "server_received_at",
+          "created_at"
+        ],
+        "title": "ConflictoSyncResponse",
+        "type": "object"
+      },
       "CuentaNegocioPerfil": {
         "properties": {
           "camarero_vinculado_id": {
@@ -460,6 +688,371 @@
         "title": "MembresiaResponse",
         "type": "object"
       },
+      "NotificacionNegocioResponse": {
+        "properties": {
+          "conflicto_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflicto Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mensaje": {
+            "title": "Mensaje",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "tipo": {
+            "title": "Tipo",
+            "type": "string"
+          },
+          "titulo": {
+            "title": "Titulo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "establecimiento_id",
+          "tipo",
+          "titulo",
+          "mensaje",
+          "payload",
+          "created_at"
+        ],
+        "title": "NotificacionNegocioResponse",
+        "type": "object"
+      },
+      "OperacionSyncRequest": {
+        "properties": {
+          "action": {
+            "pattern": "^(crear|actualizar|archivar)$",
+            "title": "Action",
+            "type": "string"
+          },
+          "aggregate_id": {
+            "format": "uuid",
+            "title": "Aggregate Id",
+            "type": "string"
+          },
+          "aggregate_type": {
+            "default": "producto",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Aggregate Type",
+            "type": "string"
+          },
+          "base_revision": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Base Revision",
+            "type": "integer"
+          },
+          "base_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Snapshot"
+          },
+          "client_created_at": {
+            "format": "date-time",
+            "title": "Client Created At",
+            "type": "string"
+          },
+          "device_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Device Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "format": "uuid",
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductoPayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "operation_id",
+          "device_id",
+          "aggregate_id",
+          "action",
+          "client_created_at"
+        ],
+        "title": "OperacionSyncRequest",
+        "type": "object"
+      },
+      "OperacionSyncResponse": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "aggregate_id": {
+            "format": "uuid",
+            "title": "Aggregate Id",
+            "type": "string"
+          },
+          "aggregate_type": {
+            "title": "Aggregate Type",
+            "type": "string"
+          },
+          "base_revision": {
+            "title": "Base Revision",
+            "type": "integer"
+          },
+          "client_created_at": {
+            "format": "date-time",
+            "title": "Client Created At",
+            "type": "string"
+          },
+          "conflict_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflict Id"
+          },
+          "estado": {
+            "title": "Estado",
+            "type": "string"
+          },
+          "global_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Global Revision"
+          },
+          "operation_id": {
+            "format": "uuid",
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "result_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Snapshot"
+          },
+          "server_received_at": {
+            "format": "date-time",
+            "title": "Server Received At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation_id",
+          "estado",
+          "aggregate_type",
+          "aggregate_id",
+          "action",
+          "base_revision",
+          "client_created_at",
+          "server_received_at"
+        ],
+        "title": "OperacionSyncResponse",
+        "type": "object"
+      },
+      "ProductoPayload": {
+        "properties": {
+          "categoria": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Categoria",
+            "type": "string"
+          },
+          "destino": {
+            "pattern": "^(barra|cocina)$",
+            "title": "Destino",
+            "type": "string"
+          },
+          "disponible": {
+            "default": true,
+            "title": "Disponible",
+            "type": "boolean"
+          },
+          "moneda": {
+            "default": "EUR",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Moneda",
+            "type": "string"
+          },
+          "nombre": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Nombre",
+            "type": "string"
+          },
+          "precio_centimos": {
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Precio Centimos",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "nombre",
+          "categoria",
+          "destino",
+          "precio_centimos"
+        ],
+        "title": "ProductoPayload",
+        "type": "object"
+      },
+      "ProductoResponse": {
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "categoria": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Categoria",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "destino": {
+            "pattern": "^(barra|cocina)$",
+            "title": "Destino",
+            "type": "string"
+          },
+          "disponible": {
+            "default": true,
+            "title": "Disponible",
+            "type": "boolean"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "moneda": {
+            "default": "EUR",
+            "pattern": "^[A-Z]{3}$",
+            "title": "Moneda",
+            "type": "string"
+          },
+          "nombre": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Nombre",
+            "type": "string"
+          },
+          "precio_centimos": {
+            "maximum": 2147483647.0,
+            "minimum": 0.0,
+            "title": "Precio Centimos",
+            "type": "integer"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nombre",
+          "categoria",
+          "destino",
+          "precio_centimos",
+          "id",
+          "establecimiento_id",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProductoResponse",
+        "type": "object"
+      },
       "QrMemberRequest": {
         "properties": {
           "qr": {
@@ -548,6 +1141,26 @@
         "title": "RegistroNegocioResponse",
         "type": "object"
       },
+      "ResolverConflictoRequest": {
+        "properties": {
+          "decision": {
+            "pattern": "^(aceptar|rechazar)$",
+            "title": "Decision",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "decision",
+          "expected_revision"
+        ],
+        "title": "ResolverConflictoRequest",
+        "type": "object"
+      },
       "SupresionNegocioRequest": {
         "properties": {
           "password": {
@@ -620,7 +1233,7 @@
     }
   },
   "info": {
-    "description": "Cuentas de negocio, establecimientos, membresías e invitaciones.",
+    "description": "Cuentas de negocio, establecimientos, catálogo canónico, sincronización offline, membresías e invitaciones.",
     "title": "Personal Hostelería — Identity (negocio)",
     "version": "0.2.0"
   },
@@ -1216,6 +1829,84 @@
         "summary": "Buscar Camarero",
         "tags": [
           "establecimientos"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/catalogo": {
+      "get": {
+        "operationId": "obtener_catalogo_v1_establecimientos__establecimiento_id__catalogo_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Catalogo",
+        "tags": [
+          "catálogo y sincronización"
         ]
       }
     },
@@ -1932,6 +2623,574 @@
         "summary": "Revocar Miembro",
         "tags": [
           "establecimientos"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/notificaciones": {
+      "get": {
+        "operationId": "listar_notificaciones_v1_establecimientos__establecimiento_id__notificaciones_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "solo_no_leidas",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Solo No Leidas",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NotificacionNegocioResponse"
+                  },
+                  "title": "Response Listar Notificaciones V1 Establecimientos  Establecimiento Id  Notificaciones Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar Notificaciones",
+        "tags": [
+          "catálogo y sincronización"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/notificaciones/{notificacion_id}/leer": {
+      "post": {
+        "operationId": "marcar_notificacion_leida_v1_establecimientos__establecimiento_id__notificaciones__notificacion_id__leer_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "notificacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Notificacion Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificacionNegocioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Marcar Notificacion Leida",
+        "tags": [
+          "catálogo y sincronización"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/sync/cambios": {
+      "get": {
+        "operationId": "obtener_cambios_v1_establecimientos__establecimiento_id__sync_cambios_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "desde",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Desde",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CambiosSyncResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Cambios",
+        "tags": [
+          "catálogo y sincronización"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/sync/conflictos": {
+      "get": {
+        "operationId": "listar_conflictos_v1_establecimientos__establecimiento_id__sync_conflictos_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "estado",
+            "required": false,
+            "schema": {
+              "default": "pendiente",
+              "pattern": "^(pendiente|aceptado|rechazado|todos)$",
+              "title": "Estado",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConflictoSyncResponse"
+                  },
+                  "title": "Response Listar Conflictos V1 Establecimientos  Establecimiento Id  Sync Conflictos Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar Conflictos",
+        "tags": [
+          "catálogo y sincronización"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/sync/conflictos/{conflicto_id}/resolver": {
+      "post": {
+        "operationId": "resolver_conflicto_v1_establecimientos__establecimiento_id__sync_conflictos__conflicto_id__resolver_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conflicto_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Conflicto Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolverConflictoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictoSyncResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resolver Conflicto",
+        "tags": [
+          "catálogo y sincronización"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/sync/operaciones": {
+      "post": {
+        "operationId": "entregar_operacion_v1_establecimientos__establecimiento_id__sync_operaciones_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperacionSyncRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperacionSyncResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Entregar Operacion",
+        "tags": [
+          "catálogo y sincronización"
         ]
       }
     },

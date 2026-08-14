@@ -74,7 +74,7 @@ PersonalHosteleriaServer/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   ├── alembic/              # migraciones BD profesionales (camareros, credenciales, app_config)
-│   ├── alembic_negocio/      # migraciones BD negocio (cuentas, establecimientos, membresías, invitaciones, outbox)
+│   ├── alembic_negocio/      # migraciones BD negocio (cuentas, catálogo/sync, membresías, invitaciones, outbox)
 │   ├── app/                  # main, auth, models, schemas, routes, storage, images
 │   ├── scripts/              # export_openapi.py
 │   └── tests/
@@ -117,6 +117,25 @@ El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>
 Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones (con Identity Web `:8081` para aceptar por magic-link sin JWT); el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar. Identity solo guarda un **espejo de respaldo** del layout de Bar (`PUT/GET /v1/establecimientos/{id}/layout`, tabla `layouts_establecimiento`) para restaurar el mapa en un dispositivo nuevo; no lo interpreta ni lo sirve a Commander.
 
 Bar y Commander **no** copian usuarios a SQLite como fuente de verdad. Cachean la sesión. La verdad está aquí.
+
+### Catálogo y sincronización offline (v0.2)
+
+Identity es también la fuente canónica del catálogo por establecimiento. Bar y
+Commander mantienen mirrors Room/SQLite. Las escrituras offline nacen en un
+outbox local y, al reconectar, se entregan mediante
+`POST /v1/establecimientos/{id}/sync/operaciones` con UUID idempotente y revisión
+base. PostgreSQL asigna la revisión global; el timestamp del cliente se audita
+pero no decide conflictos.
+
+La primera vertical soportada es `producto`: UUID estable, precio en céntimos,
+categoría visible, destino explícito `barra|cocina`, disponibilidad y tombstone.
+`GET .../catalogo` entrega snapshot, `GET .../sync/cambios` entrega deltas,
+`GET/POST .../sync/conflictos` permite revisar y resolver, y
+`GET/POST .../notificaciones` mantiene el aviso durable. La cuenta titular
+escribe/resuelve; miembros activos solo leen catálogo y cambios. FCM/APNs, los
+modales y el outbox Room se implementan en los repos Android sin cambiar este
+contrato. No extender este mecanismo a salas, mesas, rondas o colas dentro del
+ítem de catálogo.
 
 ## Qué no hacer
 

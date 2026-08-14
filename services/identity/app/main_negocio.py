@@ -11,6 +11,7 @@ from app.routes.establecimientos import (
     invitations_router,
     router as establecimientos_router,
 )
+from app.routes.catalogo import router as catalogo_router
 from app.routes.internal import negocio_internal_router
 from app.routes.negocio_auth import router as negocio_auth_router
 
@@ -25,7 +26,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Personal Hostelería — Identity (negocio)",
     version="0.2.0",
-    description="Cuentas de negocio, establecimientos, membresías e invitaciones.",
+    description=(
+        "Cuentas de negocio, establecimientos, catálogo canónico, "
+        "sincronización offline, membresías e invitaciones."
+    ),
     lifespan=lifespan,
 )
 
@@ -47,6 +51,7 @@ if _web_origins:
 
 app.include_router(negocio_auth_router)
 app.include_router(establecimientos_router)
+app.include_router(catalogo_router)
 app.include_router(invitations_router)
 app.include_router(negocio_internal_router)
 
