@@ -18,6 +18,7 @@ docker compose up --build
 
 - API: http://localhost:8080/health
 - Meta: http://localhost:8080/v1/meta
+- Web de invitaciones: http://localhost:8081/invitaciones/<token>
 - Postgres: `localhost:5432` (usuario `hosteleria`, base `identity`)
 - Esquema: aplicado por Alembic al arrancar (`alembic upgrade head`), tablas de profesionales y organización (`camareros`, `credenciales`, `cuentas_negocio`, `establecimientos`, `membresias` y `app_config`)
 
@@ -165,12 +166,22 @@ Rutas principales:
 - `POST /v1/establecimientos/{id}/miembros/qr` → valida un QR y crea la membresía.
 - `GET /v1/establecimientos/{id}/camareros/buscar?email=...` → búsqueda exacta autorizada.
 - `POST /v1/establecimientos/{id}/invitaciones` → crea una invitación por email.
-- `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide.
+- `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT cuando se llega desde el enlace del email (magic-link): el token del enlace es la credencial, one-time + TTL 72h. `404 identity.camarero_no_encontrado` si la cuenta del email fue suprimida.
 - `POST /v1/establecimientos/{id}/invitaciones/{id}/revocar` → revoca una invitación pendiente.
 
 El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar; los rankings quedan fuera de este incremento.
 
 Las invitaciones se almacenan con token hash y generan una entrada en `email_outbox`. El worker `email-worker` procesa la outbox. En Docker el proveedor por defecto es `console`; para pruebas de entrega se puede configurar `EMAIL_PROVIDER=smtp` con un relay como Brevo mediante secretos fuera de git. El free tier no es una garantía de producción: hay que verificar dominio, SPF, DKIM, DMARC, límites y GDPR.
+
+### Identity Web (invitaciones por navegador)
+
+`identity-web` es un servicio del compose (nginx + SPA vanilla) que sirve la página de aceptación en `:8081`:
+
+- El email de invitación apunta a `http://localhost:8081/invitaciones/<token>` (`INVITATION_URL_BASE`).
+- La página lee el token de la URL, llama a `POST /v1/invitaciones/{token}/aceptar` (sin JWT, magic-link) y muestra el resultado según el `code` (`identity.invitacion_expirada`, `identity.invitacion_ya_usada`, `identity.invitacion_no_encontrada`, etc.).
+- La URL de la API se inyecta en runtime vía `config.js` (`IDENTITY_API_URL`), sin hardcodear.
+- CORS: la API solo acepta orígenes de `IDENTITY_WEB_ORIGIN` (default `http://localhost:8081`, separados por comas). Sin credenciales; métodos GET/POST/DELETE.
+- En producción, `INVITATION_URL_BASE` e `IDENTITY_WEB_ORIGIN` deben apuntar al dominio HTTPS del VPS (el enlace viaja en el email; Brevo no lo configura).
 
 ## Tests
 
@@ -179,4 +190,4 @@ docker compose up --build -d
 docker compose exec identity python -m pytest /app/tests -v
 ```
 
-Hay health, esquema Postgres, registro/login de camarero, perfil/QR (`/me`, `/me/qr`), foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías, clave pública QR, invitaciones, outbox y OpenAPI.
+Hay health, esquema Postgres, registro/login de camarero, perfil/QR (`/me`, `/me/qr`), foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías, clave pública QR, invitaciones (incluida la aceptación por magic-link y CORS de la web), outbox y OpenAPI.

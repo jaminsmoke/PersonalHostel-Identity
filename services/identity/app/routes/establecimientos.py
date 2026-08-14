@@ -7,10 +7,16 @@ import uuid
 
 from fastapi import APIRouter, Depends, status
 from pydantic import EmailStr
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_actor, get_current_camarero, get_current_cuenta_negocio
+from app.auth import (
+    get_current_actor,
+    get_current_camarero,
+    get_current_camarero_optional,
+    get_current_cuenta_negocio,
+)
 from app.db import get_db
 from app.errors import (
     CAMARERO_NOT_FOUND,
@@ -428,7 +434,7 @@ def crear_invitacion(
         payload={
             "token_encrypted": protect_invitation_token(token, get_session_secret(db)),
             "invitation_url_base": os.environ.get(
-                "INVITATION_URL_BASE", "http://localhost:8080/v1/invitaciones"
+                "INVITATION_URL_BASE", "http://localhost:8081/invitaciones"
             ),
             "establishment_name": establecimiento.nombre,
         },
@@ -487,7 +493,7 @@ def revocar_invitacion(
 )
 def aceptar_invitacion(
     token: str,
-    camarero: Camarero = Depends(get_current_camarero),
+    camarero: Camarero | None = Depends(get_current_camarero_optional),
     db: Session = Depends(get_db),
 ) -> InvitacionAcceptResponse:
     token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
@@ -513,12 +519,25 @@ def aceptar_invitacion(
             code=INVITACION_EXPIRED,
             detail="La invitación ha expirado",
         )
-    if camarero.email.lower() != invitation.email_objetivo:
-        raise ApiError(
-            status_code=status.HTTP_403_FORBIDDEN,
-            code=INVITACION_UNAUTHORIZED,
-            detail="La invitación no corresponde a este camarero",
+    if camarero is None:
+        camarero = (
+            db.query(Camarero)
+            .filter(func.lower(Camarero.email) == invitation.email_objetivo.lower())
+            .one_or_none()
         )
+        if camarero is None:
+            raise ApiError(
+                status_code=status.HTTP_404_NOT_FOUND,
+                code=CAMARERO_NOT_FOUND,
+                detail="No existe una cuenta para el email de la invitación",
+            )
+    else:
+        if camarero.email.lower() != invitation.email_objetivo:
+            raise ApiError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                code=INVITACION_UNAUTHORIZED,
+                detail="La invitación no corresponde a este camarero",
+            )
     establecimiento = db.get(Establecimiento, invitation.establecimiento_id)
     membership = _add_or_reactivate_membership(
         db, establecimiento, camarero.id, invitation.rol.value, allow_existing=True

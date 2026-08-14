@@ -22,6 +22,8 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/${POSTGRES_DB:-identity}
       FOTOS_DIR: /app/data/fotos
+      IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:8081}
+      INVITATION_URL_BASE: ${INVITATION_URL_BASE:-http://localhost:8081/invitaciones}
     volumes:
       - fotos:/app/data/fotos
     depends_on:
@@ -45,7 +47,16 @@ services:
       EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.test}
       EMAIL_USE_TLS: ${EMAIL_USE_TLS:-true}
-      INVITATION_URL_BASE: ${INVITATION_URL_BASE:-http://localhost:8080/v1/invitaciones}
+    depends_on:
+      identity:
+        condition: service_healthy
+
+  identity-web:
+    build: ./services/identity-web
+    ports:
+      - "${IDENTITY_WEB_PORT:-8081}:80"
+    environment:
+      IDENTITY_API_URL: ${IDENTITY_API_URL:-http://localhost:8080}
     depends_on:
       identity:
         condition: service_healthy
