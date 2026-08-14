@@ -1,31 +1,27 @@
 import base64
 import hashlib
-import os
 import uuid
 from datetime import datetime, timedelta, timezone
 
 import nacl.signing
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
+from app.auth import create_access_token
+from app.db import CamareroSessionLocal, NegocioSessionLocal
+from app.models import EmailOutbox, Invitacion
+from app.security import (
+    get_session_secret_env,
+    unprotect_invitation_token,
+    verify_qr_payload,
 )
-
-from app.auth import create_access_token  # noqa: E402
-from app.db import SessionLocal  # noqa: E402
-from app.main import app  # noqa: E402
-from app.models import EmailOutbox, Invitacion  # noqa: E402
-from app.security import get_session_secret, unprotect_invitation_token, verify_qr_payload  # noqa: E402
-
-client = TestClient(app)
 
 
 @pytest.fixture(scope="module")
 def db_ready():
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
+        session.execute(text("SELECT 1"))
+    with NegocioSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
@@ -34,9 +30,9 @@ def _email(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4()}@example.com"
 
 
-def _camarero() -> tuple[str, str, str, str]:
+def _camarero(camarero_client) -> tuple[str, str, str, str]:
     email = _email("onboarding-cam")
-    registered = client.post(
+    registered = camarero_client.post(
         "/v1/camareros/registro",
         json={
             "nombre": "Bar",
@@ -46,7 +42,7 @@ def _camarero() -> tuple[str, str, str, str]:
         },
     )
     assert registered.status_code == 201
-    login = client.post(
+    login = camarero_client.post(
         "/v1/auth/login",
         json={"email": email, "password": "pass-12345678"},
     )
@@ -54,9 +50,9 @@ def _camarero() -> tuple[str, str, str, str]:
     return registered.json()["id"], email, registered.json()["qr"], login.json()["token"]
 
 
-def _negocio() -> str:
+def _negocio(negocio_client) -> str:
     email = _email("onboarding-biz")
-    registered = client.post(
+    registered = negocio_client.post(
         "/v1/auth/negocio/registro",
         json={
             "nombre_mostrar": "Bar Smoke",
@@ -65,7 +61,7 @@ def _negocio() -> str:
         },
     )
     assert registered.status_code == 201
-    login = client.post(
+    login = negocio_client.post(
         "/v1/auth/negocio/login",
         json={"email": email, "password": "negocio-12345678"},
     )
@@ -73,8 +69,8 @@ def _negocio() -> str:
     return login.json()["token"]
 
 
-def _establecimiento(token: str) -> str:
-    response = client.post(
+def _establecimiento(negocio_client, token: str) -> str:
+    response = negocio_client.post(
         "/v1/establecimientos",
         headers={"Authorization": f"Bearer {token}"},
         json={"nombre": "Bar Onboarding"},
@@ -83,18 +79,18 @@ def _establecimiento(token: str) -> str:
     return response.json()["id"]
 
 
-def test_clave_publica_y_alta_por_qr(db_ready):
-    camarero_id, _, qr, _ = _camarero()
-    negocio_token = _negocio()
-    establecimiento_id = _establecimiento(negocio_token)
-    public = client.get("/v1/keys/qr")
+def test_clave_publica_y_alta_por_qr(db_ready, camarero_client, negocio_client):
+    camarero_id, _, qr, _ = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    public = camarero_client.get("/v1/keys/qr")
     assert public.status_code == 200
     body = public.json()
     verify_key = nacl.signing.VerifyKey(
         base64.urlsafe_b64decode(body["public_key"] + "=" * (-len(body["public_key"]) % 4))
     )
     assert verify_qr_payload(qr, verify_key)
-    added = client.post(
+    added = negocio_client.post(
         f"/v1/establecimientos/{establecimiento_id}/miembros/qr",
         headers={"Authorization": f"Bearer {negocio_token}"},
         json={"qr": qr, "rol": "staff"},
@@ -103,17 +99,17 @@ def test_clave_publica_y_alta_por_qr(db_ready):
     assert added.json()["camarero_id"] == camarero_id
 
 
-def test_qr_revocado_no_se_puede_anadir(db_ready):
-    _, _, qr, camarero_token = _camarero()
-    negocio_token = _negocio()
-    establecimiento_id = _establecimiento(negocio_token)
-    revoked = client.post(
+def test_qr_revocado_no_se_puede_anadir(db_ready, camarero_client, negocio_client):
+    _, _, qr, camarero_token = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    revoked = camarero_client.post(
         "/v1/camareros/me/revocar",
         headers={"Authorization": f"Bearer {camarero_token}"},
         json={"motivo": "prueba"},
     )
     assert revoked.status_code == 200
-    response = client.post(
+    response = negocio_client.post(
         f"/v1/establecimientos/{establecimiento_id}/miembros/qr",
         headers={"Authorization": f"Bearer {negocio_token}"},
         json={"qr": qr},
@@ -122,12 +118,12 @@ def test_qr_revocado_no_se_puede_anadir(db_ready):
     assert response.json()["code"] == "identity.credencial_inactiva"
 
 
-def test_busqueda_invitacion_outbox_y_aceptacion(db_ready):
-    camarero_id, email, _, camarero_token = _camarero()
-    negocio_token = _negocio()
-    establecimiento_id = _establecimiento(negocio_token)
+def test_busqueda_invitacion_outbox_y_aceptacion(db_ready, camarero_client, negocio_client):
+    camarero_id, email, _, camarero_token = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
     headers = {"Authorization": f"Bearer {negocio_token}"}
-    found = client.get(
+    found = negocio_client.get(
         f"/v1/establecimientos/{establecimiento_id}/camareros/buscar",
         headers=headers,
         params={"email": email},
@@ -135,14 +131,14 @@ def test_busqueda_invitacion_outbox_y_aceptacion(db_ready):
     assert found.status_code == 200
     assert found.json()["id"] == camarero_id
 
-    invitation = client.post(
+    invitation = negocio_client.post(
         f"/v1/establecimientos/{establecimiento_id}/invitaciones",
         headers=headers,
         json={"email": email, "rol": "staff"},
     )
     assert invitation.status_code == 201
     invitation_id = invitation.json()["id"]
-    with SessionLocal() as session:
+    with NegocioSessionLocal() as session:
         row = session.get(Invitacion, uuid.UUID(invitation_id))
         outbox = (
             session.query(EmailOutbox)
@@ -152,43 +148,43 @@ def test_busqueda_invitacion_outbox_y_aceptacion(db_ready):
         assert "token" not in outbox.payload
         assert outbox.payload["token_encrypted"]
         token = unprotect_invitation_token(
-            outbox.payload["token_encrypted"], get_session_secret(session)
+            outbox.payload["token_encrypted"], get_session_secret_env()
         )
         assert row.token_hash == hashlib.sha256(token.encode()).hexdigest()
 
-    accepted = client.post(
+    accepted = negocio_client.post(
         f"/v1/invitaciones/{token}/aceptar",
         headers={"Authorization": f"Bearer {camarero_token}"},
     )
     assert accepted.status_code == 200
     assert accepted.json()["membresia"]["camarero_id"] == camarero_id
-    used = client.post(
+    used = negocio_client.post(
         f"/v1/invitaciones/{token}/aceptar",
         headers={"Authorization": f"Bearer {camarero_token}"},
     )
     assert used.status_code == 409
 
 
-def test_invitacion_expirada(db_ready):
-    _, email, _, camarero_token = _camarero()
-    negocio_token = _negocio()
-    establecimiento_id = _establecimiento(negocio_token)
-    invitation = client.post(
+def test_invitacion_expirada(db_ready, camarero_client, negocio_client):
+    _, email, _, camarero_token = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    invitation = negocio_client.post(
         f"/v1/establecimientos/{establecimiento_id}/invitaciones",
         headers={"Authorization": f"Bearer {negocio_token}"},
         json={"email": email},
     )
     assert invitation.status_code == 201
     invitation_id = uuid.UUID(invitation.json()["id"])
-    with SessionLocal() as session:
+    with NegocioSessionLocal() as session:
         row = session.get(Invitacion, invitation_id)
         row.expira_en = datetime.now(timezone.utc) - timedelta(minutes=1)
         outbox = session.query(EmailOutbox).filter_by(invitacion_id=invitation_id).one()
         token = unprotect_invitation_token(
-            outbox.payload["token_encrypted"], get_session_secret(session)
+            outbox.payload["token_encrypted"], get_session_secret_env()
         )
         session.commit()
-    expired = client.post(
+    expired = negocio_client.post(
         f"/v1/invitaciones/{token}/aceptar",
         headers={"Authorization": f"Bearer {camarero_token}"},
     )

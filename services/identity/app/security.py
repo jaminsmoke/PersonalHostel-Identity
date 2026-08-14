@@ -4,8 +4,8 @@ import os
 import secrets
 import uuid
 
-import nacl.signing
 import nacl.secret
+import nacl.signing
 from sqlalchemy.orm import Session
 
 from app.models import AppConfig
@@ -58,6 +58,18 @@ def get_session_secret(db: Session) -> str:
     secret = secrets.token_urlsafe(48)
     db.add(AppConfig(clave=CONFIG_KEY_SESSION, valor=secret))
     db.commit()
+    return secret
+
+
+def get_session_secret_env() -> str:
+    """Secreto de sesión compartido entre los dos servicios.
+
+    El servicio de negocio no tiene tabla ``app_config`` propia; depende del
+    secreto inyectado por la orquestación (Docker Compose / VPS).
+    """
+    secret = os.environ.get(SESSION_SECRET_ENV)
+    if not secret:
+        raise RuntimeError(f"{SESSION_SECRET_ENV} debe estar definido")
     return secret
 
 

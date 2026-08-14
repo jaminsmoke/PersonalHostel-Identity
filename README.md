@@ -8,6 +8,25 @@ No es el nodo de sala: eso es [Personal Bar](https://github.com/jaminsmoke/Perso
 
 Mapa de producto y **flujo kanban completo** (Detectado → Changelog, Debate, CLI): [`AGENTS.md`](AGENTS.md). Setup corto de la CLI: [`tools/README.md`](tools/README.md).
 
+## Dos servicios, dos bases de datos
+
+Desde el split de dominios, Identity se despliega como **dos servicios** con **bases de datos separadas**:
+
+| Servicio | Puerto | BD | Dominio |
+|---|---|---|---|
+| `identity-camareros` | **8080** | `identity_camareros` | Identidad profesional: `camareros`, `credenciales`, `app_config` |
+| `identity-negocio` | **8082** | `identity_negocio` | Negocio: `cuentas_negocio`, `establecimientos`, `layouts_establecimiento`, `membresias`, `invitaciones`, `email_outbox` |
+
+Ambos comparten dos secretos inyectados por la orquestación (`SESSION_SECRET` y
+`QR_SIGNING_KEY`) para que los JWT y el QR `phid1` funcionen entre servicios. Las
+consultas que cruzan la frontera (buscar/verificar camarero, establecimientos de
+un camarero) van por un **cliente interno** (`/internal/*`) con dos transportes:
+`direct` (tests) y `http` (Compose/VPS).
+
+- Camareros (identidad profesional): rutas `/v1/camareros/*`, `/v1/auth/login`, `/v1/keys/qr` → `:8080`.
+- Negocio: rutas `/v1/auth/negocio/*`, `/v1/establecimientos/*`, `/v1/invitaciones/*` → `:8082`.
+- `GET /health` y `GET /v1/meta` existen en ambos.
+
 ## Levantar en local (Docker)
 
 ```bash
@@ -16,26 +35,27 @@ copy .env.example .env
 docker compose up --build
 ```
 
-- API: http://localhost:8080/health
-- Meta: http://localhost:8080/v1/meta
-- Web de invitaciones: http://localhost:8081/invitaciones/<token>
-- Postgres: `localhost:5432` (usuario `hosteleria`, base `identity`)
-- Esquema: aplicado por Alembic al arrancar (`alembic upgrade head`), tablas de profesionales y organización (`camareros`, `credenciales`, `cuentas_negocio`, `establecimientos`, `membresias`, `invitaciones`, `email_outbox`, `layouts_establecimiento` y `app_config`)
+- Camareros (API profesionales): http://localhost:8080/health
+- Negocio (cuentas y establecimientos): http://localhost:8082/health
+- Web de invitaciones: http://localhost:8081/invitaciones/<token> (llama al servicio de negocio)
+- Postgres: `localhost:5432` (usuario `hosteleria`; bases `identity_camareros` y `identity_negocio`)
+- Esquema: aplicado por Alembic al arrancar; una cadena por BD (`alembic` para camareros, `alembic_negocio` para negocio)
 
 ## API v1
 
 ### OpenAPI y contrato versionado
 
-- Documentación interactiva: http://localhost:8080/docs (Swagger UI) y http://localhost:8080/redoc.
-- Spec vivo: http://localhost:8080/openapi.json (`info.version` = `0.2.0`).
-- Spec versionado en git: [`docs/openapi.json`](docs/openapi.json). Se regenera con:
+- Camareros: http://localhost:8080/docs · http://localhost:8080/openapi.json
+- Negocio: http://localhost:8082/docs · http://localhost:8082/openapi.json
+- `info.version` = `0.2.0` en ambos.
+- Specs versionados en git: [`docs/openapi-camareros.json`](docs/openapi-camareros.json) y [`docs/openapi-negocio.json`](docs/openapi-negocio.json). Se regeneran con:
 
   ```bash
-  python services/identity/scripts/export_openapi.py          # escribe docs/openapi.json
-  python services/identity/scripts/export_openapi.py --check  # falla si difiere del vivo
+  python services/identity/scripts/export_openapi.py          # escribe docs/openapi-*.json
+  python services/identity/scripts/export_openapi.py --check  # falla si difieren del vivo
   ```
 
-- El workflow `.github/workflows/openapi-check.yml` falla si el spec commiteado no coincide con el generado (anti-drift).
+- El workflow `.github/workflows/openapi-check.yml` falla si algún spec commiteado no coincide con el generado (anti-drift).
 
 ### Errores y códigos estables
 
@@ -55,7 +75,7 @@ Toda respuesta de error lleva `detail` (mensaje en español) y `code` (código e
 
 ### Registro de profesional
 
-`POST /v1/camareros/registro`
+`POST /v1/camareros/registro` (servicio `:8080`)
 
 ```json
 {
@@ -83,7 +103,7 @@ Toda respuesta de error lleva `detail` (mensaje en español) y `code` (código e
 
 ### Login (recupera la misma identidad y el mismo QR)
 
-`POST /v1/auth/login`
+`POST /v1/auth/login` (servicio `:8080`)
 
 ```json
 {
@@ -110,89 +130,69 @@ Respuesta `200`:
 ```
 
 - El `qr` es el de la **credencial activa**: tras reinstalar (sin renovar), login → misma identidad y mismo QR.
-- `401` con `Email o contraseña incorrectos` si el email no existe, la password no cuadra o el camarero aún no tiene password (creados antes de la migración `0003`).
-- `409` con `Clave revocada. Renueva la clave` si la cuenta no tiene credencial activa (hay que renovar desde una sesión con Bearer válido).
+- `401` con `Email o contraseña incorrectos` si el email no existe, la password no cuadra o el camarero aún no tiene password.
+- `409` con `Clave revocada. Renueva la clave` si la cuenta no tiene credencial activa.
 - JWT HS256, TTL 30 días por defecto (`SESSION_TTL_DAYS`); secreto `SESSION_SECRET` (env) o generado y persistido en `app_config` (local).
 
 ### Perfil y QR de la sesión
 
-- `GET /v1/camareros/me` → perfil del camarero (`Authorization: Bearer <token>`). Incluye `nick` (mote visible en barra/colas) o `null` si aún no se ha definido.
-- `PATCH /v1/camareros/me` (`Authorization: Bearer <token>`, body `{ "nick": "Anita" }`) → actualiza el nick. Solo la sesión del profesional (Commander); Bar no edita identidad. `1–40` caracteres.
-- `GET /v1/camareros/me/qr` → `{ "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>" }` (QR de la credencial activa).
-- `GET`/`PATCH` de `/me` y `/me/qr` devuelven `401` en español si falta el token o es inválido/caducado.
+- `GET /v1/camareros/me` → perfil del camarero (`Authorization: Bearer <token>`). Incluye `nick` o `null`.
+- `PATCH /v1/camareros/me` (`{ "nick": "Anita" }`) → actualiza el nick. Solo la sesión del profesional.
+- `GET /v1/camareros/me/qr` → `{ "qr": "phid1:..." }` (QR de la credencial activa).
+- `GET /v1/camareros/me/establecimientos` → establecimientos activos del profesional (el servicio de camareros consulta al de negocio internamente).
 - `/me/qr` devuelve `409` si no hay credencial activa.
 
 ### Foto de perfil
 
-La foto se guarda normalizada a un único avatar **256×256 WebP** (se descarta el original) en un volumen Docker (`fotos`), con la metadata (clave, mimetype, tamaño, fecha) en `camareros`.
+La foto se guarda normalizada a un único avatar **256×256 WebP** en un volumen Docker (`fotos`), con la metadata en `camareros`.
 
-- `POST /v1/camareros/me/foto` (`Authorization: Bearer <token>`, `multipart/form-data`, campo `foto`) → sube/reemplaza la foto. Acepta JPEG/PNG/WebP, máx. 2 MB. Respuesta `200`: `{ "foto_url": "/v1/camareros/me/foto" }`. `422` con `identity.foto_invalida` si el formato/tamaño no es válido.
-- `GET /v1/camareros/me/foto` (`Authorization: Bearer <token>`) → sirve la imagen WebP con `Content-Type: image/webp`, `Cache-Control: private` y `ETag`. `404` con `identity.foto_inexistente` si no hay foto.
-- `DELETE /v1/camareros/me/foto` (`Authorization: Bearer <token>`) → borra la foto (fichero + metadata). Respuesta `200`: `{ "foto_url": null }`. Idempotente.
-- `GET /v1/camareros/me` y el login incluyen ahora `foto_url` (o `null`) y `nick` (o `null`).
-- Reemplazar o borrar elimina el fichero anterior. **Revocar el QR no borra la foto**; el borrado real es `DELETE` (y el futuro derecho de supresión GDPR).
+- `POST /v1/camareros/me/foto` (multipart, campo `foto`) → sube/reemplaza. JPEG/PNG/WebP, máx. 2 MB. Respuesta `200`: `{ "foto_url": "/v1/camareros/me/foto" }`. `422 identity.foto_invalida` si no es válido.
+- `GET /v1/camareros/me/foto` → sirve WebP con `Cache-Control: private` y `ETag`. `404 identity.foto_inexistente` si no hay.
+- `DELETE /v1/camareros/me/foto` → borra. Idempotente.
 - La foto **no** viaja en el QR.
 
 ### Renovar y revocar la clave/QR
 
-- `POST /v1/camareros/me/renovar` (`Authorization: Bearer <token>`) → revoca las credenciales activas y crea una nueva. Respuesta `200`: `{ "qr": "phid1:..." }` (payload **nuevo**; el `id` del camarero no cambia). Tras renovar, Bar debe volver a dar de alta el QR.
-- `POST /v1/camareros/me/revocar` (`Authorization: Bearer <token>`, body opcional `{ "motivo": "..." }`) → revoca la credencial activa **sin** crear otra. Respuesta `200`: `{ "status": "revocada" }`. La cuenta queda viva; login y `/me/qr` devuelven `409` hasta que se renueve.
-- Ambos requieren Bearer. Si no hay credencial activa, `revocar` devuelve `409`. La sesión JWT sigue válida tras revocar, así se puede llamar a `renovar` sin deadlock.
-- Recuperación sin sesión (reset por admin) queda fuera de v0.1.
+- `POST /v1/camareros/me/renovar` → revoca las credenciales activas y crea una nueva. Respuesta `200`: `{ "qr": "phid1:..." }`.
+- `POST /v1/camareros/me/revocar` (body opcional `{ "motivo": "..." }`) → revoca la credencial activa **sin** crear otra. Respuesta `200`: `{ "status": "revocada" }`.
 
 ### Borrar cuenta (derecho de supresión)
 
-- `DELETE /v1/camareros/me` (`Authorization: Bearer <token>`, body `{ "password": "..." }`) → borra la cuenta de forma **irreversible**: camarero + credenciales (cascada) + foto del volumen + hash de password. Respuesta `200`: `{ "status": "borrada" }`.
-- Requiere re-autenticación: `401` con `identity.password_incorrecta` si la password no cuadra (la cuenta queda intacta).
-- Tras borrar, el JWT viejo queda inútil (el `sub` ya no resuelve → `401 identity.token_invalido`) y el login deja de funcionar.
-- Las claves globales (`app_config`) no se tocan: el QR de los demás camareros sigue válido.
+- `DELETE /v1/camareros/me` (body `{ "password": "..." }`) → borra la cuenta de forma **irreversible**: camarero + credenciales (cascada) + foto. Respuesta `200`: `{ "status": "borrada" }`.
+- Requiere re-autenticación: `401 identity.password_incorrecta` si la password no cuadra.
 
-### Cuentas de negocio y establecimientos (v0.2)
-
-Identity mantiene separadas tres entidades:
+### Cuentas de negocio y establecimientos (v0.2, servicio `:8082`)
 
 - `cuentas_negocio`: credencial de acceso y titular de la ficha del negocio.
 - `establecimientos`: UUID canónico estable para que Bar y Comander identifiquen el negocio.
-- `membresias`: relación N:N entre camareros y establecimientos, con rol `dueno` o `staff`.
-
-La cuenta de negocio usa JWT con tipo `negocio`, independiente del JWT de camarero. Una cuenta puede vincularse opcionalmente a un camarero; al crear un establecimiento se genera automáticamente su membresía `dueno`.
+- `membresias`: relación N:N entre camareros y establecimientos, con rol `dueno` o `staff`. El `camarero_id` es un **UUID plano** (la FK real vive en la otra BD).
 
 Rutas principales:
 
-- `POST /v1/auth/negocio/registro` y `POST /v1/auth/negocio/login` → alta y sesión de la cuenta de negocio. El registro acepta `tipo_establecimiento` opcional del catálogo `bar | restaurante | cafeteria | pub | copas` (otro valor → `422 identity.validation_error`); el login devuelve `cuenta` con `tipo_establecimiento` y `logo_url`.
-- `POST /v1/auth/negocio/me/logo` (multipart, campo `logo`) → sube/reemplaza el logo (normalizado a 256×256 WebP, máx. 2 MB). `GET /v1/auth/negocio/me/logo` lo sirve con ETag/cache; `DELETE` lo borra. Sin logo → `404 identity.foto_inexistente`; fichero inválido → `422 identity.foto_invalida`. Exigen token de negocio.
-- `DELETE /v1/auth/negocio/me` → supresión de cuenta y establecimientos, sin borrar camareros; borra también el fichero del logo (GDPR).
+- `POST /v1/auth/negocio/registro` y `POST /v1/auth/negocio/login` → alta y sesión de la cuenta de negocio. El registro acepta `tipo_establecimiento` opcional del catálogo `bar | restaurante | cafeteria | pub | copas` y `camarero_vinculado_id` (validado contra el servicio de camareros). El login devuelve `cuenta` con `tipo_establecimiento` y `logo_url`.
+- `POST /v1/auth/negocio/me/logo` (multipart, campo `logo`) → sube/reemplaza el logo (256×256 WebP, máx. 2 MB). `GET`/`DELETE` lo sirven/borran.
+- `DELETE /v1/auth/negocio/me` → supresión de cuenta y establecimientos, sin borrar camareros.
 - `POST /v1/establecimientos` y `GET /v1/establecimientos/mios` → crear y listar establecimientos propios.
 - `GET /v1/establecimientos/{id}` → consulta para la cuenta titular o un miembro activo.
 - `POST/GET/DELETE /v1/establecimientos/{id}/miembros...` → gestionar membresías.
-- `GET /v1/camareros/me/establecimientos` → establecimientos activos del profesional.
-- `GET /v1/keys/qr` → clave pública Ed25519 para verificación offline del QR.
-- `POST /v1/establecimientos/{id}/miembros/qr` → valida un QR y crea la membresía.
+- `GET /v1/keys/qr` → clave pública Ed25519 (en el servicio de camareros, `:8080`).
+- `POST /v1/establecimientos/{id}/miembros/qr` → valida un QR (delegado al servicio de camareros) y crea la membresía.
 - `GET /v1/establecimientos/{id}/camareros/buscar?email=...` → búsqueda exacta autorizada.
 - `POST /v1/establecimientos/{id}/invitaciones` → crea una invitación por email.
-- `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT cuando se llega desde el enlace del email (magic-link): el token del enlace es la credencial, one-time + TTL 72h. `404 identity.camarero_no_encontrado` si la cuenta del email fue suprimida.
-- `POST /v1/establecimientos/{id}/invitaciones/{id}/revocar` → revoca una invitación pendiente.
-- `PUT /v1/establecimientos/{id}/layout` y `GET /v1/establecimientos/{id}/layout` → **copia de respaldo del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la **cuenta de negocio dueña** puede leer/sobrescribir. El payload es el JSON **fiel** de Bar (`salas` + `mesas` como arrays, sin validar la estructura interna), con `version` incremental y `updated_at`. Sin snapshot → `404 identity.layout_no_encontrado`. **No es sync de mesas**: Identity no interpreta el layout ni lo expone a Commander; Bar es la fuente de verdad y el espejo es solo DR (cambio de dispositivo).
+- `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT (magic-link desde el email): token one-time + TTL 72h.
+- `PUT/GET /v1/establecimientos/{id}/layout` → **copia de respaldo del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la cuenta de negocio dueña.
 
-El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar; los rankings quedan fuera de este incremento. El layout respaldado vive en `layouts_establecimiento` (una fila por establecimiento).
-
-Las invitaciones se almacenan con token hash y generan una entrada en `email_outbox`. El worker `email-worker` procesa la outbox. En Docker el proveedor por defecto es `console`; para pruebas de entrega se puede configurar `EMAIL_PROVIDER=smtp` con un relay como Brevo mediante secretos fuera de git. El free tier no es una garantía de producción: hay que verificar dominio, SPF, DKIM, DMARC, límites y GDPR.
+El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar.
 
 ### Identity Web (invitaciones por navegador)
 
-`identity-web` es un servicio del compose (nginx + SPA vanilla) que sirve la página de aceptación en `:8081`:
-
-- El email de invitación apunta a `http://localhost:8081/invitaciones/<token>` (`INVITATION_URL_BASE`).
-- La página lee el token de la URL, llama a `POST /v1/invitaciones/{token}/aceptar` (sin JWT, magic-link) y muestra el resultado según el `code` (`identity.invitacion_expirada`, `identity.invitacion_ya_usada`, `identity.invitacion_no_encontrada`, etc.).
-- La URL de la API se inyecta en runtime vía `config.js` (`IDENTITY_API_URL`), sin hardcodear.
-- CORS: la API solo acepta orígenes de `IDENTITY_WEB_ORIGIN` (default `http://localhost:8081`, separados por comas). Sin credenciales; métodos GET/POST/DELETE.
-- En producción, `INVITATION_URL_BASE` e `IDENTITY_WEB_ORIGIN` deben apuntar al dominio HTTPS del VPS (el enlace viaja en el email; Brevo no lo configura).
+`identity-web` sirve la página de aceptación en `:8081` y llama al **servicio de negocio** (`IDENTITY_API_URL`, default `http://localhost:8082`) para `POST /v1/invitaciones/{token}/aceptar` (magic-link, sin JWT).
 
 ## Tests
 
 ```bash
 docker compose up --build -d
-docker compose exec identity python -m pytest /app/tests -v
+docker compose exec identity-camareros python -m pytest tests -v
 ```
 
-Hay health, esquema Postgres, registro/login de camarero, perfil/QR (`/me`, `/me/qr`), foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías, clave pública QR, invitaciones (incluida la aceptación por magic-link y CORS de la web), espejo del layout (`PUT/GET /v1/establecimientos/{id}/layout`), outbox y OpenAPI.
+Hay health, esquema Postgres (dos BD), registro/login de camarero, perfil/QR, foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, membresías, clave pública QR, invitaciones (magic-link + CORS), espejo del layout, outbox y OpenAPI (dos specs).

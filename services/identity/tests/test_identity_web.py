@@ -1,28 +1,20 @@
 import hashlib
-import os
 import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
-
-from app.db import SessionLocal  # noqa: E402
-from app.main import app  # noqa: E402
-from app.models import EmailOutbox, Invitacion  # noqa: E402
-from app.security import get_session_secret, unprotect_invitation_token  # noqa: E402
-
-client = TestClient(app)
+from app.db import CamareroSessionLocal, NegocioSessionLocal
+from app.models import EmailOutbox, Invitacion
+from app.security import get_session_secret_env, unprotect_invitation_token
 
 
 @pytest.fixture(scope="module")
 def db_ready():
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
+        session.execute(text("SELECT 1"))
+    with NegocioSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
@@ -31,9 +23,9 @@ def _email(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4()}@example.com"
 
 
-def _camarero() -> tuple[str, str]:
+def _camarero(camarero_client) -> tuple[str, str]:
     email = _email("web-cam")
-    registered = client.post(
+    registered = camarero_client.post(
         "/v1/camareros/registro",
         json={
             "nombre": "Web",
@@ -46,9 +38,9 @@ def _camarero() -> tuple[str, str]:
     return registered.json()["id"], email
 
 
-def _negocio() -> str:
+def _negocio(negocio_client) -> str:
     email = _email("web-biz")
-    registered = client.post(
+    registered = negocio_client.post(
         "/v1/auth/negocio/registro",
         json={
             "nombre_mostrar": "Web Smoke",
@@ -57,7 +49,7 @@ def _negocio() -> str:
         },
     )
     assert registered.status_code == 201
-    login = client.post(
+    login = negocio_client.post(
         "/v1/auth/negocio/login",
         json={"email": email, "password": "negocio-12345678"},
     )
@@ -65,8 +57,8 @@ def _negocio() -> str:
     return login.json()["token"]
 
 
-def _establecimiento(token: str) -> str:
-    response = client.post(
+def _establecimiento(negocio_client, token: str) -> str:
+    response = negocio_client.post(
         "/v1/establecimientos",
         headers={"Authorization": f"Bearer {token}"},
         json={"nombre": "Web Onboarding"},
@@ -75,49 +67,49 @@ def _establecimiento(token: str) -> str:
     return response.json()["id"]
 
 
-def _crear_invitacion(negocio_token: str, establecimiento_id: str, email: str) -> str:
-    invitation = client.post(
+def _crear_invitacion(negocio_client, negocio_token: str, establecimiento_id: str, email: str) -> str:
+    invitation = negocio_client.post(
         f"/v1/establecimientos/{establecimiento_id}/invitaciones",
         headers={"Authorization": f"Bearer {negocio_token}"},
         json={"email": email},
     )
     assert invitation.status_code == 201
     invitation_id = uuid.UUID(invitation.json()["id"])
-    with SessionLocal() as session:
+    with NegocioSessionLocal() as session:
         outbox = session.query(EmailOutbox).filter_by(invitacion_id=invitation_id).one()
         token = unprotect_invitation_token(
-            outbox.payload["token_encrypted"], get_session_secret(session)
+            outbox.payload["token_encrypted"], get_session_secret_env()
         )
     return token
 
 
-def test_aceptar_por_magic_link_sin_jwt(db_ready):
-    camarero_id, email = _camarero()
-    negocio_token = _negocio()
-    establecimiento_id = _establecimiento(negocio_token)
-    token = _crear_invitacion(negocio_token, establecimiento_id, email)
+def test_aceptar_por_magic_link_sin_jwt(db_ready, camarero_client, negocio_client):
+    camarero_id, email = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    token = _crear_invitacion(negocio_client, negocio_token, establecimiento_id, email)
 
-    accepted = client.post(f"/v1/invitaciones/{token}/aceptar")
+    accepted = negocio_client.post(f"/v1/invitaciones/{token}/aceptar")
     assert accepted.status_code == 200
     assert accepted.json()["membresia"]["camarero_id"] == camarero_id
 
-    used = client.post(f"/v1/invitaciones/{token}/aceptar")
+    used = negocio_client.post(f"/v1/invitaciones/{token}/aceptar")
     assert used.status_code == 409
     assert used.json()["code"] == "identity.invitacion_ya_usada"
 
 
-def test_aceptar_magic_link_sin_cuenta(db_ready):
-    camarero_id, email = _camarero()
-    negocio_token = _negocio()
-    establecimiento_id = _establecimiento(negocio_token)
-    token = _crear_invitacion(negocio_token, establecimiento_id, email)
+def test_aceptar_magic_link_sin_cuenta(db_ready, camarero_client, negocio_client):
+    camarero_id, email = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    token = _crear_invitacion(negocio_client, negocio_token, establecimiento_id, email)
 
-    login = client.post(
+    login = camarero_client.post(
         "/v1/auth/login",
         json={"email": email, "password": "pass-12345678"},
     )
     assert login.status_code == 200
-    suppressed = client.request(
+    suppressed = camarero_client.request(
         "DELETE",
         "/v1/camareros/me",
         headers={"Authorization": f"Bearer {login.json()['token']}"},
@@ -125,17 +117,17 @@ def test_aceptar_magic_link_sin_cuenta(db_ready):
     )
     assert suppressed.status_code == 200
 
-    response = client.post(f"/v1/invitaciones/{token}/aceptar")
+    response = negocio_client.post(f"/v1/invitaciones/{token}/aceptar")
     assert response.status_code == 404
     assert response.json()["code"] == "identity.camarero_no_encontrado"
 
 
-def test_aceptar_magic_link_expirada(db_ready):
-    _, email = _camarero()
-    negocio_token = _negocio()
-    establecimiento_id = _establecimiento(negocio_token)
-    token = _crear_invitacion(negocio_token, establecimiento_id, email)
-    with SessionLocal() as session:
+def test_aceptar_magic_link_expirada(db_ready, camarero_client, negocio_client):
+    _, email = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    token = _crear_invitacion(negocio_client, negocio_token, establecimiento_id, email)
+    with NegocioSessionLocal() as session:
         invitation = (
             session.query(Invitacion)
             .filter_by(token_hash=hashlib.sha256(token.encode()).hexdigest())
@@ -143,13 +135,13 @@ def test_aceptar_magic_link_expirada(db_ready):
         )
         invitation.expira_en = datetime.now(timezone.utc) - timedelta(minutes=1)
         session.commit()
-    expired = client.post(f"/v1/invitaciones/{token}/aceptar")
+    expired = negocio_client.post(f"/v1/invitaciones/{token}/aceptar")
     assert expired.status_code == 410
     assert expired.json()["code"] == "identity.invitacion_expirada"
 
 
-def test_cors_origen_permitido(db_ready):
-    response = client.options(
+def test_cors_origen_permitido(db_ready, negocio_client):
+    response = negocio_client.options(
         "/v1/invitaciones/dummy/aceptar",
         headers={
             "Origin": "http://localhost:8081",
@@ -160,8 +152,8 @@ def test_cors_origen_permitido(db_ready):
     assert response.headers.get("access-control-allow-origin") == "http://localhost:8081"
 
 
-def test_cors_origen_no_permitido(db_ready):
-    response = client.options(
+def test_cors_origen_no_permitido(db_ready, negocio_client):
+    response = negocio_client.options(
         "/v1/invitaciones/dummy/aceptar",
         headers={
             "Origin": "http://evil.example",

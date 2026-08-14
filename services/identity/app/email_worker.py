@@ -1,7 +1,7 @@
 import logging
 import time
 
-from app.db import SessionLocal
+from app.db import NegocioSessionLocal
 from app.outbox import process_pending_outbox
 
 logging.basicConfig(level=logging.INFO)
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     while True:
-        with SessionLocal() as db:
+        with NegocioSessionLocal() as db:
             processed = process_pending_outbox(db)
         if processed:
             logger.info("Procesados %s emails de outbox", processed)

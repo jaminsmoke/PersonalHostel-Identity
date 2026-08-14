@@ -4,7 +4,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.db import CamareroBase, CAMAREROS_DATABASE_URL
+from app.db import NegocioBase, NEGOCIO_DATABASE_URL
 from app import models  # noqa: F401  (registra los modelos en sus bases)
 
 config = context.config
@@ -12,9 +12,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", os.environ.get("CAMAREROS_DATABASE_URL", CAMAREROS_DATABASE_URL))
+config.set_main_option("sqlalchemy.url", os.environ.get("NEGOCIO_DATABASE_URL", NEGOCIO_DATABASE_URL))
 
-target_metadata = CamareroBase.metadata
+target_metadata = NegocioBase.metadata
 
 
 def run_migrations_offline() -> None:

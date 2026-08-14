@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.email import get_email_sender
 from app.models import EmailOutbox, EmailOutboxEstado
-from app.security import get_session_secret, unprotect_invitation_token
+from app.security import get_session_secret_env, unprotect_invitation_token
 
 
 def process_pending_outbox(db: Session, limit: int = 20) -> int:
@@ -35,7 +35,7 @@ def process_pending_outbox(db: Session, limit: int = 20) -> int:
         db.commit()
         try:
             token = unprotect_invitation_token(
-                row.payload["token_encrypted"], get_session_secret(db)
+                row.payload["token_encrypted"], get_session_secret_env()
             )
             base_url = row.payload["invitation_url_base"].rstrip("/")
             link = f"{base_url}/{token}"

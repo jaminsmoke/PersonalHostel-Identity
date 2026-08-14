@@ -9,14 +9,15 @@ from fastapi import Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from app.db import get_db
+from app.db import get_camarero_db, get_negocio_db
 from app.errors import (
     INVALID_TOKEN,
     NEGOCIO_INVALID_TOKEN,
     ApiError,
 )
+from app.internal import get_camareros_internal
 from app.models import Camarero, CuentaNegocio, Credencial, CredencialEstado
-from app.security import get_session_secret
+from app.security import get_session_secret, get_session_secret_env
 
 TTL_DAYS_ENV = "SESSION_TTL_DAYS"
 DEFAULT_TTL_DAYS = 30
@@ -48,7 +49,9 @@ def _ttl_days() -> int:
     return DEFAULT_TTL_DAYS
 
 
-def create_access_token(subject_id: uuid.UUID, secret: str, subject_type: str = "camarero") -> str:
+def create_access_token(
+    subject_id: uuid.UUID, secret: str, subject_type: str = "camarero"
+) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(subject_id),
@@ -81,18 +84,28 @@ def get_credencial_activa(db: Session, camarero_id: uuid.UUID) -> Credencial | N
     )
 
 
-def get_current_camarero(
-    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
-    db: Session = Depends(get_db),
-) -> Camarero:
+def _bearer_token(
+    credentials: HTTPAuthorizationCredentials | None,
+) -> str:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise ApiError(
             status_code=status.HTTP_401_UNAUTHORIZED,
             code=INVALID_TOKEN,
             detail="Token de sesión inválido o caducado",
         )
+    return credentials.credentials
+
+
+# ── Servicio de profesionales ──────────────────────────────────────────────
+
+
+def get_current_camarero(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    db: Session = Depends(get_camarero_db),
+) -> Camarero:
+    token = _bearer_token(credentials)
     camarero_id = decode_access_token(
-        credentials.credentials, get_session_secret(db), expected_type="camarero"
+        token, get_session_secret(db), expected_type="camarero"
     )
     if camarero_id is None:
         raise ApiError(
@@ -112,7 +125,7 @@ def get_current_camarero(
 
 def get_current_camarero_optional(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_camarero_db),
 ) -> Camarero | None:
     """Resuelve el camarero si hay bearer válido; si no, devuelve None (magic-link)."""
     if credentials is None or credentials.scheme.lower() != "bearer":
@@ -125,22 +138,20 @@ def get_current_camarero_optional(
     return db.get(Camarero, camarero_id)
 
 
+# ── Servicio de negocio ────────────────────────────────────────────────────
+
+
 def create_business_access_token(cuenta_id: uuid.UUID, secret: str) -> str:
     return create_access_token(cuenta_id, secret, subject_type="negocio")
 
 
 def get_current_cuenta_negocio(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> CuentaNegocio:
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        raise ApiError(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            code=NEGOCIO_INVALID_TOKEN,
-            detail="Token de cuenta de negocio inválido o caducado",
-        )
+    token = _bearer_token(credentials)
     cuenta_id = decode_access_token(
-        credentials.credentials, get_session_secret(db), expected_type="negocio"
+        token, get_session_secret_env(), expected_type="negocio"
     )
     cuenta = db.get(CuentaNegocio, cuenta_id) if cuenta_id else None
     if cuenta is None:
@@ -154,20 +165,17 @@ def get_current_cuenta_negocio(
 
 def get_current_actor(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
-    db: Session = Depends(get_db),
-) -> tuple[str, Camarero | CuentaNegocio]:
-    """Resuelve un token de profesional o de cuenta de negocio."""
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        raise ApiError(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            code=INVALID_TOKEN,
-            detail="Token de sesión inválido o caducado",
-        )
+    db: Session = Depends(get_negocio_db),
+) -> tuple[str, uuid.UUID]:
+    """Resuelve un token de profesional o de cuenta de negocio.
+
+    Devuelve ``(tipo, subject_id)``. El camarero no se carga (vive en la otra
+    BD): solo se valida su existencia mediante el cliente interno.
+    """
+    token = _bearer_token(credentials)
     try:
         payload = jwt.decode(
-            credentials.credentials,
-            get_session_secret(db),
-            algorithms=[ALGORITHM],
+            token, get_session_secret_env(), algorithms=[ALGORITHM]
         )
         subject_id = uuid.UUID(payload["sub"])
         subject_type = payload.get("typ", "camarero")
@@ -179,14 +187,33 @@ def get_current_actor(
         )
 
     if subject_type == "negocio":
-        actor = db.get(CuentaNegocio, subject_id)
+        if db.get(CuentaNegocio, subject_id) is None:
+            raise ApiError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                code=INVALID_TOKEN,
+                detail="Token de sesión inválido o caducado",
+            )
     else:
         subject_type = "camarero"
-        actor = db.get(Camarero, subject_id)
-    if actor is None:
-        raise ApiError(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            code=INVALID_TOKEN,
-            detail="Token de sesión inválido o caducado",
-        )
-    return subject_type, actor
+        if get_camareros_internal().perfil(subject_id) is None:
+            raise ApiError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                code=INVALID_TOKEN,
+                detail="Token de sesión inválido o caducado",
+            )
+    return subject_type, subject_id
+
+
+def get_current_camarero_id_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> uuid.UUID | None:
+    """Resuelve el ``camarero_id`` del bearer (servicio de negocio) o ``None``.
+
+    El negocio no carga el ORM del camarero (vive en la otra BD); devuelve solo
+    el id para cruzar con ``membresias`` o para consultar el perfil interno.
+    """
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        return None
+    return decode_access_token(
+        credentials.credentials, get_session_secret_env(), expected_type="camarero"
+    )

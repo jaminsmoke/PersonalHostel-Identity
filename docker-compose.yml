@@ -9,19 +9,49 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./services/identity/db-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hosteleria} -d ${POSTGRES_DB:-identity}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hosteleria}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  identity:
+  identity-camareros:
     build: ./services/identity
     ports:
       - "${IDENTITY_PORT:-8080}:8080"
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/${POSTGRES_DB:-identity}
+      CAMAREROS_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/identity_camareros
+      NEGOCIO_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/identity_negocio
+      SESSION_SECRET: ${SESSION_SECRET:-BdZh-Awc4rEhsHCtzyUoufxqf7mT97y68QhilC9fxVnszS4CFmICrNRncw7vVeN2}
+      QR_SIGNING_KEY: ${QR_SIGNING_KEY:-osYIdBW7fkucKVqY9St5yQKpLpDuAzJ4PeRaFMXbtDI=}
       FOTOS_DIR: /app/data/fotos
+      INTERNAL_TRANSPORT: http
+      NEGOCIO_INTERNAL_URL: http://identity-negocio:8080
+    volumes:
+      - fotos:/app/data/fotos
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  identity-negocio:
+    build: ./services/identity
+    ports:
+      - "${NEGOCIO_PORT:-8082}:8080"
+    environment:
+      SERVICE: negocio
+      NEGOCIO_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/identity_negocio
+      CAMAREROS_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/identity_camareros
+      SESSION_SECRET: ${SESSION_SECRET:-BdZh-Awc4rEhsHCtzyUoufxqf7mT97y68QhilC9fxVnszS4CFmICrNRncw7vVeN2}
+      QR_SIGNING_KEY: ${QR_SIGNING_KEY:-osYIdBW7fkucKVqY9St5yQKpLpDuAzJ4PeRaFMXbtDI=}
+      FOTOS_DIR: /app/data/fotos
+      INTERNAL_TRANSPORT: http
+      CAMAREROS_INTERNAL_URL: http://identity-camareros:8080
       IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:8081}
       INVITATION_URL_BASE: ${INVITATION_URL_BASE:-http://localhost:8081/invitaciones}
     volumes:
@@ -37,9 +67,10 @@ services:
 
   email-worker:
     build: ./services/identity
-    command: ["python", "-m", "app.email_worker"]
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/${POSTGRES_DB:-identity}
+      SERVICE: email-worker
+      NEGOCIO_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/identity_negocio
+      SESSION_SECRET: ${SESSION_SECRET:-BdZh-Awc4rEhsHCtzyUoufxqf7mT97y68QhilC9fxVnszS4CFmICrNRncw7vVeN2}
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
       EMAIL_HOST: ${EMAIL_HOST:-}
       EMAIL_PORT: ${EMAIL_PORT:-587}
@@ -48,7 +79,7 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.test}
       EMAIL_USE_TLS: ${EMAIL_USE_TLS:-true}
     depends_on:
-      identity:
+      identity-negocio:
         condition: service_healthy
 
   identity-web:
@@ -56,9 +87,9 @@ services:
     ports:
       - "${IDENTITY_WEB_PORT:-8081}:80"
     environment:
-      IDENTITY_API_URL: ${IDENTITY_API_URL:-http://localhost:8080}
+      IDENTITY_API_URL: ${IDENTITY_API_URL:-http://localhost:8082}
     depends_on:
-      identity:
+      identity-negocio:
         condition: service_healthy
 
 volumes:

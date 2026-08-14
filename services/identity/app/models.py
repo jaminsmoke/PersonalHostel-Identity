@@ -2,11 +2,21 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db import Base
+from app.db import CamareroBase, NegocioBase
 
 
 class CredencialEstado(str, enum.Enum):
@@ -41,7 +51,10 @@ class EmailOutboxEstado(str, enum.Enum):
     fallido = "fallido"
 
 
-class AppConfig(Base):
+# ── BD de profesionales ────────────────────────────────────────────────────
+
+
+class AppConfig(CamareroBase):
     __tablename__ = "app_config"
 
     clave: Mapped[str] = mapped_column(String(100), primary_key=True)
@@ -54,7 +67,7 @@ class AppConfig(Base):
     )
 
 
-class Camarero(Base):
+class Camarero(CamareroBase):
     __tablename__ = "camareros"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -80,12 +93,6 @@ class Camarero(Base):
     credenciales: Mapped[list["Credencial"]] = relationship(
         back_populates="camarero", cascade="all, delete-orphan"
     )
-    membresias: Mapped[list["Membresia"]] = relationship(
-        back_populates="camarero", cascade="all, delete-orphan"
-    )
-    cuentas_negocio_vinculadas: Mapped[list["CuentaNegocio"]] = relationship(
-        back_populates="camarero_vinculado"
-    )
 
     @property
     def foto_url(self) -> str | None:
@@ -95,7 +102,7 @@ class Camarero(Base):
         return "/v1/camareros/me/foto"
 
 
-class Credencial(Base):
+class Credencial(CamareroBase):
     __tablename__ = "credenciales"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -120,7 +127,10 @@ class Credencial(Base):
     camarero: Mapped[Camarero] = relationship(back_populates="credenciales")
 
 
-class CuentaNegocio(Base):
+# ── BD de negocio ──────────────────────────────────────────────────────────
+
+
+class CuentaNegocio(NegocioBase):
     __tablename__ = "cuentas_negocio"
     __table_args__ = (
         CheckConstraint(
@@ -136,18 +146,14 @@ class CuentaNegocio(Base):
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     nombre_mostrar: Mapped[str] = mapped_column(String(200), nullable=False)
-    tipo_establecimiento: Mapped[str | None] = mapped_column(
-        String(50), nullable=True
-    )
+    tipo_establecimiento: Mapped[str | None] = mapped_column(String(50), nullable=True)
     logo_clave: Mapped[str | None] = mapped_column(String(255))
     logo_mimetype: Mapped[str | None] = mapped_column(String(64))
     logo_size: Mapped[int | None] = mapped_column(Integer)
     logo_actualizada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # UUID plano: la FK real apunta a la BD de profesionales (otro servicio).
     camarero_vinculado_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("camareros.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
+        UUID(as_uuid=True), nullable=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -156,9 +162,6 @@ class CuentaNegocio(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    camarero_vinculado: Mapped[Camarero | None] = relationship(
-        back_populates="cuentas_negocio_vinculadas"
-    )
     establecimientos: Mapped[list["Establecimiento"]] = relationship(
         back_populates="cuenta_negocio", cascade="all, delete-orphan"
     )
@@ -174,7 +177,7 @@ class CuentaNegocio(Base):
         return "/v1/auth/negocio/me/logo"
 
 
-class Establecimiento(Base):
+class Establecimiento(NegocioBase):
     __tablename__ = "establecimientos"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -206,7 +209,7 @@ class Establecimiento(Base):
     )
 
 
-class LayoutEstablecimiento(Base):
+class LayoutEstablecimiento(NegocioBase):
     """Copia de respaldo (DR) del layout del mapa: salas y mesas tal cual las
     serializa Bar. Identity no interpreta el layout; solo lo guarda y lo devuelve.
     Fuente de verdad: Bar. Una fila por establecimiento.
@@ -229,7 +232,7 @@ class LayoutEstablecimiento(Base):
     establecimiento: Mapped[Establecimiento] = relationship(back_populates="layout")
 
 
-class Membresia(Base):
+class Membresia(NegocioBase):
     __tablename__ = "membresias"
     __table_args__ = (
         UniqueConstraint(
@@ -246,11 +249,9 @@ class Membresia(Base):
         nullable=False,
         index=True,
     )
+    # UUID plano: el camarero vive en la BD de profesionales (otro servicio).
     camarero_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("camareros.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+        UUID(as_uuid=True), nullable=False, index=True
     )
     rol: Mapped[MembresiaRol] = mapped_column(
         Enum(MembresiaRol, name="membresia_rol"), nullable=False
@@ -264,10 +265,9 @@ class Membresia(Base):
     revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     establecimiento: Mapped[Establecimiento] = relationship(back_populates="membresias")
-    camarero: Mapped[Camarero] = relationship(back_populates="membresias")
 
 
-class Invitacion(Base):
+class Invitacion(NegocioBase):
     __tablename__ = "invitaciones"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -307,7 +307,7 @@ class Invitacion(Base):
     )
 
 
-class EmailOutbox(Base):
+class EmailOutbox(NegocioBase):
     __tablename__ = "email_outbox"
 
     id: Mapped[uuid.UUID] = mapped_column(
