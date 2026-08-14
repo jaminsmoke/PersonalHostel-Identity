@@ -66,7 +66,7 @@ if _web_origins:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=_web_origins,
-        allow_methods=["GET", "POST", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["*"],
         allow_credentials=False,
     )

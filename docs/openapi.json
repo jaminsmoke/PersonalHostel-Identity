@@ -368,6 +368,67 @@
         "title": "InvitacionResponse",
         "type": "object"
       },
+      "LayoutResponse": {
+        "description": "Copia de respaldo del layout de un establecimiento.",
+        "properties": {
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "mesas": {
+            "items": {},
+            "title": "Mesas",
+            "type": "array"
+          },
+          "salas": {
+            "items": {},
+            "title": "Salas",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "establecimiento_id",
+          "version",
+          "salas",
+          "mesas",
+          "updated_at"
+        ],
+        "title": "LayoutResponse",
+        "type": "object"
+      },
+      "LayoutUpdateRequest": {
+        "description": "Snapshot del layout que sube Bar: salas y mesas tal cual las serializa.\nEstructura interna no validada (copia de respaldo; Bar es la fuente).",
+        "properties": {
+          "mesas": {
+            "items": {},
+            "minItems": 0,
+            "title": "Mesas",
+            "type": "array"
+          },
+          "salas": {
+            "items": {},
+            "minItems": 0,
+            "title": "Salas",
+            "type": "array"
+          }
+        },
+        "required": [
+          "salas",
+          "mesas"
+        ],
+        "title": "LayoutUpdateRequest",
+        "type": "object"
+      },
       "LoginNegocioResponse": {
         "properties": {
           "cuenta": {
@@ -1967,6 +2028,172 @@
           }
         ],
         "summary": "Revocar Invitacion",
+        "tags": [
+          "establecimientos"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/layout": {
+      "get": {
+        "description": "Devuelve la copia de respaldo del layout del mapa. Solo la cuenta dueña.",
+        "operationId": "obtener_layout_v1_establecimientos__establecimiento_id__layout_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Layout",
+        "tags": [
+          "establecimientos"
+        ]
+      },
+      "put": {
+        "description": "Copia de respaldo del layout del mapa. Solo la cuenta dueña.",
+        "operationId": "guardar_layout_v1_establecimientos__establecimiento_id__layout_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LayoutUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LayoutResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Guardar Layout",
         "tags": [
           "establecimientos"
         ]

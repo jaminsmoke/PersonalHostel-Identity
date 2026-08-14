@@ -21,6 +21,7 @@ from app.db import get_db
 from app.errors import (
     CAMARERO_NOT_FOUND,
     ESTABLECIMIENTO_NOT_FOUND,
+    LAYOUT_NOT_FOUND,
     CREDENTIAL_INACTIVE,
     EMAIL_NOT_FOUND,
     INVITACION_DUPLICATE,
@@ -31,6 +32,7 @@ from app.errors import (
     MEMBERSHIP_DUPLICATE,
     MEMBERSHIP_FORBIDDEN,
     QR_INVALIDO,
+    VALIDATION_ERROR,
     ApiError,
 )
 from app.models import (
@@ -43,6 +45,7 @@ from app.models import (
     Establecimiento,
     Invitacion,
     InvitacionEstado,
+    LayoutEstablecimiento,
     Membresia,
     MembresiaEstado,
     MembresiaRol,
@@ -55,6 +58,8 @@ from app.schemas import (
     InvitacionAcceptResponse,
     InvitacionCreateRequest,
     InvitacionResponse,
+    LayoutResponse,
+    LayoutUpdateRequest,
     MembresiaCreateRequest,
     MembresiaResponse,
     QrMemberRequest,
@@ -244,6 +249,74 @@ def obtener_establecimiento(
                 detail="El camarero no pertenece a este establecimiento",
             )
     return establecimiento
+
+
+@router.put(
+    "/{establecimiento_id}/layout",
+    response_model=LayoutResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorResponse},
+    },
+)
+def guardar_layout(
+    establecimiento_id: uuid.UUID,
+    payload: LayoutUpdateRequest,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_db),
+) -> LayoutEstablecimiento:
+    """Copia de respaldo del layout del mapa. Solo la cuenta dueña."""
+    _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    if len(payload.model_dump_json().encode("utf-8")) > 1_000_000:
+        raise ApiError(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            code=VALIDATION_ERROR,
+            detail="El layout supera el tamaño máximo de 1 MB",
+        )
+    layout = db.get(LayoutEstablecimiento, establecimiento_id)
+    if layout is None:
+        layout = LayoutEstablecimiento(
+            establecimiento_id=establecimiento_id,
+            salas=payload.salas,
+            mesas=payload.mesas,
+            version=1,
+        )
+        db.add(layout)
+    else:
+        layout.salas = payload.salas
+        layout.mesas = payload.mesas
+        layout.version += 1
+    db.commit()
+    db.refresh(layout)
+    return layout
+
+
+@router.get(
+    "/{establecimiento_id}/layout",
+    response_model=LayoutResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def obtener_layout(
+    establecimiento_id: uuid.UUID,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_db),
+) -> LayoutEstablecimiento:
+    """Devuelve la copia de respaldo del layout del mapa. Solo la cuenta dueña."""
+    _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    layout = db.get(LayoutEstablecimiento, establecimiento_id)
+    if layout is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=LAYOUT_NOT_FOUND,
+            detail="El establecimiento no tiene un layout respaldado",
+        )
+    return layout
 
 
 @router.post(

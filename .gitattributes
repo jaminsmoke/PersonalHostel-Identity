@@ -1,0 +1,4 @@
+# Los scripts bash del contenedor Docker deben conservar LF (shebang).
+# core.autocrlf=true en Windows los convertiría a CRLF y rompería el
+# entrypoint (exit 127: "not found").
+*.sh text eol=lf
