@@ -28,6 +28,7 @@ services:
       FOTOS_DIR: /app/data/fotos
       INTERNAL_TRANSPORT: http
       NEGOCIO_INTERNAL_URL: http://identity-negocio:8080
+      ALLOW_NON_REAL_DATA: ${ALLOW_NON_REAL_DATA:-true}
     volumes:
       - fotos:/app/data/fotos
     depends_on:
@@ -54,6 +55,7 @@ services:
       CAMAREROS_INTERNAL_URL: http://identity-camareros:8080
       IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:8081}
       INVITATION_URL_BASE: ${INVITATION_URL_BASE:-http://localhost:8081/invitaciones}
+      ALLOW_NON_REAL_DATA: ${ALLOW_NON_REAL_DATA:-true}
     volumes:
       - fotos:/app/data/fotos
     depends_on:

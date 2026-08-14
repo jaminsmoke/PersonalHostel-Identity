@@ -37,6 +37,7 @@ def product_snapshot(product: ProductoCatalogo) -> dict:
         "id": str(product.id),
         "establecimiento_id": str(product.establecimiento_id),
         "nombre": product.nombre,
+        "data_origin": product.data_origin.value,
         "categoria": product.categoria,
         "destino": product.destino.value,
         "precio_centimos": product.precio_centimos,
@@ -203,6 +204,7 @@ def _apply_operation(
             product = ProductoCatalogo(
                 id=operation.aggregate_id,
                 establecimiento_id=establishment.id,
+                data_origin=establishment.data_origin,
                 revision=1,
                 created_at=now,
                 updated_at=now,

@@ -10,6 +10,11 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Procedencia canónica de datos** `real|test|demo` para camareros y cuentas,
+  heredada de forma inmutable por establecimientos y productos. Incluye política
+  segura por entorno, auditor read-only con PII redactada, diagnóstico cross-DB y
+  CI sobre PostgreSQL efímero. ([#21](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/21), Build/CI)
+
 - **Catálogo canónico por establecimiento** con UUID estable, dinero en céntimos,
   destino `barra|cocina`, archivado lógico y lectura para miembros activos.
   Incluye protocolo reutilizable para mirrors offline: operaciones idempotentes,

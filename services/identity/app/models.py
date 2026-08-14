@@ -78,6 +78,14 @@ class ConflictoEstado(str, enum.Enum):
     rechazado = "rechazado"
 
 
+class DataOrigin(str, enum.Enum):
+    """Procedencia inmutable de una entidad canónica."""
+
+    real = "real"
+    test = "test"
+    demo = "demo"
+
+
 # ── BD de profesionales ────────────────────────────────────────────────────
 
 
@@ -105,6 +113,13 @@ class Camarero(CamareroBase):
     nick: Mapped[str | None] = mapped_column(String(40))
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
     telefono: Mapped[str | None] = mapped_column(String(32), unique=True)
+    data_origin: Mapped[DataOrigin] = mapped_column(
+        Enum(DataOrigin, name="data_origin"),
+        nullable=False,
+        default=DataOrigin.real,
+        server_default=DataOrigin.real.value,
+        index=True,
+    )
     password_hash: Mapped[str | None] = mapped_column(String(255))
     foto_clave: Mapped[str | None] = mapped_column(String(255))
     foto_mimetype: Mapped[str | None] = mapped_column(String(64))
@@ -173,6 +188,13 @@ class CuentaNegocio(NegocioBase):
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     nombre_mostrar: Mapped[str] = mapped_column(String(200), nullable=False)
+    data_origin: Mapped[DataOrigin] = mapped_column(
+        Enum(DataOrigin, name="data_origin"),
+        nullable=False,
+        default=DataOrigin.real,
+        server_default=DataOrigin.real.value,
+        index=True,
+    )
     tipo_establecimiento: Mapped[str | None] = mapped_column(String(50), nullable=True)
     logo_clave: Mapped[str | None] = mapped_column(String(255))
     logo_mimetype: Mapped[str | None] = mapped_column(String(64))
@@ -211,6 +233,13 @@ class Establecimiento(NegocioBase):
         UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
     nombre: Mapped[str] = mapped_column(String(200), nullable=False)
+    data_origin: Mapped[DataOrigin] = mapped_column(
+        Enum(DataOrigin, name="data_origin"),
+        nullable=False,
+        default=DataOrigin.real,
+        server_default=DataOrigin.real.value,
+        index=True,
+    )
     cuenta_negocio_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("cuentas_negocio.id", ondelete="CASCADE"),
@@ -263,6 +292,13 @@ class ProductoCatalogo(NegocioBase):
         index=True,
     )
     nombre: Mapped[str] = mapped_column(String(200), nullable=False)
+    data_origin: Mapped[DataOrigin] = mapped_column(
+        Enum(DataOrigin, name="data_origin"),
+        nullable=False,
+        default=DataOrigin.real,
+        server_default=DataOrigin.real.value,
+        index=True,
+    )
     categoria: Mapped[str] = mapped_column(String(100), nullable=False)
     destino: Mapped[ProductoDestino] = mapped_column(
         Enum(ProductoDestino, name="producto_destino"), nullable=False

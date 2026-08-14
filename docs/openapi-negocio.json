@@ -21,6 +21,9 @@
             "title": "Apellidos",
             "type": "string"
           },
+          "data_origin": {
+            "$ref": "#/components/schemas/DataOrigin"
+          },
           "email": {
             "title": "Email",
             "type": "string"
@@ -50,7 +53,8 @@
           "id",
           "nombre",
           "apellidos",
-          "email"
+          "email",
+          "data_origin"
         ],
         "title": "CamareroSearchResponse",
         "type": "object"
@@ -297,6 +301,9 @@
             ],
             "title": "Camarero Vinculado Id"
           },
+          "data_origin": {
+            "$ref": "#/components/schemas/DataOrigin"
+          },
           "email": {
             "title": "Email",
             "type": "string"
@@ -336,10 +343,21 @@
         "required": [
           "id",
           "email",
-          "nombre_mostrar"
+          "nombre_mostrar",
+          "data_origin"
         ],
         "title": "CuentaNegocioPerfil",
         "type": "object"
+      },
+      "DataOrigin": {
+        "description": "Procedencia inmutable de una entidad canónica.",
+        "enum": [
+          "real",
+          "test",
+          "demo"
+        ],
+        "title": "DataOrigin",
+        "type": "string"
       },
       "ErrorResponse": {
         "description": "Respuesta de error con código estable y mensaje en español.",
@@ -398,6 +416,9 @@
             "title": "Cuenta Negocio Id",
             "type": "string"
           },
+          "data_origin": {
+            "$ref": "#/components/schemas/DataOrigin"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -411,7 +432,8 @@
         "required": [
           "id",
           "nombre",
-          "cuenta_negocio_id"
+          "cuenta_negocio_id",
+          "data_origin"
         ],
         "title": "EstablecimientoResponse",
         "type": "object"
@@ -991,6 +1013,9 @@
             "title": "Created At",
             "type": "string"
           },
+          "data_origin": {
+            "$ref": "#/components/schemas/DataOrigin"
+          },
           "destino": {
             "pattern": "^(barra|cocina)$",
             "title": "Destino",
@@ -1046,6 +1071,7 @@
           "precio_centimos",
           "id",
           "establecimiento_id",
+          "data_origin",
           "revision",
           "created_at",
           "updated_at"
@@ -1088,6 +1114,11 @@
             ],
             "title": "Camarero Vinculado Id"
           },
+          "data_origin": {
+            "$ref": "#/components/schemas/DataOrigin",
+            "default": "real",
+            "description": "Procedencia inmutable; test/demo requieren habilitación del entorno."
+          },
           "email": {
             "format": "email",
             "title": "Email",
@@ -1129,6 +1160,9 @@
       },
       "RegistroNegocioResponse": {
         "properties": {
+          "data_origin": {
+            "$ref": "#/components/schemas/DataOrigin"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -1136,7 +1170,8 @@
           }
         },
         "required": [
-          "id"
+          "id",
+          "data_origin"
         ],
         "title": "RegistroNegocioResponse",
         "type": "object"

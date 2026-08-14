@@ -94,6 +94,7 @@ def test_negocio_crea_establecimiento_y_membresia(db_ready, camarero_client, neg
     assert mine.status_code == 200
     assert mine.json()[0]["id"] == establecimiento_id
     assert mine.json()[0]["rol"] == "dueno"
+    assert mine.json()[0]["data_origin"] == "real"
 
 
 def test_tokens_de_profesional_y_negocio_no_se_intercambian(db_ready, camarero_client, negocio_client):

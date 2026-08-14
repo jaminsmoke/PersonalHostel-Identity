@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.models import DataOrigin
+
 
 class RegistroRequest(BaseModel):
     """Datos de alta de un camarero."""
@@ -14,6 +16,10 @@ class RegistroRequest(BaseModel):
     telefono: str | None = Field(default=None, max_length=32, examples=["+34600000000"])
     password: str = Field(..., min_length=8, max_length=128, examples=["contraseña-mín-8"])
     nick: str | None = Field(default=None, min_length=1, max_length=40, examples=["Anita"])
+    data_origin: DataOrigin = Field(
+        default=DataOrigin.real,
+        description="Procedencia inmutable; test/demo requieren habilitación del entorno.",
+    )
 
 
 class RegistroResponse(BaseModel):
@@ -23,6 +29,7 @@ class RegistroResponse(BaseModel):
 
     id: uuid.UUID = Field(..., examples=["3fa85f64-5717-4562-b3fc-2c963f66afa6"])
     qr: str = Field(..., examples=["phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"])
+    data_origin: DataOrigin
 
 
 class CamareroPerfil(BaseModel):
@@ -37,6 +44,7 @@ class CamareroPerfil(BaseModel):
     telefono: str | None = Field(default=None, examples=["+34600000000"])
     foto_url: str | None = Field(default=None, examples=["/v1/camareros/me/foto"])
     nick: str | None = Field(default=None, examples=["Anita"])
+    data_origin: DataOrigin
 
 
 class PerfilUpdateRequest(BaseModel):
@@ -112,6 +120,7 @@ class CuentaNegocioPerfil(BaseModel):
     tipo_establecimiento: str | None = None
     logo_url: str | None = None
     camarero_vinculado_id: uuid.UUID | None = None
+    data_origin: DataOrigin
 
 
 class RegistroNegocioRequest(BaseModel):
@@ -124,6 +133,10 @@ class RegistroNegocioRequest(BaseModel):
         description="Tipo de establecimiento del catálogo canónico.",
     )
     camarero_vinculado_id: uuid.UUID | None = None
+    data_origin: DataOrigin = Field(
+        default=DataOrigin.real,
+        description="Procedencia inmutable; test/demo requieren habilitación del entorno.",
+    )
 
 
 class LogoNegocioResponse(BaseModel):
@@ -132,6 +145,7 @@ class LogoNegocioResponse(BaseModel):
 
 class RegistroNegocioResponse(BaseModel):
     id: uuid.UUID
+    data_origin: DataOrigin
 
 
 class LoginNegocioResponse(BaseModel):
@@ -149,6 +163,7 @@ class EstablecimientoResponse(BaseModel):
     id: uuid.UUID
     nombre: str
     cuenta_negocio_id: uuid.UUID
+    data_origin: DataOrigin
 
 
 class EstablecimientoMembresiaResponse(EstablecimientoResponse):
@@ -195,6 +210,7 @@ class CamareroSearchResponse(BaseModel):
     apellidos: str
     email: str
     nick: str | None = None
+    data_origin: DataOrigin
 
 
 class InvitacionCreateRequest(BaseModel):
@@ -250,6 +266,7 @@ class ProductoResponse(ProductoPayload):
 
     id: uuid.UUID
     establecimiento_id: uuid.UUID
+    data_origin: DataOrigin
     revision: int
     created_at: datetime
     updated_at: datetime

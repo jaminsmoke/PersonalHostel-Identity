@@ -52,6 +52,7 @@ def _perfil_dict(c: Camarero) -> dict:
         "apellidos": c.apellidos,
         "email": c.email,
         "nick": c.nick,
+        "data_origin": c.data_origin.value,
     }
 
 
@@ -126,6 +127,7 @@ class DirectNegocioInternal:
                 "id": str(e.id),
                 "nombre": e.nombre,
                 "cuenta_negocio_id": str(e.cuenta_negocio_id),
+                "data_origin": e.data_origin.value,
                 "rol": rol.value,
             }
             for e, rol in rows
