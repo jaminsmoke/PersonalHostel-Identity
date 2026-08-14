@@ -110,6 +110,21 @@ def get_current_camarero(
     return camarero
 
 
+def get_current_camarero_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    db: Session = Depends(get_db),
+) -> Camarero | None:
+    """Resuelve el camarero si hay bearer válido; si no, devuelve None (magic-link)."""
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        return None
+    camarero_id = decode_access_token(
+        credentials.credentials, get_session_secret(db), expected_type="camarero"
+    )
+    if camarero_id is None:
+        return None
+    return db.get(Camarero, camarero_id)
+
+
 def create_business_access_token(cuenta_id: uuid.UUID, secret: str) -> str:
     return create_access_token(cuenta_id, secret, subject_type="negocio")
 

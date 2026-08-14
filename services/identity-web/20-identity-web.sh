@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+
+cat > /usr/share/nginx/html/config.js <<EOF
+window.IDENTITY_API_URL = "$IDENTITY_API_URL";
+EOF

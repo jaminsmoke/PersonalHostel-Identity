@@ -73,17 +73,22 @@ PersonalHosteleriaServer/
 ├── services/identity/        # API FastAPI (identidad, QR, foto, OpenAPI)
 │   ├── Dockerfile
 │   ├── requirements.txt
-│   ├── alembic/              # migraciones (camareros, credenciales, foto)
+│   ├── alembic/              # migraciones (camareros, credenciales, foto, invitaciones)
 │   ├── app/                  # main, auth, models, schemas, routes, storage, images
 │   ├── scripts/              # export_openapi.py
 │   └── tests/
+├── services/identity-web/    # página de invitaciones (nginx + SPA vanilla, :8081)
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   ├── 20-identity-web.sh    # genera config.js en runtime (IDENTITY_API_URL)
+│   └── static/               # index.html, style.css, app.js
 └── tools/
     ├── README.md
     ├── kanban-cli/
     └── agent-skills/
 ```
 
-`docker compose up --build` levanta Postgres 16 + API en `:8080`.
+`docker compose up --build` levanta Postgres 16 + API en `:8080` + Identity Web (página de invitaciones) en `:8081` + worker de email.
 
 - `GET /health` → `{ "ok": true }`
 - `GET /v1/meta` → servicio, rol `identity`, `status: schema`
@@ -108,7 +113,7 @@ Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores l
 
 El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>`, **estable** entre reinstalaciones. La foto no viaja en el QR.
 
-Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones; el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar.
+Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones (con Identity Web `:8081` para aceptar por magic-link sin JWT); el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar.
 
 Bar y Commander **no** copian usuarios a SQLite como fuente de verdad. Cachean la sesión. La verdad está aquí.
 
