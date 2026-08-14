@@ -1,27 +1,17 @@
-import os
 import uuid
 from io import BytesIO
 
 import pytest
-from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy import text
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
-
-from app.db import SessionLocal  # noqa: E402
-from app.main import app  # noqa: E402
-from app.storage import get_foto_storage  # noqa: E402
-
-client = TestClient(app)
+from app.db import NegocioSessionLocal
+from app.storage import get_foto_storage
 
 
 @pytest.fixture(scope="module")
 def db_ready():
-    with SessionLocal() as session:
+    with NegocioSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
@@ -30,7 +20,7 @@ def _email(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4()}@example.com"
 
 
-def _crear_negocio(tipo: str | None = None) -> tuple[str, str, str]:
+def _crear_negocio(negocio_client, tipo: str | None = None) -> tuple[str, str, str]:
     email = _email("negtipo")
     payload = {
         "nombre_mostrar": "Negocio Tipo",
@@ -39,10 +29,10 @@ def _crear_negocio(tipo: str | None = None) -> tuple[str, str, str]:
     }
     if tipo is not None:
         payload["tipo_establecimiento"] = tipo
-    response = client.post("/v1/auth/negocio/registro", json=payload)
+    response = negocio_client.post("/v1/auth/negocio/registro", json=payload)
     assert response.status_code == 201
     data = response.json()
-    login = client.post(
+    login = negocio_client.post(
         "/v1/auth/negocio/login",
         json={"email": email, "password": "negocio-12345678"},
     )
@@ -68,9 +58,9 @@ def _reg_chip() -> bytes:
     return buf.getvalue()
 
 
-def test_registro_con_tipo_nulo_y_login_incluye_tipo(db_ready):
-    _, email, token = _crear_negocio()
-    login_resp = client.post(
+def test_registro_con_tipo_nulo_y_login_incluye_tipo(db_ready, negocio_client):
+    _, email, token = _crear_negocio(negocio_client)
+    login_resp = negocio_client.post(
         "/v1/auth/negocio/login",
         json={"email": email, "password": "negocio-12345678"},
     )
@@ -81,9 +71,9 @@ def test_registro_con_tipo_nulo_y_login_incluye_tipo(db_ready):
     assert _auth(token)
 
 
-def test_registro_tipo_valido_en_login(db_ready):
-    _, email, _ = _crear_negocio("restaurante")
-    login_resp = client.post(
+def test_registro_tipo_valido_en_login(db_ready, negocio_client):
+    _, email, _ = _crear_negocio(negocio_client, "restaurante")
+    login_resp = negocio_client.post(
         "/v1/auth/negocio/login",
         json={"email": email, "password": "negocio-12345678"},
     )
@@ -91,8 +81,8 @@ def test_registro_tipo_valido_en_login(db_ready):
     assert login_resp.json()["cuenta"]["tipo_establecimiento"] == "restaurante"
 
 
-def test_registro_tipo_invalido_422(db_ready):
-    response = client.post(
+def test_registro_tipo_invalido_422(db_ready, negocio_client):
+    response = negocio_client.post(
         "/v1/auth/negocio/registro",
         json={
             "nombre_mostrar": "Invalido",
@@ -104,9 +94,9 @@ def test_registro_tipo_invalido_422(db_ready):
     assert response.status_code == 422
 
 
-def test_registro_todos_los_tipos_validos(db_ready):
+def test_registro_todos_los_tipos_validos(db_ready, negocio_client):
     for tipo in ("bar", "restaurante", "cafeteria", "pub", "copas"):
-        response = client.post(
+        response = negocio_client.post(
             "/v1/auth/negocio/registro",
             json={
                 "nombre_mostrar": f"Tipo {tipo}",
@@ -118,11 +108,11 @@ def test_registro_todos_los_tipos_validos(db_ready):
         assert response.status_code == 201, tipo
 
 
-def test_logo_ciclo_completo(db_ready):
-    _, email, token = _crear_negocio()
+def test_logo_ciclo_completo(db_ready, negocio_client):
+    _, email, token = _crear_negocio(negocio_client)
     headers = _auth(token)
 
-    resp = client.post(
+    resp = negocio_client.post(
         "/v1/auth/negocio/me/logo",
         headers=headers,
         files={"logo": ("logo.png", _png_bytes(), "image/png")},
@@ -130,7 +120,7 @@ def test_logo_ciclo_completo(db_ready):
     assert resp.status_code == 200
     assert resp.json()["logo_url"] == "/v1/auth/negocio/me/logo"
 
-    logo = client.get("/v1/auth/negocio/me/logo", headers=headers)
+    logo = negocio_client.get("/v1/auth/negocio/me/logo", headers=headers)
     assert logo.status_code == 200
     assert logo.headers["content-type"] == "image/webp"
     assert logo.headers["etag"]
@@ -138,7 +128,7 @@ def test_logo_ciclo_completo(db_ready):
     assert img.format == "WEBP"
     assert img.size == (256, 256)
 
-    login_resp = client.post(
+    login_resp = negocio_client.post(
         "/v1/auth/negocio/login",
         json={"email": email, "password": "negocio-12345678"},
     )
@@ -146,28 +136,28 @@ def test_logo_ciclo_completo(db_ready):
     assert login_resp.json()["cuenta"]["logo_url"] == "/v1/auth/negocio/me/logo"
 
 
-def test_logo_reemplazo_borra_anterior(db_ready):
-    _, email, token = _crear_negocio()
+def test_logo_reemplazo_borra_anterior(db_ready, negocio_client):
+    _, email, token = _crear_negocio(negocio_client)
     headers = _auth(token)
 
-    client.post(
+    negocio_client.post(
         "/v1/auth/negocio/me/logo",
         headers=headers,
         files={"logo": ("a.png", _png_bytes((255, 0, 0)), "image/png")},
     )
-    with SessionLocal() as session:
+    with NegocioSessionLocal() as session:
         from app.models import CuentaNegocio
 
         cuenta = session.query(CuentaNegocio).filter_by(email=email).one()
         old_clave = cuenta.logo_clave
     assert old_clave is not None
 
-    client.post(
+    negocio_client.post(
         "/v1/auth/negocio/me/logo",
         headers=headers,
         files={"logo": ("b.webp", _reg_chip(), "image/webp")},
     )
-    with SessionLocal() as session:
+    with NegocioSessionLocal() as session:
         from app.models import CuentaNegocio
 
         cuenta = session.query(CuentaNegocio).filter_by(email=email).one()
@@ -176,27 +166,27 @@ def test_logo_reemplazo_borra_anterior(db_ready):
     assert get_foto_storage().leer(old_clave) is None
 
 
-def test_logo_borrar_y_404(db_ready):
-    _, _, token = _crear_negocio()
+def test_logo_borrar_y_404(db_ready, negocio_client):
+    _, _, token = _crear_negocio(negocio_client)
     headers = _auth(token)
 
-    client.post(
+    negocio_client.post(
         "/v1/auth/negocio/me/logo",
         headers=headers,
         files={"logo": ("a.webp", _reg_chip(), "image/webp")},
     )
-    resp = client.delete("/v1/auth/negocio/me/logo", headers=headers)
+    resp = negocio_client.delete("/v1/auth/negocio/me/logo", headers=headers)
     assert resp.status_code == 200
     assert resp.json()["logo_url"] is None
 
-    assert client.get("/v1/auth/negocio/me/logo", headers=headers).status_code == 404
+    assert negocio_client.get("/v1/auth/negocio/me/logo", headers=headers).status_code == 404
 
 
-def test_logo_invalido_422(db_ready):
-    _, _, token = _crear_negocio()
+def test_logo_invalido_422(db_ready, negocio_client):
+    _, _, token = _crear_negocio(negocio_client)
     headers = _auth(token)
 
-    resp = client.post(
+    resp = negocio_client.post(
         "/v1/auth/negocio/me/logo",
         headers=headers,
         files={"logo": ("no-imagen.txt", b"esto no es una imagen", "text/plain")},
@@ -205,24 +195,24 @@ def test_logo_invalido_422(db_ready):
     assert resp.json()["code"] == "identity.foto_invalida"
 
 
-def test_logo_requiere_token_negocio(db_ready):
-    resp = client.post(
+def test_logo_requiere_token_negocio(db_ready, negocio_client):
+    resp = negocio_client.post(
         "/v1/auth/negocio/me/logo",
         files={"logo": ("a.webp", _reg_chip(), "image/webp")},
     )
     assert resp.status_code in (401, 403)
-    assert client.get("/v1/auth/negocio/me/logo").status_code in (401, 403)
+    assert negocio_client.get("/v1/auth/negocio/me/logo").status_code in (401, 403)
 
 
-def test_supresion_borra_fichero_logo(db_ready):
-    _, email, token = _crear_negocio()
+def test_supresion_borra_fichero_logo(db_ready, negocio_client):
+    _, email, token = _crear_negocio(negocio_client)
     headers = _auth(token)
-    client.post(
+    negocio_client.post(
         "/v1/auth/negocio/me/logo",
         headers=headers,
         files={"logo": ("a.webp", _reg_chip(), "image/webp")},
     )
-    with SessionLocal() as session:
+    with NegocioSessionLocal() as session:
         from app.models import CuentaNegocio
 
         clave = (
@@ -230,7 +220,7 @@ def test_supresion_borra_fichero_logo(db_ready):
         )
     assert get_foto_storage().leer(clave) is not None
 
-    resp = client.request(
+    resp = negocio_client.request(
         "DELETE",
         "/v1/auth/negocio/me",
         headers=headers,

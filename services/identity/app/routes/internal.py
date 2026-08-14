@@ -1,0 +1,56 @@
+"""Rutas internas servicio-a-servicio (sin auth; red de confianza).
+
+El servicio de negocio llama a ``/internal/camareros/*`` y el de profesionales a
+``/internal/camareros/{id}/establecimientos``. Solo se alcanzan desde el otro
+servicio vía ``CAMAREROS_INTERNAL_URL`` / ``NEGOCIO_INTERNAL_URL``.
+"""
+
+import uuid
+
+from fastapi import APIRouter, status
+from pydantic import BaseModel, Field
+
+from app.errors import CAMARERO_NOT_FOUND, EMAIL_NOT_FOUND, ApiError
+from app.internal import DirectCamarerosInternal, DirectNegocioInternal
+
+camareros_internal_router = APIRouter(prefix="/internal/camareros", tags=["internal"])
+negocio_internal_router = APIRouter(prefix="/internal/camareros", tags=["internal"])
+
+
+class QrVerifyRequest(BaseModel):
+    qr: str = Field(..., min_length=20, max_length=500)
+
+
+@camareros_internal_router.get("/buscar")
+def internal_buscar(email: str) -> dict:
+    perfil = DirectCamarerosInternal().buscar_por_email(email)
+    if perfil is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=EMAIL_NOT_FOUND,
+            detail="No hay un camarero registrado con ese email",
+        )
+    return perfil
+
+
+@camareros_internal_router.get("/{camarero_id}")
+def internal_perfil(camarero_id: uuid.UUID) -> dict:
+    perfil = DirectCamarerosInternal().perfil(camarero_id)
+    if perfil is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=CAMARERO_NOT_FOUND,
+            detail="Camarero no encontrado",
+        )
+    return perfil
+
+
+@camareros_internal_router.post("/qr/verify")
+def internal_verificar_qr(payload: QrVerifyRequest) -> dict:
+    camarero_id = DirectCamarerosInternal().verificar_qr(payload.qr)
+    return {"camarero_id": str(camarero_id)}
+
+
+@negocio_internal_router.get("/{camarero_id}/establecimientos")
+def internal_establecimientos(camarero_id: uuid.UUID) -> list[dict]:
+    return DirectNegocioInternal().establecimientos_de(camarero_id)

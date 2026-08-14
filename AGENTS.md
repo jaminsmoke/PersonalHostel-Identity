@@ -18,7 +18,7 @@ If you are the agent continuing here: read this **entire** file before writing c
 | API | Python 3.12 + FastAPI + Uvicorn |
 | DB | PostgreSQL 16 |
 | Orchestration | Docker Compose |
-| API port | **8080** |
+| API ports | **8080** (camareros) · **8082** (negocio) — dos servicios, dos BD |
 | Postgres port | **5432** (dev machine only) |
 
 `docker compose up --build` is the only supported local path.
@@ -73,7 +73,8 @@ PersonalHosteleriaServer/
 ├── services/identity/        # API FastAPI (identidad, QR, foto, OpenAPI)
 │   ├── Dockerfile
 │   ├── requirements.txt
-│   ├── alembic/              # migraciones (camareros, credenciales, foto, invitaciones, layout)
+│   ├── alembic/              # migraciones BD profesionales (camareros, credenciales, app_config)
+│   ├── alembic_negocio/      # migraciones BD negocio (cuentas, establecimientos, membresías, invitaciones, outbox)
 │   ├── app/                  # main, auth, models, schemas, routes, storage, images
 │   ├── scripts/              # export_openapi.py
 │   └── tests/

@@ -12,7 +12,7 @@ from app.auth import (
     hash_password,
     verify_password,
 )
-from app.db import get_db
+from app.db import get_camarero_db
 from app.errors import (
     CREDENTIAL_REVOKED,
     EMAIL_ALREADY_REGISTERED,
@@ -22,17 +22,16 @@ from app.errors import (
     ApiError,
 )
 from app.images import MAX_INPUT_BYTES, FotoInvalida, normalizar_foto
+from app.internal import get_negocio_internal
 from app.models import (
     Camarero,
     Credencial,
     CredencialEstado,
-    Establecimiento,
-    Membresia,
-    MembresiaEstado,
 )
 from app.schemas import (
     CamareroPerfil,
     ErrorResponse,
+    EstablecimientoMembresiaResponse,
     FotoResponse,
     PerfilUpdateRequest,
     QrResponse,
@@ -42,8 +41,6 @@ from app.schemas import (
     RevocarResponse,
     SupresionRequest,
     SupresionResponse,
-    EstablecimientoResponse,
-    EstablecimientoMembresiaResponse,
 )
 from app.security import build_qr_payload, get_signing_key
 from app.storage import get_foto_storage
@@ -78,7 +75,9 @@ _VALIDATION = {
         status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
     },
 )
-def registrar_camarero(payload: RegistroRequest, db: Session = Depends(get_db)) -> RegistroResponse:
+def registrar_camarero(
+    payload: RegistroRequest, db: Session = Depends(get_camarero_db)
+) -> RegistroResponse:
     camarero = Camarero(
         nombre=payload.nombre.strip(),
         apellidos=payload.apellidos.strip(),
@@ -132,7 +131,7 @@ def me(camarero: Camarero = Depends(get_current_camarero)) -> Camarero:
 def actualizar_me(
     payload: PerfilUpdateRequest,
     camarero: Camarero = Depends(get_current_camarero),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_camarero_db),
 ) -> Camarero:
     camarero.nick = payload.nick.strip()
     db.commit()
@@ -147,26 +146,8 @@ def actualizar_me(
 )
 def mis_establecimientos(
     camarero: Camarero = Depends(get_current_camarero),
-    db: Session = Depends(get_db),
-) -> list[EstablecimientoMembresiaResponse]:
-    rows = (
-        db.query(Establecimiento, Membresia.rol)
-        .join(Membresia, Membresia.establecimiento_id == Establecimiento.id)
-        .filter(
-            Membresia.camarero_id == camarero.id,
-            Membresia.estado == MembresiaEstado.activa,
-        )
-        .all()
-    )
-    return [
-        EstablecimientoMembresiaResponse(
-            id=establecimiento.id,
-            nombre=establecimiento.nombre,
-            cuenta_negocio_id=establecimiento.cuenta_negocio_id,
-            rol=rol.value,
-        )
-        for establecimiento, rol in rows
-    ]
+) -> list[dict]:
+    return get_negocio_internal().establecimientos_de(camarero.id)
 
 
 @router.get(
@@ -179,7 +160,7 @@ def mis_establecimientos(
 )
 def me_qr(
     camarero: Camarero = Depends(get_current_camarero),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_camarero_db),
 ) -> QrResponse:
     credencial = get_credencial_activa(db, camarero.id)
     if credencial is None:
@@ -199,7 +180,7 @@ def me_qr(
 )
 def renovar(
     camarero: Camarero = Depends(get_current_camarero),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_camarero_db),
 ) -> QrResponse:
     now = datetime.now(timezone.utc)
     activas = (
@@ -237,7 +218,7 @@ def renovar(
 def revocar(
     payload: RevocarRequest | None = None,
     camarero: Camarero = Depends(get_current_camarero),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_camarero_db),
 ) -> RevocarResponse:
     credencial = get_credencial_activa(db, camarero.id)
     if credencial is None:
@@ -279,7 +260,7 @@ _NOT_FOUND = {
 async def subir_foto(
     foto: UploadFile = File(...),
     camarero: Camarero = Depends(get_current_camarero),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_camarero_db),
 ) -> FotoResponse:
     data = await foto.read(MAX_INPUT_BYTES + 1)
     try:
@@ -343,7 +324,7 @@ def obtener_foto(camarero: Camarero = Depends(get_current_camarero)) -> Response
 )
 def borrar_foto(
     camarero: Camarero = Depends(get_current_camarero),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_camarero_db),
 ) -> FotoResponse:
     if camarero.foto_clave:
         get_foto_storage().borrar(camarero.foto_clave)
@@ -366,7 +347,7 @@ def borrar_foto(
 def suprimir_cuenta(
     payload: SupresionRequest,
     camarero: Camarero = Depends(get_current_camarero),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_camarero_db),
 ) -> SupresionResponse:
     if camarero.password_hash is None or not verify_password(
         payload.password, camarero.password_hash

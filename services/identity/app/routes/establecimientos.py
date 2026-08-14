@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from typing import cast
 import hashlib
 import os
 import secrets
@@ -13,16 +12,14 @@ from sqlalchemy.orm import Session
 
 from app.auth import (
     get_current_actor,
-    get_current_camarero,
-    get_current_camarero_optional,
+    get_current_camarero_id_optional,
     get_current_cuenta_negocio,
 )
-from app.db import get_db
+from app.db import get_negocio_db
 from app.errors import (
     CAMARERO_NOT_FOUND,
     ESTABLECIMIENTO_NOT_FOUND,
     LAYOUT_NOT_FOUND,
-    CREDENTIAL_INACTIVE,
     EMAIL_NOT_FOUND,
     INVITACION_DUPLICATE,
     INVITACION_EXPIRED,
@@ -31,15 +28,12 @@ from app.errors import (
     INVITACION_USED,
     MEMBERSHIP_DUPLICATE,
     MEMBERSHIP_FORBIDDEN,
-    QR_INVALIDO,
     VALIDATION_ERROR,
     ApiError,
 )
+from app.internal import get_camareros_internal
 from app.models import (
-    Camarero,
     CuentaNegocio,
-    Credencial,
-    CredencialEstado,
     EmailOutbox,
     EmailOutboxEstado,
     Establecimiento,
@@ -63,18 +57,13 @@ from app.schemas import (
     MembresiaCreateRequest,
     MembresiaResponse,
     QrMemberRequest,
-    QrPublicKeyResponse,
 )
 from app.security import (
-    get_session_secret,
-    get_verify_key,
-    parse_and_verify_qr_payload,
+    get_session_secret_env,
     protect_invitation_token,
-    qr_public_key_payload,
 )
 
 router = APIRouter(prefix="/v1/establecimientos", tags=["establecimientos"])
-keys_router = APIRouter(prefix="/v1/keys", tags=["keys"])
 invitations_router = APIRouter(prefix="/v1/invitaciones", tags=["invitaciones"])
 
 _UNAUTHORIZED = {
@@ -109,7 +98,7 @@ def _add_or_reactivate_membership(
     rol: str,
     allow_existing: bool = False,
 ) -> Membresia:
-    if db.get(Camarero, camarero_id) is None:
+    if get_camareros_internal().perfil(camarero_id) is None:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
             code=CAMARERO_NOT_FOUND,
@@ -165,7 +154,7 @@ def _invitation_response(invitation: Invitacion) -> InvitacionResponse:
 def crear_establecimiento(
     payload: EstablecimientoCreateRequest,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> Establecimiento:
     establecimiento = Establecimiento(
         nombre=payload.nombre.strip(), cuenta_negocio_id=cuenta.id
@@ -193,7 +182,7 @@ def crear_establecimiento(
 )
 def mis_establecimientos(
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> list[Establecimiento]:
     return (
         db.query(Establecimiento)
@@ -215,7 +204,7 @@ def mis_establecimientos(
 def obtener_establecimiento(
     establecimiento_id: uuid.UUID,
     actor=Depends(get_current_actor),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> Establecimiento:
     tipo, identidad = actor
     establecimiento = db.get(Establecimiento, establecimiento_id)
@@ -226,7 +215,7 @@ def obtener_establecimiento(
             detail="Establecimiento no encontrado",
         )
     if tipo == "negocio":
-        if cast(CuentaNegocio, identidad).id != establecimiento.cuenta_negocio_id:
+        if identidad != establecimiento.cuenta_negocio_id:
             raise ApiError(
                 status_code=status.HTTP_403_FORBIDDEN,
                 code=MEMBERSHIP_FORBIDDEN,
@@ -237,7 +226,7 @@ def obtener_establecimiento(
             db.query(Membresia)
             .filter_by(
                 establecimiento_id=establecimiento.id,
-                camarero_id=cast(Camarero, identidad).id,
+                camarero_id=identidad,
                 estado=MembresiaEstado.activa,
             )
             .one_or_none()
@@ -265,7 +254,7 @@ def guardar_layout(
     establecimiento_id: uuid.UUID,
     payload: LayoutUpdateRequest,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> LayoutEstablecimiento:
     """Copia de respaldo del layout del mapa. Solo la cuenta dueña."""
     _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
@@ -305,7 +294,7 @@ def guardar_layout(
 def obtener_layout(
     establecimiento_id: uuid.UUID,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> LayoutEstablecimiento:
     """Devuelve la copia de respaldo del layout del mapa. Solo la cuenta dueña."""
     _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
@@ -334,7 +323,7 @@ def añadir_miembro(
     establecimiento_id: uuid.UUID,
     payload: MembresiaCreateRequest,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> Membresia:
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     membership = _add_or_reactivate_membership(
@@ -353,11 +342,6 @@ def añadir_miembro(
     return membership
 
 
-@keys_router.get("/qr", response_model=QrPublicKeyResponse)
-def obtener_clave_publica_qr(db: Session = Depends(get_db)) -> dict[str, str]:
-    return qr_public_key_payload(db)
-
-
 @router.post(
     "/{establecimiento_id}/miembros/qr",
     response_model=MembresiaResponse,
@@ -373,28 +357,10 @@ def añadir_miembro_por_qr(
     establecimiento_id: uuid.UUID,
     payload: QrMemberRequest,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> Membresia:
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
-    parsed = parse_and_verify_qr_payload(payload.qr, get_verify_key(db))
-    if parsed is None:
-        raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            code=QR_INVALIDO,
-            detail="El QR no es válido",
-        )
-    camarero_id, credencial_id = parsed
-    credencial = db.get(Credencial, credencial_id)
-    if (
-        credencial is None
-        or credencial.camarero_id != camarero_id
-        or credencial.estado != CredencialEstado.activa
-    ):
-        raise ApiError(
-            status_code=status.HTTP_409_CONFLICT,
-            code=CREDENTIAL_INACTIVE,
-            detail="La credencial del QR no está activa",
-        )
+    camarero_id = get_camareros_internal().verificar_qr(payload.qr)
     membership = _add_or_reactivate_membership(
         db, establecimiento, camarero_id, payload.rol
     )
@@ -416,10 +382,10 @@ def buscar_camarero(
     establecimiento_id: uuid.UUID,
     email: EmailStr,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
-    db: Session = Depends(get_db),
-) -> Camarero:
+    db: Session = Depends(get_negocio_db),
+) -> dict:
     _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
-    camarero = db.query(Camarero).filter_by(email=str(email).lower()).one_or_none()
+    camarero = get_camareros_internal().buscar_por_email(str(email).lower())
     if camarero is None:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -444,22 +410,23 @@ def crear_invitacion(
     establecimiento_id: uuid.UUID,
     payload: InvitacionCreateRequest,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> InvitacionResponse:
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     email = str(payload.email).lower()
-    camarero = db.query(Camarero).filter_by(email=email).one_or_none()
+    camarero = get_camareros_internal().buscar_por_email(email)
     if camarero is None:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
             code=EMAIL_NOT_FOUND,
             detail="No hay un camarero registrado con ese email",
         )
+    camarero_id = uuid.UUID(camarero["id"])
     active_membership = (
         db.query(Membresia)
         .filter_by(
             establecimiento_id=establecimiento.id,
-            camarero_id=camarero.id,
+            camarero_id=camarero_id,
             estado=MembresiaEstado.activa,
         )
         .one_or_none()
@@ -505,7 +472,7 @@ def crear_invitacion(
         tipo="invitacion_establecimiento",
         destinatario=email,
         payload={
-            "token_encrypted": protect_invitation_token(token, get_session_secret(db)),
+            "token_encrypted": protect_invitation_token(token, get_session_secret_env()),
             "invitation_url_base": os.environ.get(
                 "INVITATION_URL_BASE", "http://localhost:8081/invitaciones"
             ),
@@ -532,7 +499,7 @@ def revocar_invitacion(
     establecimiento_id: uuid.UUID,
     invitacion_id: uuid.UUID,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> InvitacionResponse:
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     invitation = (
@@ -566,8 +533,8 @@ def revocar_invitacion(
 )
 def aceptar_invitacion(
     token: str,
-    camarero: Camarero | None = Depends(get_current_camarero_optional),
-    db: Session = Depends(get_db),
+    camarero_id: uuid.UUID | None = Depends(get_current_camarero_id_optional),
+    db: Session = Depends(get_negocio_db),
 ) -> InvitacionAcceptResponse:
     token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
     invitation = db.query(Invitacion).filter_by(token_hash=token_hash).one_or_none()
@@ -592,20 +559,18 @@ def aceptar_invitacion(
             code=INVITACION_EXPIRED,
             detail="La invitación ha expirado",
         )
-    if camarero is None:
-        camarero = (
-            db.query(Camarero)
-            .filter(func.lower(Camarero.email) == invitation.email_objetivo.lower())
-            .one_or_none()
-        )
-        if camarero is None:
+    if camarero_id is None:
+        perfil = get_camareros_internal().buscar_por_email(invitation.email_objetivo)
+        if perfil is None:
             raise ApiError(
                 status_code=status.HTTP_404_NOT_FOUND,
                 code=CAMARERO_NOT_FOUND,
                 detail="No existe una cuenta para el email de la invitación",
             )
+        camarero_id = uuid.UUID(perfil["id"])
     else:
-        if camarero.email.lower() != invitation.email_objetivo:
+        perfil = get_camareros_internal().perfil(camarero_id)
+        if perfil is None or perfil["email"].lower() != invitation.email_objetivo:
             raise ApiError(
                 status_code=status.HTTP_403_FORBIDDEN,
                 code=INVITACION_UNAUTHORIZED,
@@ -613,7 +578,7 @@ def aceptar_invitacion(
             )
     establecimiento = db.get(Establecimiento, invitation.establecimiento_id)
     membership = _add_or_reactivate_membership(
-        db, establecimiento, camarero.id, invitation.rol.value, allow_existing=True
+        db, establecimiento, camarero_id, invitation.rol.value, allow_existing=True
     )
     invitation.estado = InvitacionEstado.aceptada
     invitation.aceptada_en = now
@@ -634,7 +599,7 @@ def aceptar_invitacion(
 def listar_miembros(
     establecimiento_id: uuid.UUID,
     actor=Depends(get_current_actor),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> list[Membresia]:
     establecimiento = db.get(Establecimiento, establecimiento_id)
     if establecimiento is None:
@@ -644,13 +609,13 @@ def listar_miembros(
             detail="Establecimiento no encontrado",
         )
     tipo, identidad = actor
-    autorizado = tipo == "negocio" and cast(CuentaNegocio, identidad).id == establecimiento.cuenta_negocio_id
+    autorizado = tipo == "negocio" and identidad == establecimiento.cuenta_negocio_id
     if tipo == "camarero" and not autorizado:
         autorizado = (
             db.query(Membresia)
             .filter_by(
                 establecimiento_id=establecimiento.id,
-                camarero_id=cast(Camarero, identidad).id,
+                camarero_id=identidad,
                 estado=MembresiaEstado.activa,
             )
             .count()
@@ -683,7 +648,7 @@ def revocar_miembro(
     establecimiento_id: uuid.UUID,
     camarero_id: uuid.UUID,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_negocio_db),
 ) -> Membresia:
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     membership = (
@@ -698,8 +663,6 @@ def revocar_miembro(
             detail="Membresía no encontrada",
         )
     membership.estado = MembresiaEstado.revocada
-    from datetime import datetime, timezone
-
     membership.revocada_en = datetime.now(timezone.utc)
     db.commit()
     db.refresh(membership)

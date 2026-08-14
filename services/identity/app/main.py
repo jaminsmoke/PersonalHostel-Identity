@@ -1,99 +1,36 @@
-import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, status
-from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from sqlalchemy import text
 
-from app.db import engine
-from app.errors import VALIDATION_ERROR, ApiError
+from app.db import camarero_engine
+from app.http import register_error_handlers
 from app.routes.auth import router as auth_router
 from app.routes.camareros import router as camareros_router
-from app.routes.establecimientos import (
-    invitations_router,
-    keys_router,
-    router as establecimientos_router,
-)
-
-CAMPOS_LEGIBLES = {
-    "nombre": "nombre",
-    "apellidos": "apellidos",
-    "email": "email",
-    "telefono": "telefono",
-    "password": "contraseña",
-    "body": "cuerpo de la petición",
-}
-
-
-def _msg_espanol(err: dict) -> str:
-    loc = err.get("loc", [])
-    campo = str(loc[-1]) if loc else "?"
-    campo = CAMPOS_LEGIBLES.get(campo, campo)
-    tipo = err.get("type", "")
-    if tipo == "missing":
-        return f"El campo '{campo}' es obligatorio"
-    if tipo == "string_too_short":
-        return f"El campo '{campo}' no puede estar vacío"
-    if tipo == "string_too_long":
-        return f"El campo '{campo}' es demasiado largo"
-    if tipo == "value_error" or "email" in tipo:
-        return f"El campo '{campo}' no es un email válido"
-    return f"Valor inválido en el campo '{campo}'"
+from app.routes.internal import camareros_internal_router
+from app.routes.keys import router as keys_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    with engine.connect() as conn:
+    with camarero_engine.connect() as conn:
         conn.execute(text("SELECT 1"))
     yield
 
 
 app = FastAPI(
-    title="Personal Hostelería — Identity",
+    title="Personal Hostelería — Identity (profesionales)",
     version="0.2.0",
-    description="Identidad profesional y cuentas de negocio: ver AGENTS.md.",
+    description="Identidad profesional (camareros) y credenciales/QR: ver AGENTS.md.",
     lifespan=lifespan,
 )
 
-_web_origins = [
-    o.strip()
-    for o in os.environ.get("IDENTITY_WEB_ORIGIN", "http://localhost:8081").split(",")
-    if o.strip()
-]
-if _web_origins:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=_web_origins,
-        allow_methods=["GET", "POST", "PUT", "DELETE"],
-        allow_headers=["*"],
-        allow_credentials=False,
-    )
+register_error_handlers(app)
 
 app.include_router(camareros_router)
 app.include_router(auth_router)
-app.include_router(establecimientos_router)
 app.include_router(keys_router)
-app.include_router(invitations_router)
-
-
-@app.exception_handler(ApiError)
-async def api_error_handler(request: Request, exc: ApiError):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail, "code": exc.code},
-        headers=exc.headers,
-    )
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    mensajes = [_msg_espanol(err) for err in exc.errors()]
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": mensajes, "code": VALIDATION_ERROR},
-    )
+app.include_router(camareros_internal_router)
 
 
 @app.get("/health")
@@ -104,7 +41,7 @@ def health() -> dict[str, bool]:
 @app.get("/v1/meta")
 def meta() -> dict[str, str]:
     return {
-        "service": "personal-hosteleria-identity",
+        "service": "personal-hosteleria-identity-camareros",
         "role": "identity",
         "status": "schema",
     }

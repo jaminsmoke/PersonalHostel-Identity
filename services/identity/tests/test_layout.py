@@ -1,19 +1,9 @@
-import os
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
-
-from app.db import SessionLocal  # noqa: E402
-from app.main import app  # noqa: E402
-
-client = TestClient(app)
+from app.db import NegocioSessionLocal
 
 _LAYOUT_SALAS = [
     {"id": "sala-barra", "nombre": "Barra", "orden": 1},
@@ -39,7 +29,7 @@ _LAYOUT_MESAS = [
 
 @pytest.fixture(scope="module")
 def db_ready():
-    with SessionLocal() as session:
+    with NegocioSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
@@ -48,9 +38,9 @@ def _email(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4()}@example.com"
 
 
-def _crear_negocio_con_establecimiento() -> tuple[str, str, str, str]:
+def _crear_negocio_con_establecimiento(negocio_client) -> tuple[str, str, str, str]:
     email = _email("layout-negocio")
-    response = client.post(
+    response = negocio_client.post(
         "/v1/auth/negocio/registro",
         json={
             "nombre_mostrar": "Bar Layout",
@@ -60,14 +50,14 @@ def _crear_negocio_con_establecimiento() -> tuple[str, str, str, str]:
     )
     assert response.status_code == 201
     negocio_id = response.json()["id"]
-    login = client.post(
+    login = negocio_client.post(
         "/v1/auth/negocio/login",
         json={"email": email, "password": "negocio-12345678"},
     )
     assert login.status_code == 200
     token = login.json()["token"]
     headers = {"Authorization": f"Bearer {token}"}
-    created = client.post(
+    created = negocio_client.post(
         "/v1/establecimientos", headers=headers, json={"nombre": "Bar Layout"}
     )
     assert created.status_code == 201
@@ -75,9 +65,9 @@ def _crear_negocio_con_establecimiento() -> tuple[str, str, str, str]:
     return negocio_id, token, establecimiento_id, email
 
 
-def _crear_camarero() -> tuple[str, str]:
+def _crear_camarero(camarero_client) -> tuple[str, str]:
     email = _email("layout-camarero")
-    response = client.post(
+    response = camarero_client.post(
         "/v1/camareros/registro",
         json={
             "nombre": "Ana",
@@ -87,7 +77,7 @@ def _crear_camarero() -> tuple[str, str]:
         },
     )
     assert response.status_code == 201
-    login = client.post(
+    login = camarero_client.post(
         "/v1/auth/login",
         json={"email": email, "password": "pass-12345678"},
     )
@@ -95,11 +85,11 @@ def _crear_camarero() -> tuple[str, str]:
     return login.json()["token"], email
 
 
-def test_put_layout_crea_y_get_devuelve_fiel(db_ready):
-    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento()
+def test_put_layout_crea_y_get_devuelve_fiel(db_ready, negocio_client):
+    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
     headers = {"Authorization": f"Bearer {token}"}
 
-    put = client.put(
+    put = negocio_client.put(
         f"/v1/establecimientos/{establecimiento_id}/layout",
         headers=headers,
         json={"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS},
@@ -112,7 +102,7 @@ def test_put_layout_crea_y_get_devuelve_fiel(db_ready):
     assert put_data["mesas"] == _LAYOUT_MESAS
     assert put_data["updated_at"]
 
-    get = client.get(
+    get = negocio_client.get(
         f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers
     )
     assert get.status_code == 200
@@ -123,11 +113,11 @@ def test_put_layout_crea_y_get_devuelve_fiel(db_ready):
     assert get_data["mesas"] == _LAYOUT_MESAS
 
 
-def test_put_layout_sobrescribe_con_version_incremental(db_ready):
-    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento()
+def test_put_layout_sobrescribe_con_version_incremental(db_ready, negocio_client):
+    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
     headers = {"Authorization": f"Bearer {token}"}
 
-    first = client.put(
+    first = negocio_client.put(
         f"/v1/establecimientos/{establecimiento_id}/layout",
         headers=headers,
         json={"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS},
@@ -152,7 +142,7 @@ def test_put_layout_sobrescribe_con_version_incremental(db_ready):
             "reservaActivaId": None,
         },
     ]
-    second = client.put(
+    second = negocio_client.put(
         f"/v1/establecimientos/{establecimiento_id}/layout",
         headers=headers,
         json={"salas": _LAYOUT_SALAS, "mesas": nuevo_mesas},
@@ -161,29 +151,29 @@ def test_put_layout_sobrescribe_con_version_incremental(db_ready):
     assert second.json()["version"] == 2
     assert second.json()["mesas"] == nuevo_mesas
 
-    get = client.get(
+    get = negocio_client.get(
         f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers
     )
     assert get.json()["version"] == 2
     assert get.json()["mesas"] == nuevo_mesas
 
 
-def test_get_layout_sin_snapshot_404(db_ready):
-    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento()
+def test_get_layout_sin_snapshot_404(db_ready, negocio_client):
+    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
     headers = {"Authorization": f"Bearer {token}"}
 
-    get = client.get(
+    get = negocio_client.get(
         f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers
     )
     assert get.status_code == 404
     assert get.json()["code"] == "identity.layout_no_encontrado"
 
 
-def test_put_layout_payload_invalido_422(db_ready):
-    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento()
+def test_put_layout_payload_invalido_422(db_ready, negocio_client):
+    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
     headers = {"Authorization": f"Bearer {token}"}
 
-    sin_salas = client.put(
+    sin_salas = negocio_client.put(
         f"/v1/establecimientos/{establecimiento_id}/layout",
         headers=headers,
         json={"mesas": _LAYOUT_MESAS},
@@ -191,7 +181,7 @@ def test_put_layout_payload_invalido_422(db_ready):
     assert sin_salas.status_code == 422
     assert sin_salas.json()["code"] == "identity.validation_error"
 
-    no_listas = client.put(
+    no_listas = negocio_client.put(
         f"/v1/establecimientos/{establecimiento_id}/layout",
         headers=headers,
         json={"salas": {"no": "es lista"}, "mesas": _LAYOUT_MESAS},
@@ -199,8 +189,7 @@ def test_put_layout_payload_invalido_422(db_ready):
     assert no_listas.status_code == 422
     assert no_listas.json()["code"] == "identity.validation_error"
 
-    body = {"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS}
-    gigante = client.put(
+    gigante = negocio_client.put(
         f"/v1/establecimientos/{establecimiento_id}/layout",
         headers=headers,
         json={"salas": [{"relleno": "x" * 1_200_000}], "mesas": []},
@@ -209,51 +198,51 @@ def test_put_layout_payload_invalido_422(db_ready):
     assert gigante.json()["code"] == "identity.validation_error"
 
 
-def test_layout_requiere_cuenta_negocio(db_ready):
-    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento()
+def test_layout_requiere_cuenta_negocio(db_ready, camarero_client, negocio_client):
+    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
     headers = {"Authorization": f"Bearer {token}"}
     payload = {"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS}
 
-    sin_token = client.put(
+    sin_token = negocio_client.put(
         f"/v1/establecimientos/{establecimiento_id}/layout", json=payload
     )
     assert sin_token.status_code == 401
 
-    camarero_token, _ = _crear_camarero()
+    camarero_token, _ = _crear_camarero(camarero_client)
     camarero_headers = {"Authorization": f"Bearer {camarero_token}"}
-    camarero_put = client.put(
+    camarero_put = negocio_client.put(
         f"/v1/establecimientos/{establecimiento_id}/layout",
         headers=camarero_headers,
         json=payload,
     )
     assert camarero_put.status_code == 401
 
-    _, otra_token, otro_establecimiento_id, _ = _crear_negocio_con_establecimiento()
+    _, otra_token, otro_establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
     otra_headers = {"Authorization": f"Bearer {otra_token}"}
-    otro_put = client.put(
+    otro_put = negocio_client.put(
         f"/v1/establecimientos/{establecimiento_id}/layout",
         headers=otra_headers,
         json=payload,
     )
     assert otro_put.status_code == 403
-    otro_get = client.get(
+    otro_get = negocio_client.get(
         f"/v1/establecimientos/{establecimiento_id}/layout",
         headers=otra_headers,
     )
     assert otro_get.status_code == 403
 
 
-def test_layout_de_otro_negocio_no_se_ve(db_ready):
-    _, token_a, establecimiento_a, _ = _crear_negocio_con_establecimiento()
+def test_layout_de_otro_negocio_no_se_ve(db_ready, negocio_client):
+    _, token_a, establecimiento_a, _ = _crear_negocio_con_establecimiento(negocio_client)
     headers_a = {"Authorization": f"Bearer {token_a}"}
-    client.put(
+    negocio_client.put(
         f"/v1/establecimientos/{establecimiento_a}/layout",
         headers=headers_a,
         json={"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS},
     )
-    _, token_b, _, _ = _crear_negocio_con_establecimiento()
+    _, token_b, _, _ = _crear_negocio_con_establecimiento(negocio_client)
     headers_b = {"Authorization": f"Bearer {token_b}"}
-    get = client.get(
+    get = negocio_client.get(
         f"/v1/establecimientos/{establecimiento_a}/layout", headers=headers_b
     )
     assert get.status_code == 403
