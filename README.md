@@ -159,8 +159,9 @@ La cuenta de negocio usa JWT con tipo `negocio`, independiente del JWT de camare
 
 Rutas principales:
 
-- `POST /v1/auth/negocio/registro` y `POST /v1/auth/negocio/login` → alta y sesión de la cuenta de negocio.
-- `DELETE /v1/auth/negocio/me` → supresión de cuenta y establecimientos, sin borrar camareros.
+- `POST /v1/auth/negocio/registro` y `POST /v1/auth/negocio/login` → alta y sesión de la cuenta de negocio. El registro acepta `tipo_establecimiento` opcional del catálogo `bar | restaurante | cafeteria | pub | copas` (otro valor → `422 identity.validation_error`); el login devuelve `cuenta` con `tipo_establecimiento` y `logo_url`.
+- `POST /v1/auth/negocio/me/logo` (multipart, campo `logo`) → sube/reemplaza el logo (normalizado a 256×256 WebP, máx. 2 MB). `GET /v1/auth/negocio/me/logo` lo sirve con ETag/cache; `DELETE` lo borra. Sin logo → `404 identity.foto_inexistente`; fichero inválido → `422 identity.foto_invalida`. Exigen token de negocio.
+- `DELETE /v1/auth/negocio/me` → supresión de cuenta y establecimientos, sin borrar camareros; borra también el fichero del logo (GDPR).
 - `POST /v1/establecimientos` y `GET /v1/establecimientos/mios` → crear y listar establecimientos propios.
 - `GET /v1/establecimientos/{id}` → consulta para la cuenta titular o un miembro activo.
 - `POST/GET/DELETE /v1/establecimientos/{id}/miembros...` → gestionar membresías.

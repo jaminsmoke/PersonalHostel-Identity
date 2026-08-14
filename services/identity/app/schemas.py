@@ -109,6 +109,8 @@ class CuentaNegocioPerfil(BaseModel):
     id: uuid.UUID
     email: str
     nombre_mostrar: str
+    tipo_establecimiento: str | None = None
+    logo_url: str | None = None
     camarero_vinculado_id: uuid.UUID | None = None
 
 
@@ -116,7 +118,16 @@ class RegistroNegocioRequest(BaseModel):
     nombre_mostrar: str = Field(..., min_length=1, max_length=200)
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
+    tipo_establecimiento: str | None = Field(
+        default=None,
+        pattern="^(bar|restaurante|cafeteria|pub|copas)$",
+        description="Tipo de establecimiento del catálogo canónico.",
+    )
     camarero_vinculado_id: uuid.UUID | None = None
+
+
+class LogoNegocioResponse(BaseModel):
+    logo_url: str | None
 
 
 class RegistroNegocioResponse(BaseModel):
