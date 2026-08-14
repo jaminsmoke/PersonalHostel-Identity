@@ -13,6 +13,7 @@ class RegistroRequest(BaseModel):
     email: EmailStr = Field(..., examples=["ana@example.com"])
     telefono: str | None = Field(default=None, max_length=32, examples=["+34600000000"])
     password: str = Field(..., min_length=8, max_length=128, examples=["contraseña-mín-8"])
+    nick: str | None = Field(default=None, min_length=1, max_length=40, examples=["Anita"])
 
 
 class RegistroResponse(BaseModel):
@@ -35,6 +36,13 @@ class CamareroPerfil(BaseModel):
     email: str = Field(..., examples=["ana@example.com"])
     telefono: str | None = Field(default=None, examples=["+34600000000"])
     foto_url: str | None = Field(default=None, examples=["/v1/camareros/me/foto"])
+    nick: str | None = Field(default=None, examples=["Anita"])
+
+
+class PerfilUpdateRequest(BaseModel):
+    """Campos editables de la cuenta desde Commander (no desde Bar)."""
+
+    nick: str = Field(..., min_length=1, max_length=40, examples=["Anita"])
 
 
 class LoginRequest(BaseModel):
@@ -169,10 +177,13 @@ class QrMemberRequest(BaseModel):
 
 
 class CamareroSearchResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     nombre: str
     apellidos: str
     email: str
+    nick: str | None = None
 
 
 class InvitacionCreateRequest(BaseModel):

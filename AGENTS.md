@@ -47,7 +47,7 @@ Kanban de producto (Commander): ítem Detectado *Sala LAN: Personal Bar como nod
 
 ## Modelo de identidad (acordado)
 
-1. El profesional **se registra** con nombre, apellidos, foto y otros datos.
+1. El profesional **se registra** con nombre, apellidos, **nick** (mote visible en barra/colas), foto y otros datos. El nick lo gestiona Commander; Bar lo consume en referencias coloquiales y puede mostrar el resto de la ficha en la gestión del negocio.
 2. El servidor emite una **clave / QR permanente** (equivalente a un DNI de oficio). Vive en **nuestra** base de datos, no solo en el móvil.
 3. Desinstalar e instalar Commander o Bar + **login** recupera la misma identidad y el mismo QR.
 4. **Revocación / renovación** posibles; si no, la clave no cambia.

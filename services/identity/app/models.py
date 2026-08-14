@@ -59,6 +59,7 @@ class Camarero(Base):
     )
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     apellidos: Mapped[str] = mapped_column(String(200), nullable=False)
+    nick: Mapped[str | None] = mapped_column(String(40))
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
     telefono: Mapped[str | None] = mapped_column(String(32), unique=True)
     password_hash: Mapped[str | None] = mapped_column(String(255))

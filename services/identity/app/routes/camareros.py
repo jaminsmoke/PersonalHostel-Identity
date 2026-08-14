@@ -34,6 +34,7 @@ from app.schemas import (
     CamareroPerfil,
     ErrorResponse,
     FotoResponse,
+    PerfilUpdateRequest,
     QrResponse,
     RegistroRequest,
     RegistroResponse,
@@ -81,6 +82,7 @@ def registrar_camarero(payload: RegistroRequest, db: Session = Depends(get_db)) 
     camarero = Camarero(
         nombre=payload.nombre.strip(),
         apellidos=payload.apellidos.strip(),
+        nick=payload.nick.strip() if payload.nick else None,
         email=payload.email.lower(),
         telefono=payload.telefono.strip() if payload.telefono else None,
         password_hash=hash_password(payload.password),
@@ -119,6 +121,22 @@ def registrar_camarero(payload: RegistroRequest, db: Session = Depends(get_db)) 
     responses={status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED},
 )
 def me(camarero: Camarero = Depends(get_current_camarero)) -> Camarero:
+    return camarero
+
+
+@router.patch(
+    "/me",
+    response_model=CamareroPerfil,
+    responses={status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED},
+)
+def actualizar_me(
+    payload: PerfilUpdateRequest,
+    camarero: Camarero = Depends(get_current_camarero),
+    db: Session = Depends(get_db),
+) -> Camarero:
+    camarero.nick = payload.nick.strip()
+    db.commit()
+    db.refresh(camarero)
     return camarero
 
 
