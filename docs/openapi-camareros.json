@@ -216,6 +216,72 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "InvitacionAcceptResponse": {
+        "properties": {
+          "invitacion_id": {
+            "format": "uuid",
+            "title": "Invitacion Id",
+            "type": "string"
+          },
+          "membresia": {
+            "$ref": "#/components/schemas/MembresiaResponse"
+          }
+        },
+        "required": [
+          "invitacion_id",
+          "membresia"
+        ],
+        "title": "InvitacionAcceptResponse",
+        "type": "object"
+      },
+      "InvitacionCamareroResponse": {
+        "description": "Invitación dirigida al camarero, con nombre del establecimiento.",
+        "properties": {
+          "creada_en": {
+            "format": "date-time",
+            "title": "Creada En",
+            "type": "string"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "establecimiento_nombre": {
+            "title": "Establecimiento Nombre",
+            "type": "string"
+          },
+          "estado": {
+            "title": "Estado",
+            "type": "string"
+          },
+          "expira_en": {
+            "format": "date-time",
+            "title": "Expira En",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "rol": {
+            "title": "Rol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "establecimiento_id",
+          "establecimiento_nombre",
+          "rol",
+          "estado",
+          "expira_en",
+          "creada_en"
+        ],
+        "title": "InvitacionCamareroResponse",
+        "type": "object"
+      },
       "LoginRequest": {
         "description": "Credenciales para recuperar la sesión y el QR tras reinstalar.",
         "properties": {
@@ -269,6 +335,42 @@
           "qr"
         ],
         "title": "LoginResponse",
+        "type": "object"
+      },
+      "MembresiaResponse": {
+        "properties": {
+          "camarero_id": {
+            "format": "uuid",
+            "title": "Camarero Id",
+            "type": "string"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "estado": {
+            "title": "Estado",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "rol": {
+            "title": "Rol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "establecimiento_id",
+          "camarero_id",
+          "rol",
+          "estado"
+        ],
+        "title": "MembresiaResponse",
         "type": "object"
       },
       "PerfilUpdateRequest": {
@@ -1124,6 +1226,144 @@
           }
         ],
         "summary": "Subir Foto",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/me/invitaciones": {
+      "get": {
+        "operationId": "mis_invitaciones_v1_camareros_me_invitaciones_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvitacionCamareroResponse"
+                  },
+                  "title": "Response Mis Invitaciones V1 Camareros Me Invitaciones Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mis Invitaciones",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/me/invitaciones/{invitacion_id}/aceptar": {
+      "post": {
+        "operationId": "aceptar_invitacion_me_v1_camareros_me_invitaciones__invitacion_id__aceptar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invitacion Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitacionAcceptResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Aceptar Invitacion Me",
         "tags": [
           "camareros"
         ]

@@ -54,3 +54,13 @@ def internal_verificar_qr(payload: QrVerifyRequest) -> dict:
 @negocio_internal_router.get("/{camarero_id}/establecimientos")
 def internal_establecimientos(camarero_id: uuid.UUID) -> list[dict]:
     return DirectNegocioInternal().establecimientos_de(camarero_id)
+
+
+@negocio_internal_router.get("/{camarero_id}/invitaciones")
+def internal_invitaciones(camarero_id: uuid.UUID) -> list[dict]:
+    return DirectNegocioInternal().invitaciones_de(camarero_id)
+
+
+@negocio_internal_router.post("/{camarero_id}/invitaciones/{invitacion_id}/aceptar")
+def internal_aceptar_invitacion(camarero_id: uuid.UUID, invitacion_id: uuid.UUID) -> dict:
+    return DirectNegocioInternal().aceptar_invitacion(invitacion_id, camarero_id)

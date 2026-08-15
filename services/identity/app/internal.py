@@ -74,6 +74,12 @@ class NegocioInternal(Protocol):
     def establecimientos_de(self, camarero_id: uuid.UUID) -> list[dict]:
         """Establecimientos activos del camarero con su rol."""
 
+    def invitaciones_de(self, camarero_id: uuid.UUID) -> list[dict]:
+        """Invitaciones dirigidas al email del camarero."""
+
+    def aceptar_invitacion(self, invitacion_id: uuid.UUID, camarero_id: uuid.UUID) -> dict:
+        """Acepta una invitación por id; devuelve la membresía resultante."""
+
 
 class DirectCamarerosInternal:
     def buscar_por_email(self, email: str) -> dict | None:
@@ -133,6 +139,16 @@ class DirectNegocioInternal:
             for e, rol in rows
         ]
 
+    def invitaciones_de(self, camarero_id: uuid.UUID) -> list[dict]:
+        from app.membresias import listar_invitaciones
+
+        return listar_invitaciones(camarero_id)
+
+    def aceptar_invitacion(self, invitacion_id: uuid.UUID, camarero_id: uuid.UUID) -> dict:
+        from app.membresias import aceptar_invitacion_por_id
+
+        return aceptar_invitacion_por_id(camarero_id, invitacion_id)
+
 
 def _raise_from_response(response: httpx.Response, fallback_code: str) -> None:
     try:
@@ -187,18 +203,33 @@ class HttpNegocioInternal:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url.rstrip("/")
 
-    def establecimientos_de(self, camarero_id: uuid.UUID) -> list[dict]:
+    def _request(self, method: str, path: str) -> httpx.Response:
         try:
-            response = httpx.get(
-                f"{self.base_url}/internal/camareros/{camarero_id}/establecimientos",
-                timeout=TIMEOUT,
-            )
+            return httpx.request(method, f"{self.base_url}{path}", timeout=TIMEOUT)
         except httpx.HTTPError as exc:
             raise ApiError(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 code="identity.internal_unavailable",
                 detail="Servicio de negocio no disponible",
             ) from exc
+
+    def establecimientos_de(self, camarero_id: uuid.UUID) -> list[dict]:
+        response = self._request("GET", f"/internal/camareros/{camarero_id}/establecimientos")
+        if response.status_code != 200:
+            _raise_from_response(response, "identity.internal_error")
+        return response.json()
+
+    def invitaciones_de(self, camarero_id: uuid.UUID) -> list[dict]:
+        response = self._request("GET", f"/internal/camareros/{camarero_id}/invitaciones")
+        if response.status_code != 200:
+            _raise_from_response(response, "identity.internal_error")
+        return response.json()
+
+    def aceptar_invitacion(self, invitacion_id: uuid.UUID, camarero_id: uuid.UUID) -> dict:
+        response = self._request(
+            "POST",
+            f"/internal/camareros/{camarero_id}/invitaciones/{invitacion_id}/aceptar",
+        )
         if response.status_code != 200:
             _raise_from_response(response, "identity.internal_error")
         return response.json()

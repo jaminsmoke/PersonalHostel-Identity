@@ -232,6 +232,18 @@ class InvitacionAcceptResponse(BaseModel):
     membresia: MembresiaResponse
 
 
+class InvitacionCamareroResponse(BaseModel):
+    """Invitación dirigida al camarero, con nombre del establecimiento."""
+
+    id: uuid.UUID
+    establecimiento_id: uuid.UUID
+    establecimiento_nombre: str
+    rol: str
+    estado: str
+    expira_en: datetime
+    creada_en: datetime
+
+
 class LayoutUpdateRequest(BaseModel):
     """Snapshot del layout que sube Bar: salas y mesas tal cual las serializa.
     Estructura interna no validada (copia de respaldo; Bar es la fuente)."""
