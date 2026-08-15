@@ -10,10 +10,9 @@ os.environ.setdefault(
     "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
 )
 
+from app.db import SessionLocal  # noqa: E402
 from app.main import app  # noqa: E402
 from app.security import get_verify_key, verify_qr_payload  # noqa: E402
-
-from app.db import SessionLocal  # noqa: E402
 
 client = TestClient(app)
 
@@ -88,7 +87,12 @@ def test_registro_email_duplicado(db_ready):
 def test_registro_email_invalido(db_ready):
     resp = client.post(
         "/v1/camareros/registro",
-        json={"nombre": "Ana", "apellidos": "García", "email": "no-es-email", "password": "pass-12345678"},
+        json={
+            "nombre": "Ana",
+            "apellidos": "García",
+            "email": "no-es-email",
+            "password": "pass-12345678",
+        },
     )
     assert resp.status_code == 422
     detail = resp.json()["detail"]

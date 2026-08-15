@@ -71,7 +71,9 @@ def test_suprimir_cuenta_ok(db_ready):
     _crear(email)
     headers = _auth(email)
 
-    resp = client.request("DELETE", "/v1/camareros/me", headers=headers, json={"password": "pass-12345678"})
+    resp = client.request(
+        "DELETE", "/v1/camareros/me", headers=headers, json={"password": "pass-12345678"}
+    )
     assert resp.status_code == 200
     assert resp.json()["status"] == "borrada"
 
@@ -101,7 +103,9 @@ def test_suprimir_borra_foto_y_credenciales(db_ready):
         assert foto_clave is not None
         assert session.query(Credencial).filter_by(camarero_id=cam.id).count() >= 1
 
-    resp = client.request("DELETE", "/v1/camareros/me", headers=headers, json={"password": "pass-12345678"})
+    resp = client.request(
+        "DELETE", "/v1/camareros/me", headers=headers, json={"password": "pass-12345678"}
+    )
     assert resp.status_code == 200
 
     # La foto desaparece del volumen
@@ -117,7 +121,9 @@ def test_suprimir_password_incorrecta(db_ready):
     _crear(email)
     headers = _auth(email)
 
-    resp = client.request("DELETE", "/v1/camareros/me", headers=headers, json={"password": "incorrecta"})
+    resp = client.request(
+        "DELETE", "/v1/camareros/me", headers=headers, json={"password": "incorrecta"}
+    )
     assert resp.status_code == 401
     assert resp.json()["code"] == "identity.password_incorrecta"
 

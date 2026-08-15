@@ -1,7 +1,7 @@
 """Catálogo canónico y endpoints de sincronización para mirrors offline."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
@@ -120,7 +120,7 @@ def obtener_catalogo(
     return {
         "establecimiento_id": establishment.id,
         "revision": establishment.sync_revision,
-        "server_time": datetime.now(timezone.utc),
+        "server_time": datetime.now(UTC),
         "productos": products,
     }
 
@@ -295,7 +295,7 @@ def marcar_notificacion_leida(
             detail="Notificación no encontrada",
         )
     if notification.read_at is None:
-        notification.read_at = datetime.now(timezone.utc)
+        notification.read_at = datetime.now(UTC)
         db.commit()
         db.refresh(notification)
     return notification

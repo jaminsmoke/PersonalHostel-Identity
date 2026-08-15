@@ -7,11 +7,13 @@ from sqlalchemy import text
 
 from app.db import negocio_engine
 from app.http import register_error_handlers
+from app.routes.catalogo import router as catalogo_router
 from app.routes.establecimientos import (
     invitations_router,
+)
+from app.routes.establecimientos import (
     router as establecimientos_router,
 )
-from app.routes.catalogo import router as catalogo_router
 from app.routes.internal import negocio_internal_router
 from app.routes.negocio_auth import router as negocio_auth_router
 

@@ -40,7 +40,9 @@ def _crear_camarero(camarero_client) -> tuple[str, str, str]:
     return data["id"], email, login.json()["token"]
 
 
-def _crear_negocio(camarero_client, negocio_client, vinculado: str | None = None) -> tuple[str, str]:
+def _crear_negocio(
+    camarero_client, negocio_client, vinculado: str | None = None
+) -> tuple[str, str]:
     email = _email("org-negocio")
     payload = {
         "nombre_mostrar": "Restaurante Prueba",
@@ -88,16 +90,16 @@ def test_negocio_crea_establecimiento_y_membresia(db_ready, camarero_client, neg
     assert member.json()[0]["camarero_id"] == camarero_id
     assert member.json()[0]["rol"] == "dueno"
 
-    mine = camarero_client.get(
-        "/v1/camareros/me/establecimientos", headers=camarero_headers
-    )
+    mine = camarero_client.get("/v1/camareros/me/establecimientos", headers=camarero_headers)
     assert mine.status_code == 200
     assert mine.json()[0]["id"] == establecimiento_id
     assert mine.json()[0]["rol"] == "dueno"
     assert mine.json()[0]["data_origin"] == "real"
 
 
-def test_tokens_de_profesional_y_negocio_no_se_intercambian(db_ready, camarero_client, negocio_client):
+def test_tokens_de_profesional_y_negocio_no_se_intercambian(
+    db_ready, camarero_client, negocio_client
+):
     camarero_id, _, camarero_token = _crear_camarero(camarero_client)
     _, negocio_token = _crear_negocio(camarero_client, negocio_client, camarero_id)
 
@@ -137,9 +139,12 @@ def test_revocar_membresia_y_borrado_independiente(db_ready, camarero_client, ne
     )
     assert revoked.status_code == 200
     assert revoked.json()["estado"] == "revocada"
-    assert negocio_client.get(
-        f"/v1/establecimientos/{establecimiento_id}", headers=camarero_headers
-    ).status_code == 403
+    assert (
+        negocio_client.get(
+            f"/v1/establecimientos/{establecimiento_id}", headers=camarero_headers
+        ).status_code
+        == 403
+    )
 
     deleted = negocio_client.request(
         "DELETE",
@@ -148,6 +153,4 @@ def test_revocar_membresia_y_borrado_independiente(db_ready, camarero_client, ne
         json={"password": "negocio-12345678"},
     )
     assert deleted.status_code == 200
-    assert camarero_client.get(
-        "/v1/camareros/me", headers=camarero_headers
-    ).status_code == 200
+    assert camarero_client.get("/v1/camareros/me", headers=camarero_headers).status_code == 200

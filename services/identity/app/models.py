@@ -94,9 +94,7 @@ class AppConfig(CamareroBase):
 
     clave: Mapped[str] = mapped_column(String(100), primary_key=True)
     valor: Mapped[str] = mapped_column(Text, nullable=False)
-    creada_en: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    creada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     actualizada_en: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -125,9 +123,7 @@ class Camarero(CamareroBase):
     foto_mimetype: Mapped[str | None] = mapped_column(String(64))
     foto_size: Mapped[int | None] = mapped_column(Integer)
     foto_actualizada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -160,9 +156,7 @@ class Credencial(CamareroBase):
     estado: Mapped[CredencialEstado] = mapped_column(
         Enum(CredencialEstado, name="credencial_estado"), nullable=False
     )
-    creada_en: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    creada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     motivo_revocacion: Mapped[str | None] = mapped_column(String(500))
 
@@ -204,9 +198,7 @@ class CuentaNegocio(NegocioBase):
     camarero_vinculado_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), nullable=True, index=True
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -246,9 +238,7 @@ class Establecimiento(NegocioBase):
         nullable=False,
         index=True,
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -307,9 +297,7 @@ class ProductoCatalogo(NegocioBase):
     moneda: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
     disponible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -341,9 +329,7 @@ class OperacionSync(NegocioBase):
     actor_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     aggregate_type: Mapped[str] = mapped_column(String(50), nullable=False)
     aggregate_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    action: Mapped[SyncAccion] = mapped_column(
-        Enum(SyncAccion, name="sync_accion"), nullable=False
-    )
+    action: Mapped[SyncAccion] = mapped_column(Enum(SyncAccion, name="sync_accion"), nullable=False)
     base_revision: Mapped[int] = mapped_column(Integer, nullable=False)
     base_snapshot: Mapped[dict | None] = mapped_column(JSONB)
     payload: Mapped[dict | None] = mapped_column(JSONB)
@@ -351,9 +337,7 @@ class OperacionSync(NegocioBase):
     server_received_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    estado: Mapped[SyncEstado] = mapped_column(
-        Enum(SyncEstado, name="sync_estado"), nullable=False
-    )
+    estado: Mapped[SyncEstado] = mapped_column(Enum(SyncEstado, name="sync_estado"), nullable=False)
     global_revision: Mapped[int | None] = mapped_column(BigInteger)
     result_snapshot: Mapped[dict | None] = mapped_column(JSONB)
 
@@ -472,18 +456,14 @@ class Membresia(NegocioBase):
         index=True,
     )
     # UUID plano: el camarero vive en la BD de profesionales (otro servicio).
-    camarero_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False, index=True
-    )
+    camarero_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     rol: Mapped[MembresiaRol] = mapped_column(
         Enum(MembresiaRol, name="membresia_rol"), nullable=False
     )
     estado: Mapped[MembresiaEstado] = mapped_column(
         Enum(MembresiaEstado, name="membresia_estado"), nullable=False
     )
-    creada_en: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    creada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     establecimiento: Mapped[Establecimiento] = relationship(back_populates="membresias")
@@ -516,9 +496,7 @@ class Invitacion(NegocioBase):
         Enum(InvitacionEstado, name="invitacion_estado"), nullable=False
     )
     expira_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    creada_en: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    creada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     aceptada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -549,9 +527,7 @@ class EmailOutbox(NegocioBase):
     )
     intentos: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     ultimo_error: Mapped[str | None] = mapped_column(String(1000))
-    creado_en: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     enviado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     invitacion: Mapped[Invitacion | None] = relationship(back_populates="outbox")

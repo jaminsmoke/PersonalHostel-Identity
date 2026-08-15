@@ -1,13 +1,12 @@
 import base64
 import hashlib
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import nacl.signing
 import pytest
 from sqlalchemy import text
 
-from app.auth import create_access_token
 from app.db import CamareroSessionLocal, NegocioSessionLocal
 from app.models import EmailOutbox, Invitacion
 from app.security import (
@@ -140,11 +139,7 @@ def test_busqueda_invitacion_outbox_y_aceptacion(db_ready, camarero_client, nego
     invitation_id = invitation.json()["id"]
     with NegocioSessionLocal() as session:
         row = session.get(Invitacion, uuid.UUID(invitation_id))
-        outbox = (
-            session.query(EmailOutbox)
-            .filter_by(invitacion_id=uuid.UUID(invitation_id))
-            .one()
-        )
+        outbox = session.query(EmailOutbox).filter_by(invitacion_id=uuid.UUID(invitation_id)).one()
         assert "token" not in outbox.payload
         assert outbox.payload["token_encrypted"]
         token = unprotect_invitation_token(
@@ -178,7 +173,7 @@ def test_invitacion_expirada(db_ready, camarero_client, negocio_client):
     invitation_id = uuid.UUID(invitation.json()["id"])
     with NegocioSessionLocal() as session:
         row = session.get(Invitacion, invitation_id)
-        row.expira_en = datetime.now(timezone.utc) - timedelta(minutes=1)
+        row.expira_en = datetime.now(UTC) - timedelta(minutes=1)
         outbox = session.query(EmailOutbox).filter_by(invitacion_id=invitation_id).one()
         token = unprotect_invitation_token(
             outbox.payload["token_encrypted"], get_session_secret_env()

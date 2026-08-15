@@ -9,7 +9,7 @@ os.environ.setdefault(
     "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
 )
 
-from app.db import engine, SessionLocal  # noqa: E402
+from app.db import SessionLocal, engine  # noqa: E402
 from app.models import Camarero, Credencial, CredencialEstado, DataOrigin  # noqa: E402
 
 

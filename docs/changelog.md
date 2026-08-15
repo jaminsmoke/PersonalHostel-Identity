@@ -25,6 +25,14 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
   Commander lo exige en el alta. `PATCH /v1/camareros/me` lo actualiza. Login, `/me`
   y búsqueda por email lo exponen.
 
+### Cambiado
+
+- **Base de calidad CI** con contrato único en `pyproject.toml`, Ruff, cobertura
+  de ramas mínima del 82%, runner Docker aislado y checks requeribles `quality`
+  e `integration`. Las imágenes runtime ya no incluyen pytest ni los tests y CI
+  cancela ejecuciones obsoletas, publica informes durante 14 días y conserva el
+  anti-drift OpenAPI y la auditoría de procedencia. ([#23](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/23), Build/CI)
+
 ## [v0.1] - 2026-08-13
 
 Primer entregable: identidad permanente del profesional — registro, QR firme,

@@ -17,12 +17,8 @@ NEGOCIO_DATABASE_URL = os.environ.get("NEGOCIO_DATABASE_URL", _NEGOCIO_DEFAULT)
 camarero_engine = create_engine(CAMAREROS_DATABASE_URL)
 negocio_engine = create_engine(NEGOCIO_DATABASE_URL)
 
-CamareroSessionLocal = sessionmaker(
-    bind=camarero_engine, autoflush=False, autocommit=False
-)
-NegocioSessionLocal = sessionmaker(
-    bind=negocio_engine, autoflush=False, autocommit=False
-)
+CamareroSessionLocal = sessionmaker(bind=camarero_engine, autoflush=False, autocommit=False)
+NegocioSessionLocal = sessionmaker(bind=negocio_engine, autoflush=False, autocommit=False)
 
 
 class CamareroBase(DeclarativeBase):

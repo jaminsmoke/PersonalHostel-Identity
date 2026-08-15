@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def _email(prefix: str) -> str:
@@ -43,7 +43,7 @@ def _operation(
         "action": action,
         "base_revision": base_revision,
         "base_snapshot": None,
-        "client_created_at": datetime.now(timezone.utc).isoformat(),
+        "client_created_at": datetime.now(UTC).isoformat(),
     }
     if action != "archivar":
         body["payload"] = {
@@ -97,9 +97,7 @@ def test_catalogo_aplica_operaciones_idempotentes_y_expone_deltas(negocio_client
     assert [change["revision"] for change in changes.json()["cambios"]] == [1]
 
     changed_intention = {**create, "payload": {**create["payload"], "nombre": "Otro"}}
-    collision = _post_operation(
-        negocio_client, establishment_id, headers, changed_intention
-    )
+    collision = _post_operation(negocio_client, establishment_id, headers, changed_intention)
     assert collision.status_code == 409
     assert collision.json()["code"] == "identity.operation_id_en_uso"
 
@@ -107,13 +105,14 @@ def test_catalogo_aplica_operaciones_idempotentes_y_expone_deltas(negocio_client
 def test_actualizar_y_archivar_generan_revisiones_y_tombstone(negocio_client):
     headers, establishment_id = _create_business_and_establishment(negocio_client)
     product_id = str(uuid.uuid4())
-    assert _post_operation(
-        negocio_client, establishment_id, headers, _operation(product_id)
-    ).status_code == 200
-
-    update = _operation(
-        product_id, action="actualizar", base_revision=1, name="Café doble"
+    assert (
+        _post_operation(
+            negocio_client, establishment_id, headers, _operation(product_id)
+        ).status_code
+        == 200
     )
+
+    update = _operation(product_id, action="actualizar", base_revision=1, name="Café doble")
     updated = _post_operation(negocio_client, establishment_id, headers, update)
     assert updated.status_code == 200
     assert updated.json()["global_revision"] == 2
@@ -144,13 +143,14 @@ def test_actualizar_y_archivar_generan_revisiones_y_tombstone(negocio_client):
 def test_conflicto_crea_aviso_y_puede_aceptarse(negocio_client):
     headers, establishment_id = _create_business_and_establishment(negocio_client)
     product_id = str(uuid.uuid4())
-    assert _post_operation(
-        negocio_client, establishment_id, headers, _operation(product_id)
-    ).status_code == 200
-
-    stale = _operation(
-        product_id, action="actualizar", base_revision=0, name="Café offline"
+    assert (
+        _post_operation(
+            negocio_client, establishment_id, headers, _operation(product_id)
+        ).status_code
+        == 200
     )
+
+    stale = _operation(product_id, action="actualizar", base_revision=0, name="Café offline")
     conflicted = _post_operation(negocio_client, establishment_id, headers, stale)
     assert conflicted.status_code == 200
     conflict_id = conflicted.json()["conflict_id"]
@@ -201,9 +201,12 @@ def test_conflicto_crea_aviso_y_puede_aceptarse(negocio_client):
 def test_conflicto_se_rechaza_y_resolucion_obsoleta_no_pisa(negocio_client):
     headers, establishment_id = _create_business_and_establishment(negocio_client)
     product_id = str(uuid.uuid4())
-    assert _post_operation(
-        negocio_client, establishment_id, headers, _operation(product_id)
-    ).status_code == 200
+    assert (
+        _post_operation(
+            negocio_client, establishment_id, headers, _operation(product_id)
+        ).status_code
+        == 200
+    )
 
     stale = _post_operation(
         negocio_client,
@@ -250,9 +253,12 @@ def test_conflicto_se_rechaza_y_resolucion_obsoleta_no_pisa(negocio_client):
 def test_miembro_activo_lee_pero_no_escribe_y_hay_aislamiento(camarero_client, negocio_client):
     owner_headers, establishment_id = _create_business_and_establishment(negocio_client)
     product_id = str(uuid.uuid4())
-    assert _post_operation(
-        negocio_client, establishment_id, owner_headers, _operation(product_id)
-    ).status_code == 200
+    assert (
+        _post_operation(
+            negocio_client, establishment_id, owner_headers, _operation(product_id)
+        ).status_code
+        == 200
+    )
 
     email = _email("catalogo-miembro")
     password = "camarero-12345678"
@@ -272,17 +278,21 @@ def test_miembro_activo_lee_pero_no_escribe_y_hay_aislamiento(camarero_client, n
         json={"camarero_id": registration.json()["id"], "rol": "staff"},
     )
     assert add.status_code == 201, add.text
-    login = camarero_client.post(
-        "/v1/auth/login", json={"email": email, "password": password}
-    )
+    login = camarero_client.post("/v1/auth/login", json={"email": email, "password": password})
     member_headers = {"Authorization": f"Bearer {login.json()['token']}"}
 
-    assert negocio_client.get(
-        f"/v1/establecimientos/{establishment_id}/catalogo", headers=member_headers
-    ).status_code == 200
-    assert negocio_client.get(
-        f"/v1/establecimientos/{establishment_id}/sync/cambios", headers=member_headers
-    ).status_code == 200
+    assert (
+        negocio_client.get(
+            f"/v1/establecimientos/{establishment_id}/catalogo", headers=member_headers
+        ).status_code
+        == 200
+    )
+    assert (
+        negocio_client.get(
+            f"/v1/establecimientos/{establishment_id}/sync/cambios", headers=member_headers
+        ).status_code
+        == 200
+    )
     member_write = _post_operation(
         negocio_client,
         establishment_id,
@@ -292,15 +302,21 @@ def test_miembro_activo_lee_pero_no_escribe_y_hay_aislamiento(camarero_client, n
     assert member_write.status_code == 401
 
     other_headers, _ = _create_business_and_establishment(negocio_client)
-    assert negocio_client.get(
-        f"/v1/establecimientos/{establishment_id}/catalogo", headers=other_headers
-    ).status_code == 403
-    assert _post_operation(
-        negocio_client,
-        establishment_id,
-        other_headers,
-        _operation(product_id, action="actualizar", base_revision=1),
-    ).status_code == 403
+    assert (
+        negocio_client.get(
+            f"/v1/establecimientos/{establishment_id}/catalogo", headers=other_headers
+        ).status_code
+        == 403
+    )
+    assert (
+        _post_operation(
+            negocio_client,
+            establishment_id,
+            other_headers,
+            _operation(product_id, action="actualizar", base_revision=1),
+        ).status_code
+        == 403
+    )
 
 
 def test_operacion_valida_tipo_tamano_y_timestamp(negocio_client):

@@ -55,7 +55,8 @@ docker compose up --build
   python services/identity/scripts/export_openapi.py --check  # falla si difieren del vivo
   ```
 
-- El workflow `.github/workflows/openapi-check.yml` falla si algún spec commiteado no coincide con el generado (anti-drift).
+- El job requerido `quality` de `.github/workflows/quality-check.yml` falla si
+  algún spec commiteado no coincide con el generado (anti-drift).
 
 ### Errores y códigos estables
 
@@ -233,11 +234,37 @@ Bar/Commander solo declaran procedencia al crear la entidad raíz correspondient
 Los tests corren contra **bases de datos de prueba separadas** (`identity_camareros_test` y `identity_negocio_test`, creadas por `db-init`), no contra las de desarrollo.
 
 ```bash
-docker compose up --build -d
-docker compose exec identity-camareros python -m pytest tests -v
+docker compose run --rm identity-tests
 ```
 
-Hay health, esquema Postgres (dos BD), registro/login de camarero, perfil/QR, foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio, establecimientos, catálogo canónico, sync/conflictos, notificaciones, membresías, clave pública QR, invitaciones (magic-link + CORS), espejo del layout, outbox y OpenAPI (dos specs).
+El runner usa la etapa Docker `test`; las imágenes de ejecución usan `runtime` y
+no contienen pytest, Ruff, informes ni el árbol `tests/`. Genera JUnit, cobertura
+de ramas XML/HTML y un resumen Markdown en `build/reports/`. El umbral base es
+**82%** y la cobertura actual es **82,71%**.
+
+Hay health, esquema Postgres (dos BD), registro/login de camarero, perfil/QR,
+foto de perfil, renovar, revocar, supresión GDPR, cuentas de negocio,
+establecimientos, catálogo canónico, sync/conflictos, notificaciones,
+membresías, clave pública QR, invitaciones (magic-link + CORS), espejo del
+layout, outbox y OpenAPI (dos specs).
+
+## Calidad y CI
+
+El contrato común vive en `services/identity/pyproject.toml` y fija Python 3.12,
+Ruff, pytest y cobertura. Para reproducir el job rápido localmente:
+
+```bash
+docker compose run --rm identity-tests ruff check app tests scripts
+docker compose run --rm identity-tests ruff format --check app tests scripts
+docker compose run --rm identity-tests python scripts/export_openapi.py --check
+```
+
+GitHub Actions ejecuta dos checks tanto en pull requests como en `main`, cancela
+ejecuciones obsoletas de la misma rama y usa permisos de solo lectura:
+
+- `quality`: Ruff (lint y formato) + anti-drift OpenAPI.
+- `integration`: Compose con PostgreSQL 16 + 86 tests + cobertura de ramas +
+  auditoría de procedencia. Conserva los informes 14 días.
 
 ## Auditoría de procedencia (solo lectura)
 

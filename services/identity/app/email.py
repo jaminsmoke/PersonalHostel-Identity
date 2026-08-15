@@ -10,8 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class EmailSender(Protocol):
-    def send_invitation(self, recipient: str, link: str, establishment_name: str) -> None:
-        ...
+    def send_invitation(self, recipient: str, link: str, establishment_name: str) -> None: ...
 
 
 class ConsoleEmailSender:

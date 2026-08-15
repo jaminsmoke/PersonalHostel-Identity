@@ -25,6 +25,7 @@ os.environ.setdefault(
 )
 os.environ.setdefault("ALLOW_NON_REAL_DATA", "true")
 
+
 # Los tests NO tocan las BD de desarrollo: usan BD de prueba separadas.
 # Se deriva el nombre de la BD del URL base para funcionar en Docker y en host.
 def _test_url(base_url: str) -> str:

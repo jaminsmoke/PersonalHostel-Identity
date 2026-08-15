@@ -1,7 +1,7 @@
 """Procesador pequeño y reintentable de la outbox de email."""
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -45,7 +45,7 @@ def process_pending_outbox(db: Session, limit: int = 20) -> int:
                 row.payload["establishment_name"],
             )
             row.estado = EmailOutboxEstado.enviado
-            row.enviado_en = datetime.now(timezone.utc)
+            row.enviado_en = datetime.now(UTC)
             row.ultimo_error = None
         except Exception as exc:  # sender failures must remain retryable
             row.estado = EmailOutboxEstado.fallido

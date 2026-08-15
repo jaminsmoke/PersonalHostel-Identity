@@ -4,6 +4,7 @@ La interfaz `FotoStorage` permite cambiar la implementación local (volumen
 Docker) por object storage en el VPS sin tocar las rutas HTTP.
 """
 
+import contextlib
 import os
 import uuid
 from pathlib import Path
@@ -45,10 +46,8 @@ class LocalFotoStorage:
 
     def borrar(self, clave: str) -> None:
         path = self.root / clave
-        try:
+        with contextlib.suppress(OSError):
             path.unlink(missing_ok=True)
-        except OSError:
-            pass
 
 
 _storage: FotoStorage | None = None

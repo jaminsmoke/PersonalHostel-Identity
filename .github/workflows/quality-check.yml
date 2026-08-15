@@ -1,0 +1,35 @@
+name: Quality check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/identity
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/identity/requirements*.txt
+      - name: Install quality dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Lint Python
+        run: ruff check --output-format=github app tests scripts
+      - name: Check Python formatting
+        run: ruff format --check app tests scripts
+      - name: Check OpenAPI specs are in sync
+        run: python scripts/export_openapi.py --check

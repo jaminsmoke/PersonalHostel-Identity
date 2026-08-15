@@ -1,8 +1,7 @@
-from datetime import datetime, timezone
-import uuid
+import secrets
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile, status
-import secrets
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -12,8 +11,8 @@ from app.auth import (
     hash_password,
     verify_password,
 )
-from app.db import get_camarero_db
 from app.data_origin import ensure_data_origin_allowed
+from app.db import get_camarero_db
 from app.errors import (
     CREDENTIAL_REVOKED,
     EMAIL_ALREADY_REGISTERED,
@@ -110,7 +109,7 @@ def registrar_camarero(
                 status_code=status.HTTP_409_CONFLICT,
                 code=EMAIL_ALREADY_REGISTERED,
                 detail="Ya existe un camarero con ese email",
-            )
+            ) from exc
         raise
 
     qr = build_qr_payload(camarero.id, credencial.id, signing_key)
@@ -185,7 +184,7 @@ def renovar(
     camarero: Camarero = Depends(get_current_camarero),
     db: Session = Depends(get_camarero_db),
 ) -> QrResponse:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     activas = (
         db.query(Credencial)
         .filter_by(camarero_id=camarero.id, estado=CredencialEstado.activa)
@@ -236,7 +235,7 @@ def revocar(
         motivo = payload.motivo.strip() or "revocada"
 
     credencial.estado = CredencialEstado.revocada
-    credencial.revocada_en = datetime.now(timezone.utc)
+    credencial.revocada_en = datetime.now(UTC)
     credencial.motivo_revocacion = motivo
     db.commit()
     return RevocarResponse(status="revocada")
@@ -273,7 +272,7 @@ async def subir_foto(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             code=FOTO_INVALIDA,
             detail=str(exc),
-        )
+        ) from exc
 
     storage = get_foto_storage()
     if camarero.foto_clave:
@@ -283,7 +282,7 @@ async def subir_foto(
     camarero.foto_clave = clave
     camarero.foto_mimetype = mimetype
     camarero.foto_size = size
-    camarero.foto_actualizada_en = datetime.now(timezone.utc)
+    camarero.foto_actualizada_en = datetime.now(UTC)
     db.commit()
     return FotoResponse(foto_url="/v1/camareros/me/foto")
 

@@ -1,11 +1,12 @@
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import create_engine
 
-from app.data_audit import REDACTED, audit_data, main as audit_main
+from app.data_audit import REDACTED, audit_data
+from app.data_audit import main as audit_main
 from app.db import camarero_engine, negocio_engine
 
 
@@ -65,7 +66,7 @@ def _create_product(client, establishment_id: str, headers: dict):
                 "moneda": "EUR",
                 "disponible": True,
             },
-            "client_created_at": datetime.now(timezone.utc).isoformat(),
+            "client_created_at": datetime.now(UTC).isoformat(),
         },
     )
     return response, product_id
@@ -92,9 +93,7 @@ def test_default_real_es_compatible_en_ambos_servicios(camarero_client, negocio_
     )
     assert establishment.status_code == 201, establishment.text
     assert establishment.json()["data_origin"] == "real"
-    operation, product_id = _create_product(
-        negocio_client, establishment.json()["id"], headers
-    )
+    operation, product_id = _create_product(negocio_client, establishment.json()["id"], headers)
     assert operation.status_code == 200, operation.text
     assert operation.json()["result_snapshot"]["data_origin"] == "real"
     catalog = negocio_client.get(
@@ -106,9 +105,7 @@ def test_default_real_es_compatible_en_ambos_servicios(camarero_client, negocio_
 
 
 def test_test_y_demo_se_heredan_en_entidades_hijas(camarero_client, negocio_client):
-    waiter, waiter_payload = _register_waiter(
-        camarero_client, origin="test", name="AnaTest"
-    )
+    waiter, waiter_payload = _register_waiter(camarero_client, origin="test", name="AnaTest")
     assert waiter.status_code == 201, waiter.text
     assert waiter.json()["data_origin"] == "test"
     login = camarero_client.post(
@@ -120,38 +117,28 @@ def test_test_y_demo_se_heredan_en_entidades_hijas(camarero_client, negocio_clie
     )
     assert login.json()["camarero"]["data_origin"] == "test"
 
-    business, _, headers = _register_business(
-        negocio_client, origin="demo", name="Negocio demo"
-    )
+    business, _, headers = _register_business(negocio_client, origin="demo", name="Negocio demo")
     assert business.status_code == 201, business.text
     establishment = negocio_client.post(
         "/v1/establecimientos", headers=headers, json={"nombre": "Local demo"}
     )
     assert establishment.json()["data_origin"] == "demo"
-    operation, _ = _create_product(
-        negocio_client, establishment.json()["id"], headers
-    )
+    operation, _ = _create_product(negocio_client, establishment.json()["id"], headers)
     assert operation.status_code == 200, operation.text
     assert operation.json()["result_snapshot"]["data_origin"] == "demo"
 
 
-def test_entorno_seguro_rechaza_procedencia_no_real(
-    camarero_client, negocio_client, monkeypatch
-):
+def test_entorno_seguro_rechaza_procedencia_no_real(camarero_client, negocio_client, monkeypatch):
     monkeypatch.setenv("ALLOW_NON_REAL_DATA", "false")
     waiter, _ = _register_waiter(camarero_client, origin="test", name="BlockedTest")
     assert waiter.status_code == 422
     assert waiter.json()["code"] == "identity.procedencia_no_permitida"
-    business, _, _ = _register_business(
-        negocio_client, origin="demo", name="Blocked demo"
-    )
+    business, _, _ = _register_business(negocio_client, origin="demo", name="Blocked demo")
     assert business.status_code == 422
     assert business.json()["code"] == "identity.procedencia_no_permitida"
 
 
-def test_no_permite_vinculos_cross_db_con_procedencia_distinta(
-    camarero_client, negocio_client
-):
+def test_no_permite_vinculos_cross_db_con_procedencia_distinta(camarero_client, negocio_client):
     waiter, _ = _register_waiter(camarero_client, origin="test", name="LinkTest")
     assert waiter.status_code == 201
     waiter_id = waiter.json()["id"]
@@ -194,8 +181,7 @@ def test_auditor_reporta_y_redacta_pii(camarero_client, capsys):
     assert unique_name not in serialized
     assert REDACTED in serialized
     assert any(
-        finding.get("reason") == "sufijo_test_con_origen_real"
-        for finding in report["findings"]
+        finding.get("reason") == "sufijo_test_con_origen_real" for finding in report["findings"]
     )
 
     assert audit_main(["--format", "json", "--fail-on-detected"]) == 2
@@ -216,9 +202,7 @@ def test_auditor_con_show_pii_es_solo_opt_in(camarero_client):
 
 
 def test_auditor_rechaza_una_bd_inesperada_antes_de_conectar():
-    unexpected = create_engine(
-        "postgresql+psycopg://hosteleria:devlocal@db:5432/produccion_ajena"
-    )
+    unexpected = create_engine("postgresql+psycopg://hosteleria:devlocal@db:5432/produccion_ajena")
     with pytest.raises(ValueError, match="Base de datos inesperada"):
         audit_data(camareros=unexpected, negocio=negocio_engine)
     unexpected.dispose()
