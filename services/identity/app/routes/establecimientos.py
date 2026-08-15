@@ -4,8 +4,9 @@ import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import EmailStr
+from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -88,14 +89,24 @@ def _establecimiento_de_cuenta(
     return establecimiento
 
 
-def _invitation_response(invitation: Invitacion) -> InvitacionResponse:
+def _estado_efectivo(invitation: Invitacion, now: datetime) -> str:
+    """Estado a presentar: deriva `expirada` para pendientes ya vencidas."""
+    if invitation.estado == InvitacionEstado.pendiente and invitation.expira_en <= now:
+        return InvitacionEstado.expirada.value
+    return invitation.estado.value
+
+
+def _invitation_response(
+    invitation: Invitacion, estado_efectivo: str | None = None
+) -> InvitacionResponse:
     return InvitacionResponse(
         id=invitation.id,
         establecimiento_id=invitation.establecimiento_id,
         email=invitation.email_objetivo,
         rol=invitation.rol.value,
-        estado=invitation.estado.value,
+        estado=estado_efectivo or invitation.estado.value,
         expira_en=invitation.expira_en,
+        creada_en=invitation.creada_en,
     )
 
 
@@ -473,6 +484,45 @@ def revocar_invitacion(
         db.commit()
         db.refresh(invitation)
     return _invitation_response(invitation)
+
+
+@router.get(
+    "/{establecimiento_id}/invitaciones",
+    response_model=list[InvitacionResponse],
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def listar_invitaciones(
+    establecimiento_id: uuid.UUID,
+    estado: InvitacionEstado | None = Query(default=None),
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_negocio_db),
+) -> list[InvitacionResponse]:
+    establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    now = datetime.now(UTC)
+    query = db.query(Invitacion).filter(Invitacion.establecimiento_id == establecimiento.id)
+    if estado == InvitacionEstado.pendiente:
+        query = query.filter(
+            Invitacion.estado == InvitacionEstado.pendiente,
+            Invitacion.expira_en > now,
+        )
+    elif estado == InvitacionEstado.expirada:
+        query = query.filter(
+            or_(
+                Invitacion.estado == InvitacionEstado.expirada,
+                and_(
+                    Invitacion.estado == InvitacionEstado.pendiente,
+                    Invitacion.expira_en <= now,
+                ),
+            )
+        )
+    elif estado is not None:
+        query = query.filter(Invitacion.estado == estado)
+    invitations = query.order_by(Invitacion.creada_en.desc()).all()
+    return [_invitation_response(inv, _estado_efectivo(inv, now)) for inv in invitations]
 
 
 @invitations_router.post(
