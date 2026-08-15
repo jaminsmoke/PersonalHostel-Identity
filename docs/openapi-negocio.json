@@ -4,7 +4,7 @@
       "Body_subir_logo_v1_auth_negocio_me_logo_post": {
         "properties": {
           "logo": {
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "Logo",
             "type": "string"
           }
@@ -1228,6 +1228,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
