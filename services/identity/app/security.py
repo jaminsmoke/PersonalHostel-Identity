@@ -78,7 +78,7 @@ def build_qr_payload(
     credencial_id: uuid.UUID,
     signing_key: nacl.signing.SigningKey,
 ) -> str:
-    message = f"{QR_PREFIX}:{camarero_id}:{credencial_id}".encode("utf-8")
+    message = f"{QR_PREFIX}:{camarero_id}:{credencial_id}".encode()
     signature = signing_key.sign(message).signature
     sig_b64 = base64.urlsafe_b64encode(signature).rstrip(b"=").decode("ascii")
     return f"{QR_PREFIX}:{camarero_id}:{credencial_id}:{sig_b64}"
@@ -99,7 +99,7 @@ def parse_and_verify_qr_payload(
         if prefix != QR_PREFIX:
             return None
         signature = base64.urlsafe_b64decode(sig_b64 + "=" * (-len(sig_b64) % 4))
-        message = f"{prefix}:{camarero_id}:{credencial_id}".encode("utf-8")
+        message = f"{prefix}:{camarero_id}:{credencial_id}".encode()
         verify_key.verify(message, signature)
         return uuid.UUID(camarero_id), uuid.UUID(credencial_id)
     except Exception:

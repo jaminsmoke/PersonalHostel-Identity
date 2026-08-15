@@ -68,11 +68,14 @@ PersonalHosteleriaServer/
 ├── .kanbanrc.json.template
 ├── docs/
 │   ├── changelog.md          # changelog v0.1
-│   └── openapi.json          # spec OpenAPI versionada
-├── .github/workflows/        # CI anti-drift del OpenAPI
+│   ├── openapi-camareros.json
+│   └── openapi-negocio.json  # contratos OpenAPI versionados
+├── .github/workflows/        # checks requeridos quality + integration
 ├── services/identity/        # API FastAPI (identidad, QR, foto, OpenAPI)
-│   ├── Dockerfile
-│   ├── requirements.txt
+│   ├── Dockerfile            # etapas runtime/test; producción sin tooling dev
+│   ├── requirements.txt      # dependencias de ejecución
+│   ├── requirements-dev.txt  # pytest, cobertura y Ruff
+│   ├── pyproject.toml        # contrato Python 3.12, lint, formato y cobertura
 │   ├── alembic/              # migraciones BD profesionales (incluye procedencia real/test/demo)
 │   ├── alembic_negocio/      # migraciones BD negocio (incluye procedencia heredada y catálogo/sync)
 │   ├── app/                  # main, auth, models, schemas, routes, storage, images
@@ -89,7 +92,8 @@ PersonalHosteleriaServer/
     └── agent-skills/
 ```
 
-`docker compose up --build` levanta Postgres 16 + API en `:8080` + Identity Web (página de invitaciones) en `:8081` + worker de email.
+`docker compose up --build` levanta Postgres 16 + APIs en `:8080` y `:8082` +
+Identity Web (página de invitaciones) en `:8081` + worker de email.
 
 - `GET /health` → `{ "ok": true }`
 - `GET /v1/meta` → servicio, rol `identity`, `status: schema`
@@ -252,7 +256,7 @@ Con la decisión ya tomada y acordada en la fase anterior, detallar **mucho más
 
 1. **Compose**: `docker compose up --build` — API en `:8080`, Postgres healthy
 2. **Health**: `GET /health` → `{"ok": true}`; `GET /v1/meta` → `status: schema` coherente
-3. **Tests**: pytest (o el runner que Debate acuerde) — todos deben pasar. Crear tests para rutas nuevas (registro, login, QR, revocar)
+3. **Tests**: `docker compose run --rm identity-tests` — todos deben pasar y la cobertura de ramas no puede bajar del 82%. Crear tests para rutas nuevas (registro, login, QR, revocar)
 4. **Contrato**: las rutas nuevas responden JSON documentado; errores de cara a apps en español
 5. **Secretos**: `.env` no está en git; no hay fotos reales ni dumps con PII
 
@@ -262,7 +266,8 @@ Con la decisión ya tomada y acordada en la fase anterior, detallar **mucho más
 - Datos → esquema aplicado, migraciones reversibles o documentadas, ping a Postgres
 - Infra → Compose, volúmenes, puertos; no mezclar con el puerto de sala de Bar
 - Docs → README y este archivo siguen siendo verdad
-- Build/CI → imagen Docker construye en limpio
+- Build/CI → imagen Docker construye en limpio; `quality` (Ruff + OpenAPI) e
+  `integration` (tests + cobertura + auditoría) pasan
 
 **Antes de pasar a Changelog**:
 - Documentar TODO en el body: sección `Verificación` con checklist de lo ejecutado y resultados
@@ -318,7 +323,7 @@ gh issue edit <N> --repo jaminsmoke/PersonalHostel-Identity --add-label "tipo:fe
 docker compose up --build
 # curl http://localhost:8080/health
 # curl http://localhost:8080/v1/meta
-# pytest  (cuando existan tests)
+docker compose run --rm identity-tests
 
 # Changelog: commit con SHA referenciable, cerrar, push
 git add <files> && git commit -m "..."
@@ -444,7 +449,8 @@ Same family as Commander: public MIT. Do not put paid premium code in this publi
 
 ## Cómo probar
 
-Ver `README.md`. Desde esta carpeta: `docker compose up --build`.
+Ver `README.md`. Desde esta carpeta: `docker compose up --build` para el stack y
+`docker compose run --rm identity-tests` para la suite aislada.
 
 ## Dev tools
 
@@ -453,4 +459,5 @@ tools/kanban-cli/          # bun install; CLI = bun run tools/kanban-cli/cli.ts
 tools/agent-skills/        # jarvis-github-kanban + jarvis-github-agentuse
 .kanbanrc.json             # local Project IDs (gitignored)
 .kanbanrc.json.template    # versioned reproducible reference
+services/identity/pyproject.toml  # Ruff + pytest + cobertura de ramas (mínimo 82%)
 ```

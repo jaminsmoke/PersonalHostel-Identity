@@ -1,12 +1,11 @@
-from datetime import datetime, timedelta, timezone
 import hashlib
 import os
 import secrets
 import uuid
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, status
 from pydantic import EmailStr
-from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -19,14 +18,14 @@ from app.db import get_negocio_db
 from app.errors import (
     CAMARERO_NOT_FOUND,
     DATA_ORIGIN_MISMATCH,
-    ESTABLECIMIENTO_NOT_FOUND,
-    LAYOUT_NOT_FOUND,
     EMAIL_NOT_FOUND,
+    ESTABLECIMIENTO_NOT_FOUND,
     INVITACION_DUPLICATE,
     INVITACION_EXPIRED,
     INVITACION_NOT_FOUND,
     INVITACION_UNAUTHORIZED,
     INVITACION_USED,
+    LAYOUT_NOT_FOUND,
     MEMBERSHIP_DUPLICATE,
     MEMBERSHIP_FORBIDDEN,
     VALIDATION_ERROR,
@@ -46,8 +45,8 @@ from app.models import (
     MembresiaRol,
 )
 from app.schemas import (
-    ErrorResponse,
     CamareroSearchResponse,
+    ErrorResponse,
     EstablecimientoCreateRequest,
     EstablecimientoResponse,
     InvitacionAcceptResponse,
@@ -114,9 +113,7 @@ def _add_or_reactivate_membership(
         )
     existing = (
         db.query(Membresia)
-        .filter_by(
-            establecimiento_id=establecimiento.id, camarero_id=camarero_id
-        )
+        .filter_by(establecimiento_id=establecimiento.id, camarero_id=camarero_id)
         .one_or_none()
     )
     if existing is not None:
@@ -342,13 +339,13 @@ def añadir_miembro(
     try:
         db.commit()
         db.refresh(membership)
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
         raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
             code=MEMBERSHIP_DUPLICATE,
             detail="El camarero ya pertenece a este establecimiento",
-        )
+        ) from exc
     return membership
 
 
@@ -371,9 +368,7 @@ def añadir_miembro_por_qr(
 ) -> Membresia:
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     camarero_id = get_camareros_internal().verificar_qr(payload.qr)
-    membership = _add_or_reactivate_membership(
-        db, establecimiento, camarero_id, payload.rol
-    )
+    membership = _add_or_reactivate_membership(db, establecimiento, camarero_id, payload.rol)
     db.commit()
     db.refresh(membership)
     return membership
@@ -447,7 +442,7 @@ def crear_invitacion(
             code=MEMBERSHIP_DUPLICATE,
             detail="El camarero ya pertenece a este establecimiento",
         )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     pending = (
         db.query(Invitacion)
         .filter(
@@ -525,7 +520,7 @@ def revocar_invitacion(
         )
     if invitation.estado == InvitacionEstado.pendiente:
         invitation.estado = InvitacionEstado.revocada
-        invitation.revocada_en = datetime.now(timezone.utc)
+        invitation.revocada_en = datetime.now(UTC)
         db.commit()
         db.refresh(invitation)
     return _invitation_response(invitation)
@@ -554,7 +549,7 @@ def aceptar_invitacion(
             code=INVITACION_NOT_FOUND,
             detail="Invitación no encontrada",
         )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if invitation.estado != InvitacionEstado.pendiente:
         raise ApiError(
             status_code=status.HTTP_409_CONFLICT,
@@ -673,7 +668,7 @@ def revocar_miembro(
             detail="Membresía no encontrada",
         )
     membership.estado = MembresiaEstado.revocada
-    membership.revocada_en = datetime.now(timezone.utc)
+    membership.revocada_en = datetime.now(UTC)
     db.commit()
     db.refresh(membership)
     return membership

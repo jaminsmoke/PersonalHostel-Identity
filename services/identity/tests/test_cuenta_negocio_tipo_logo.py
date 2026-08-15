@@ -215,9 +215,7 @@ def test_supresion_borra_fichero_logo(db_ready, negocio_client):
     with NegocioSessionLocal() as session:
         from app.models import CuentaNegocio
 
-        clave = (
-            session.query(CuentaNegocio).filter_by(email=email).one().logo_clave
-        )
+        clave = session.query(CuentaNegocio).filter_by(email=email).one().logo_clave
     assert get_foto_storage().leer(clave) is not None
 
     resp = negocio_client.request(

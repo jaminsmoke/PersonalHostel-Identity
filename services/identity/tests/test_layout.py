@@ -102,9 +102,7 @@ def test_put_layout_crea_y_get_devuelve_fiel(db_ready, negocio_client):
     assert put_data["mesas"] == _LAYOUT_MESAS
     assert put_data["updated_at"]
 
-    get = negocio_client.get(
-        f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers
-    )
+    get = negocio_client.get(f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers)
     assert get.status_code == 200
     get_data = get.json()
     assert get_data["establecimiento_id"] == establecimiento_id
@@ -151,9 +149,7 @@ def test_put_layout_sobrescribe_con_version_incremental(db_ready, negocio_client
     assert second.json()["version"] == 2
     assert second.json()["mesas"] == nuevo_mesas
 
-    get = negocio_client.get(
-        f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers
-    )
+    get = negocio_client.get(f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers)
     assert get.json()["version"] == 2
     assert get.json()["mesas"] == nuevo_mesas
 
@@ -162,9 +158,7 @@ def test_get_layout_sin_snapshot_404(db_ready, negocio_client):
     _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
     headers = {"Authorization": f"Bearer {token}"}
 
-    get = negocio_client.get(
-        f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers
-    )
+    get = negocio_client.get(f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers)
     assert get.status_code == 404
     assert get.json()["code"] == "identity.layout_no_encontrado"
 
@@ -199,8 +193,7 @@ def test_put_layout_payload_invalido_422(db_ready, negocio_client):
 
 
 def test_layout_requiere_cuenta_negocio(db_ready, camarero_client, negocio_client):
-    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
-    headers = {"Authorization": f"Bearer {token}"}
+    _, _, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
     payload = {"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS}
 
     sin_token = negocio_client.put(
@@ -242,7 +235,5 @@ def test_layout_de_otro_negocio_no_se_ve(db_ready, negocio_client):
     )
     _, token_b, _, _ = _crear_negocio_con_establecimiento(negocio_client)
     headers_b = {"Authorization": f"Bearer {token_b}"}
-    get = negocio_client.get(
-        f"/v1/establecimientos/{establecimiento_a}/layout", headers=headers_b
-    )
+    get = negocio_client.get(f"/v1/establecimientos/{establecimiento_a}/layout", headers=headers_b)
     assert get.status_code == 403

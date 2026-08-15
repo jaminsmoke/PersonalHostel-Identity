@@ -7,7 +7,6 @@ from fastapi import status
 from app.errors import NON_REAL_DATA_FORBIDDEN, ApiError
 from app.models import DataOrigin
 
-
 _TRUE_VALUES = {"1", "true", "yes", "on", "si", "sí"}
 
 

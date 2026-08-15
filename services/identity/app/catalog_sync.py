@@ -1,7 +1,7 @@
 """Dominio canónico de catálogo y primera vertical del protocolo de sync."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import status
 from sqlalchemy.orm import Session
@@ -279,7 +279,7 @@ def process_operation(
             detail="El identificador del producto ya está en uso",
         )
     product = any_product
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     operation = OperacionSync(
         id=payload.operation_id,
         establecimiento_id=establishment_id,
@@ -302,14 +302,11 @@ def process_operation(
     db.flush()
 
     is_conflict = (
-        (
-            operation.action == SyncAccion.crear
-            and (product is not None or operation.base_revision != 0)
-        )
-        or (
-            operation.action in (SyncAccion.actualizar, SyncAccion.archivar)
-            and (product is None or product.revision != operation.base_revision)
-        )
+        operation.action == SyncAccion.crear
+        and (product is not None or operation.base_revision != 0)
+    ) or (
+        operation.action in (SyncAccion.actualizar, SyncAccion.archivar)
+        and (product is None or product.revision != operation.base_revision)
     )
     if is_conflict:
         _create_conflict(db, operation, product)
@@ -374,7 +371,7 @@ def resolve_conflict(
             detail="El dato canónico cambió; refresca el conflicto antes de decidir",
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     conflict.resolved_at = now
     conflict.resolved_by = account.id
     if decision == "rechazar":

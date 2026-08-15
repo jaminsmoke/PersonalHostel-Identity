@@ -1,7 +1,5 @@
 import uuid
 
-import pytest
-
 from app.main import app as camareros_app
 from app.main_negocio import app as negocio_app
 

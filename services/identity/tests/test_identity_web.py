@@ -1,6 +1,6 @@
 import hashlib
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import text
@@ -67,7 +67,9 @@ def _establecimiento(negocio_client, token: str) -> str:
     return response.json()["id"]
 
 
-def _crear_invitacion(negocio_client, negocio_token: str, establecimiento_id: str, email: str) -> str:
+def _crear_invitacion(
+    negocio_client, negocio_token: str, establecimiento_id: str, email: str
+) -> str:
     invitation = negocio_client.post(
         f"/v1/establecimientos/{establecimiento_id}/invitaciones",
         headers={"Authorization": f"Bearer {negocio_token}"},
@@ -133,7 +135,7 @@ def test_aceptar_magic_link_expirada(db_ready, camarero_client, negocio_client):
             .filter_by(token_hash=hashlib.sha256(token.encode()).hexdigest())
             .one()
         )
-        invitation.expira_en = datetime.now(timezone.utc) - timedelta(minutes=1)
+        invitation.expira_en = datetime.now(UTC) - timedelta(minutes=1)
         session.commit()
     expired = negocio_client.post(f"/v1/invitaciones/{token}/aceptar")
     assert expired.status_code == 410

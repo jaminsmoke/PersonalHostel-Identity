@@ -17,7 +17,9 @@ services:
       retries: 10
 
   identity-camareros:
-    build: ./services/identity
+    build:
+      context: ./services/identity
+      target: runtime
     ports:
       - "${IDENTITY_PORT:-8080}:8080"
     environment:
@@ -41,7 +43,9 @@ services:
       retries: 12
 
   identity-negocio:
-    build: ./services/identity
+    build:
+      context: ./services/identity
+      target: runtime
     ports:
       - "${NEGOCIO_PORT:-8082}:8080"
     environment:
@@ -68,7 +72,9 @@ services:
       retries: 12
 
   email-worker:
-    build: ./services/identity
+    build:
+      context: ./services/identity
+      target: runtime
     environment:
       SERVICE: email-worker
       NEGOCIO_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/identity_negocio
@@ -82,6 +88,41 @@ services:
       EMAIL_USE_TLS: ${EMAIL_USE_TLS:-true}
     depends_on:
       identity-negocio:
+        condition: service_healthy
+
+  identity-tests:
+    profiles: ["test"]
+    build:
+      context: ./services/identity
+      target: test
+    environment:
+      CAMAREROS_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/identity_camareros
+      NEGOCIO_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/identity_negocio
+      SESSION_SECRET: ${SESSION_SECRET:-BdZh-Awc4rEhsHCtzyUoufxqf7mT97y68QhilC9fxVnszS4CFmICrNRncw7vVeN2}
+      QR_SIGNING_KEY: ${QR_SIGNING_KEY:-osYIdBW7fkucKVqY9St5yQKpLpDuAzJ4PeRaFMXbtDI=}
+      FOTOS_DIR: /tmp/identity-test-fotos
+      OPENAPI_DOCS_DIR: /docs
+      INTERNAL_TRANSPORT: direct
+      ALLOW_NON_REAL_DATA: "true"
+    command:
+      - python
+      - -m
+      - pytest
+      - tests
+      - -v
+      - --junitxml=/reports/junit.xml
+      - --cov=app
+      - --cov-branch
+      - --cov-report=term-missing
+      - --cov-report=xml:/reports/coverage.xml
+      - --cov-report=html:/reports/htmlcov
+      - --cov-report=markdown:/reports/coverage.md
+    volumes:
+      - ./services/identity:/app
+      - ./docs:/docs:ro
+      - ./build/reports:/reports
+    depends_on:
+      db:
         condition: service_healthy
 
   identity-web:

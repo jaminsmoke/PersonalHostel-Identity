@@ -6,7 +6,8 @@ import argparse
 import json
 import sys
 from collections import Counter
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from sqlalchemy import Engine, func, select
 from sqlalchemy.orm import Session
@@ -78,9 +79,9 @@ def _origin_counts(rows: Iterable[Any]) -> dict[str, int]:
 
 def _related_counts(db: Session, model, root, join_condition) -> dict[str, int]:
     rows = db.execute(
-        select(root.data_origin, func.count()).join(model, join_condition).group_by(
-            root.data_origin
-        )
+        select(root.data_origin, func.count())
+        .join(model, join_condition)
+        .group_by(root.data_origin)
     ).all()
     counts = {origin.value: count for origin, count in rows}
     return {origin.value: counts.get(origin.value, 0) for origin in DataOrigin}
@@ -134,9 +135,10 @@ def audit_data(
         try:
             camarero_conn.exec_driver_sql("SET TRANSACTION READ ONLY")
             negocio_conn.exec_driver_sql("SET TRANSACTION READ ONLY")
-            with Session(bind=camarero_conn) as camarero_db, Session(
-                bind=negocio_conn
-            ) as negocio_db:
+            with (
+                Session(bind=camarero_conn) as camarero_db,
+                Session(bind=negocio_conn) as negocio_db,
+            ):
                 waiters = list(camarero_db.scalars(select(Camarero)))
                 accounts = list(negocio_db.scalars(select(CuentaNegocio)))
                 establishments = list(negocio_db.scalars(select(Establecimiento)))
@@ -179,9 +181,7 @@ def audit_data(
 
                 waiter_origin = {row.id: row.data_origin for row in waiters}
                 account_origin = {row.id: row.data_origin for row in accounts}
-                establishment_origin = {
-                    row.id: row.data_origin for row in establishments
-                }
+                establishment_origin = {row.id: row.data_origin for row in establishments}
 
                 for establishment in establishments:
                     parent = account_origin.get(establishment.cuenta_negocio_id)
@@ -250,9 +250,7 @@ def audit_data(
                         )
                 for membership in memberships:
                     waiter = waiter_origin.get(membership.camarero_id)
-                    establishment = establishment_origin.get(
-                        membership.establecimiento_id
-                    )
+                    establishment = establishment_origin.get(membership.establecimiento_id)
                     if waiter is None:
                         findings.append(
                             {
@@ -369,23 +367,19 @@ def _human_report(report: dict[str, Any]) -> str:
     ]
     for entity, counts in report["counts"].items():
         lines.append(
-            f"- {entity}: real={counts['real']} test={counts['test']} "
-            f"demo={counts['demo']}"
+            f"- {entity}: real={counts['real']} test={counts['test']} demo={counts['demo']}"
         )
     lines.append("Dependencias (sin PII):")
     for entity, counts in report["dependencies"].items():
         if isinstance(counts, dict):
             lines.append(
-                f"- {entity}: real={counts['real']} test={counts['test']} "
-                f"demo={counts['demo']}"
+                f"- {entity}: real={counts['real']} test={counts['test']} demo={counts['demo']}"
             )
         else:
             lines.append(f"- {entity}: {counts}")
     lines.append(f"Hallazgos de coherencia: {len(report['findings'])}")
     for finding in report["findings"]:
-        lines.append(
-            f"  - {finding['kind']} · {finding['entity']} · {finding['id']}"
-        )
+        lines.append(f"  - {finding['kind']} · {finding['entity']} · {finding['id']}")
     lines.append("PII redactada" if report["pii_redacted"] else "PII visible (uso manual)")
     return "\n".join(lines)
 

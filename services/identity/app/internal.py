@@ -152,20 +152,16 @@ class HttpCamarerosInternal:
 
     def _request(self, method: str, path: str, **kwargs) -> httpx.Response:
         try:
-            return httpx.request(
-                method, f"{self.base_url}{path}", timeout=TIMEOUT, **kwargs
-            )
-        except httpx.HTTPError:
+            return httpx.request(method, f"{self.base_url}{path}", timeout=TIMEOUT, **kwargs)
+        except httpx.HTTPError as exc:
             raise ApiError(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 code="identity.internal_unavailable",
                 detail="Servicio de profesionales no disponible",
-            )
+            ) from exc
 
     def buscar_por_email(self, email: str) -> dict | None:
-        response = self._request(
-            "GET", "/internal/camareros/buscar", params={"email": email}
-        )
+        response = self._request("GET", "/internal/camareros/buscar", params={"email": email})
         if response.status_code == status.HTTP_404_NOT_FOUND:
             return None
         if response.status_code != 200:
@@ -181,9 +177,7 @@ class HttpCamarerosInternal:
         return response.json()
 
     def verificar_qr(self, qr: str) -> uuid.UUID:
-        response = self._request(
-            "POST", "/internal/camareros/qr/verify", json={"qr": qr}
-        )
+        response = self._request("POST", "/internal/camareros/qr/verify", json={"qr": qr})
         if response.status_code != 200:
             _raise_from_response(response, QR_INVALIDO)
         return uuid.UUID(response.json()["camarero_id"])
@@ -199,12 +193,12 @@ class HttpNegocioInternal:
                 f"{self.base_url}/internal/camareros/{camarero_id}/establecimientos",
                 timeout=TIMEOUT,
             )
-        except httpx.HTTPError:
+        except httpx.HTTPError as exc:
             raise ApiError(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 code="identity.internal_unavailable",
                 detail="Servicio de negocio no disponible",
-            )
+            ) from exc
         if response.status_code != 200:
             _raise_from_response(response, "identity.internal_error")
         return response.json()

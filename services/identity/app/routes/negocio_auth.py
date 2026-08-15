@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 from sqlalchemy.exc import IntegrityError
@@ -10,8 +10,8 @@ from app.auth import (
     hash_password,
     verify_password,
 )
-from app.db import get_negocio_db
 from app.data_origin import ensure_data_origin_allowed
+from app.db import get_negocio_db
 from app.errors import (
     CAMARERO_NOT_FOUND,
     DATA_ORIGIN_MISMATCH,
@@ -82,7 +82,7 @@ def registrar_negocio(
                 status_code=status.HTTP_409_CONFLICT,
                 code=NEGOCIO_EMAIL_ALREADY_REGISTERED,
                 detail="Ya existe una cuenta de negocio con ese email",
-            )
+            ) from exc
         raise
     return RegistroNegocioResponse(id=cuenta.id, data_origin=cuenta.data_origin)
 
@@ -143,7 +143,7 @@ async def subir_logo(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             code=FOTO_INVALIDA,
             detail=str(exc),
-        )
+        ) from exc
 
     storage = get_foto_storage()
     if cuenta.logo_clave:
@@ -153,7 +153,7 @@ async def subir_logo(
     cuenta.logo_clave = clave
     cuenta.logo_mimetype = mimetype
     cuenta.logo_size = size
-    cuenta.logo_actualizada_en = datetime.now(timezone.utc)
+    cuenta.logo_actualizada_en = datetime.now(UTC)
     db.commit()
     return LogoNegocioResponse(logo_url="/v1/auth/negocio/me/logo")
 

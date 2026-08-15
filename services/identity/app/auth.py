@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 from argon2 import PasswordHasher
@@ -16,7 +16,7 @@ from app.errors import (
     ApiError,
 )
 from app.internal import get_camareros_internal
-from app.models import Camarero, CuentaNegocio, Credencial, CredencialEstado
+from app.models import Camarero, Credencial, CredencialEstado, CuentaNegocio
 from app.security import get_session_secret, get_session_secret_env
 
 TTL_DAYS_ENV = "SESSION_TTL_DAYS"
@@ -49,10 +49,8 @@ def _ttl_days() -> int:
     return DEFAULT_TTL_DAYS
 
 
-def create_access_token(
-    subject_id: uuid.UUID, secret: str, subject_type: str = "camarero"
-) -> str:
-    now = datetime.now(timezone.utc)
+def create_access_token(subject_id: uuid.UUID, secret: str, subject_type: str = "camarero") -> str:
+    now = datetime.now(UTC)
     payload = {
         "sub": str(subject_id),
         "typ": subject_type,
@@ -104,9 +102,7 @@ def get_current_camarero(
     db: Session = Depends(get_camarero_db),
 ) -> Camarero:
     token = _bearer_token(credentials)
-    camarero_id = decode_access_token(
-        token, get_session_secret(db), expected_type="camarero"
-    )
+    camarero_id = decode_access_token(token, get_session_secret(db), expected_type="camarero")
     if camarero_id is None:
         raise ApiError(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -150,9 +146,7 @@ def get_current_cuenta_negocio(
     db: Session = Depends(get_negocio_db),
 ) -> CuentaNegocio:
     token = _bearer_token(credentials)
-    cuenta_id = decode_access_token(
-        token, get_session_secret_env(), expected_type="negocio"
-    )
+    cuenta_id = decode_access_token(token, get_session_secret_env(), expected_type="negocio")
     cuenta = db.get(CuentaNegocio, cuenta_id) if cuenta_id else None
     if cuenta is None:
         raise ApiError(
@@ -174,17 +168,15 @@ def get_current_actor(
     """
     token = _bearer_token(credentials)
     try:
-        payload = jwt.decode(
-            token, get_session_secret_env(), algorithms=[ALGORITHM]
-        )
+        payload = jwt.decode(token, get_session_secret_env(), algorithms=[ALGORITHM])
         subject_id = uuid.UUID(payload["sub"])
         subject_type = payload.get("typ", "camarero")
-    except (jwt.PyJWTError, KeyError, ValueError):
+    except (jwt.PyJWTError, KeyError, ValueError) as exc:
         raise ApiError(
             status_code=status.HTTP_401_UNAUTHORIZED,
             code=INVALID_TOKEN,
             detail="Token de sesión inválido o caducado",
-        )
+        ) from exc
 
     if subject_type == "negocio":
         if db.get(CuentaNegocio, subject_id) is None:
