@@ -128,7 +128,7 @@ class Camarero(CamareroBase):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    credenciales: Mapped[list["Credencial"]] = relationship(
+    credenciales: Mapped[list[Credencial]] = relationship(
         back_populates="camarero", cascade="all, delete-orphan"
     )
 
@@ -203,10 +203,10 @@ class CuentaNegocio(NegocioBase):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    establecimientos: Mapped[list["Establecimiento"]] = relationship(
+    establecimientos: Mapped[list[Establecimiento]] = relationship(
         back_populates="cuenta_negocio", cascade="all, delete-orphan"
     )
-    invitaciones: Mapped[list["Invitacion"]] = relationship(
+    invitaciones: Mapped[list[Invitacion]] = relationship(
         back_populates="cuenta_negocio", cascade="all, delete-orphan"
     )
 
@@ -247,16 +247,16 @@ class Establecimiento(NegocioBase):
     )
 
     cuenta_negocio: Mapped[CuentaNegocio] = relationship(back_populates="establecimientos")
-    membresias: Mapped[list["Membresia"]] = relationship(
+    membresias: Mapped[list[Membresia]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
-    invitaciones: Mapped[list["Invitacion"]] = relationship(
+    invitaciones: Mapped[list[Invitacion]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
-    layout: Mapped["LayoutEstablecimiento | None"] = relationship(
+    layout: Mapped[LayoutEstablecimiento | None] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
-    productos: Mapped[list["ProductoCatalogo"]] = relationship(
+    productos: Mapped[list[ProductoCatalogo]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
 
@@ -502,7 +502,7 @@ class Invitacion(NegocioBase):
 
     establecimiento: Mapped[Establecimiento] = relationship(back_populates="invitaciones")
     cuenta_negocio: Mapped[CuentaNegocio] = relationship(back_populates="invitaciones")
-    outbox: Mapped[list["EmailOutbox"]] = relationship(
+    outbox: Mapped[list[EmailOutbox]] = relationship(
         back_populates="invitacion", cascade="all, delete-orphan"
     )
 

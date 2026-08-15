@@ -267,7 +267,7 @@ layout, outbox y OpenAPI (dos specs).
 
 ## Calidad y CI
 
-El contrato común vive en `services/identity/pyproject.toml` y fija Python 3.12,
+El contrato común vive en `services/identity/pyproject.toml` y fija Python 3.14,
 Ruff, pytest y cobertura. Para reproducir el job rápido localmente:
 
 ```bash
