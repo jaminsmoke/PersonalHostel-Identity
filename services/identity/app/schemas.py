@@ -225,6 +225,7 @@ class InvitacionResponse(BaseModel):
     rol: str
     estado: str
     expira_en: datetime
+    creada_en: datetime
 
 
 class InvitacionAcceptResponse(BaseModel):
