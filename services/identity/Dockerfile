@@ -1,4 +1,4 @@
-FROM python:3.12-slim@sha256:dd29372629eeba2dd003fd9e9d35a5b8236c44727875a0364254b5127af88e65 AS base
+FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4 AS app
 
 WORKDIR /app
 COPY requirements.txt .
@@ -10,19 +10,12 @@ COPY alembic_negocio.ini .
 COPY scripts ./scripts
 COPY alembic.ini .
 
-FROM base AS runtime
-
 RUN groupadd --gid 10001 identity \
     && useradd --uid 10001 --gid identity --no-create-home --shell /usr/sbin/nologin identity \
     && mkdir -p /app/data/fotos \
     && chown -R identity:identity /app/data
 
-USER 10001:10001
-
-EXPOSE 8080
-CMD ["sh", "/app/scripts/entrypoint.sh"]
-
-FROM runtime AS test
+FROM app AS test
 
 USER root
 COPY requirements-dev.txt pyproject.toml ./
@@ -30,5 +23,25 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY tests ./tests
 
 USER 10001:10001
+
+FROM app AS runtime-files
+
+# El servicio no instala paquetes en ejecución. Retirar el toolchain evita
+# conservar pip/setuptools y sus dependencias vendorizadas en producción.
+RUN pip uninstall --yes pip setuptools wheel \
+    && rm -rf /root/.cache /tmp/*
+
+# Copiar el filesystem final a scratch aplana las capas de la imagen oficial.
+# Así el artefacto desplegable tampoco conserva metadatos vulnerables borrados
+# de las capas base, que los escáneres de cadena de suministro aún detectan.
+FROM scratch AS runtime
+
+COPY --from=runtime-files / /
+
+WORKDIR /app
+USER 10001:10001
+
+EXPOSE 8080
+CMD ["sh", "/app/scripts/entrypoint.sh"]
 
 FROM runtime AS production

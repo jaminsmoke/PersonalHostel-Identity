@@ -15,7 +15,7 @@ If you are the agent continuing here: read this **entire** file before writing c
 
 | Layer | Technology |
 |---|---|
-| API | Python 3.12 + FastAPI + Uvicorn |
+| API | Python 3.14 + FastAPI + Uvicorn |
 | DB | PostgreSQL 16 |
 | Orchestration | Docker Compose |
 | API ports | **8080** (camareros) · **8082** (negocio) — dos servicios, dos BD |
@@ -76,7 +76,7 @@ PersonalHosteleriaServer/
 │   ├── Dockerfile            # etapas runtime/test; producción sin tooling dev
 │   ├── requirements.txt      # dependencias de ejecución
 │   ├── requirements-dev.txt  # pytest, cobertura y Ruff
-│   ├── pyproject.toml        # contrato Python 3.12, lint, formato y cobertura
+│   ├── pyproject.toml        # contrato Python 3.14, lint, formato y cobertura
 │   ├── alembic/              # migraciones BD profesionales (incluye procedencia real/test/demo)
 │   ├── alembic_negocio/      # migraciones BD negocio (incluye procedencia heredada y catálogo/sync)
 │   ├── app/                  # main, auth, models, schemas, routes, storage, images

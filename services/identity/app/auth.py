@@ -35,7 +35,7 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, password_hash: str) -> bool:
     try:
         return _hasher.verify(password_hash, password)
-    except (VerifyMismatchError, TypeError, ValueError):
+    except VerifyMismatchError, TypeError, ValueError:
         return False
 
 
@@ -69,7 +69,7 @@ def decode_access_token(
         if token_type != expected_type:
             return None
         return uuid.UUID(payload["sub"])
-    except (jwt.PyJWTError, KeyError, ValueError):
+    except jwt.PyJWTError, KeyError, ValueError:
         return None
 
 
