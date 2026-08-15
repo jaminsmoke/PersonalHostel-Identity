@@ -17,14 +17,10 @@ from app.auth import (
 from app.db import get_negocio_db
 from app.errors import (
     CAMARERO_NOT_FOUND,
-    DATA_ORIGIN_MISMATCH,
     EMAIL_NOT_FOUND,
     ESTABLECIMIENTO_NOT_FOUND,
     INVITACION_DUPLICATE,
-    INVITACION_EXPIRED,
     INVITACION_NOT_FOUND,
-    INVITACION_UNAUTHORIZED,
-    INVITACION_USED,
     LAYOUT_NOT_FOUND,
     MEMBERSHIP_DUPLICATE,
     MEMBERSHIP_FORBIDDEN,
@@ -32,6 +28,7 @@ from app.errors import (
     ApiError,
 )
 from app.internal import get_camareros_internal
+from app.membresias import _add_or_reactivate_membership, _finalizar_aceptacion
 from app.models import (
     CuentaNegocio,
     EmailOutbox,
@@ -89,54 +86,6 @@ def _establecimiento_de_cuenta(
             detail="La cuenta no tiene acceso a este establecimiento",
         )
     return establecimiento
-
-
-def _add_or_reactivate_membership(
-    db: Session,
-    establecimiento: Establecimiento,
-    camarero_id: uuid.UUID,
-    rol: str,
-    allow_existing: bool = False,
-) -> Membresia:
-    waiter = get_camareros_internal().perfil(camarero_id)
-    if waiter is None:
-        raise ApiError(
-            status_code=status.HTTP_404_NOT_FOUND,
-            code=CAMARERO_NOT_FOUND,
-            detail="Camarero no encontrado",
-        )
-    if waiter["data_origin"] != establecimiento.data_origin.value:
-        raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            code=DATA_ORIGIN_MISMATCH,
-            detail="El camarero y el establecimiento deben tener la misma procedencia",
-        )
-    existing = (
-        db.query(Membresia)
-        .filter_by(establecimiento_id=establecimiento.id, camarero_id=camarero_id)
-        .one_or_none()
-    )
-    if existing is not None:
-        if existing.estado == MembresiaEstado.revocada:
-            existing.estado = MembresiaEstado.activa
-            existing.revocada_en = None
-            existing.rol = MembresiaRol(rol)
-            return existing
-        if allow_existing:
-            return existing
-        raise ApiError(
-            status_code=status.HTTP_409_CONFLICT,
-            code=MEMBERSHIP_DUPLICATE,
-            detail="El camarero ya pertenece a este establecimiento",
-        )
-    membership = Membresia(
-        establecimiento_id=establecimiento.id,
-        camarero_id=camarero_id,
-        rol=MembresiaRol(rol),
-        estado=MembresiaEstado.activa,
-    )
-    db.add(membership)
-    return membership
 
 
 def _invitation_response(invitation: Invitacion) -> InvitacionResponse:
@@ -549,21 +498,6 @@ def aceptar_invitacion(
             code=INVITACION_NOT_FOUND,
             detail="Invitación no encontrada",
         )
-    now = datetime.now(UTC)
-    if invitation.estado != InvitacionEstado.pendiente:
-        raise ApiError(
-            status_code=status.HTTP_409_CONFLICT,
-            code=INVITACION_USED,
-            detail="La invitación ya no está disponible",
-        )
-    if invitation.expira_en <= now:
-        invitation.estado = InvitacionEstado.expirada
-        db.commit()
-        raise ApiError(
-            status_code=status.HTTP_410_GONE,
-            code=INVITACION_EXPIRED,
-            detail="La invitación ha expirado",
-        )
     if camarero_id is None:
         perfil = get_camareros_internal().buscar_por_email(invitation.email_objetivo)
         if perfil is None:
@@ -573,22 +507,7 @@ def aceptar_invitacion(
                 detail="No existe una cuenta para el email de la invitación",
             )
         camarero_id = uuid.UUID(perfil["id"])
-    else:
-        perfil = get_camareros_internal().perfil(camarero_id)
-        if perfil is None or perfil["email"].lower() != invitation.email_objetivo:
-            raise ApiError(
-                status_code=status.HTTP_403_FORBIDDEN,
-                code=INVITACION_UNAUTHORIZED,
-                detail="La invitación no corresponde a este camarero",
-            )
-    establecimiento = db.get(Establecimiento, invitation.establecimiento_id)
-    membership = _add_or_reactivate_membership(
-        db, establecimiento, camarero_id, invitation.rol.value, allow_existing=True
-    )
-    invitation.estado = InvitacionEstado.aceptada
-    invitation.aceptada_en = now
-    db.commit()
-    db.refresh(membership)
+    membership = _finalizar_aceptacion(db, invitation, camarero_id)
     return InvitacionAcceptResponse(invitacion_id=invitation.id, membresia=membership)
 
 

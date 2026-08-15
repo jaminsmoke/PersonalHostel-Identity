@@ -1,4 +1,5 @@
 import secrets
+import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile, status
@@ -33,6 +34,8 @@ from app.schemas import (
     ErrorResponse,
     EstablecimientoMembresiaResponse,
     FotoResponse,
+    InvitacionAcceptResponse,
+    InvitacionCamareroResponse,
     PerfilUpdateRequest,
     QrResponse,
     RegistroRequest,
@@ -150,6 +153,35 @@ def mis_establecimientos(
     camarero: Camarero = Depends(get_current_camarero),
 ) -> list[dict]:
     return get_negocio_internal().establecimientos_de(camarero.id)
+
+
+@router.get(
+    "/me/invitaciones",
+    response_model=list[InvitacionCamareroResponse],
+    responses={status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED},
+)
+def mis_invitaciones(
+    camarero: Camarero = Depends(get_current_camarero),
+) -> list[dict]:
+    return get_negocio_internal().invitaciones_de(camarero.id)
+
+
+@router.post(
+    "/me/invitaciones/{invitacion_id}/aceptar",
+    response_model=InvitacionAcceptResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+        status.HTTP_410_GONE: {"model": ErrorResponse},
+    },
+)
+def aceptar_invitacion_me(
+    invitacion_id: uuid.UUID,
+    camarero: Camarero = Depends(get_current_camarero),
+) -> dict:
+    return get_negocio_internal().aceptar_invitacion(invitacion_id, camarero.id)
 
 
 @router.get(
