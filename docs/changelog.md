@@ -10,6 +10,12 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Política raíz de seguridad de CI y cadena de suministro**: CodeQL y
+  Dependabot, auditoría Python/workflows/contenedores con `pip-audit`,
+  `actionlint`, `zizmor` y Trivy, SBOM SPDX por imagen, pines inmutables y
+  excepciones justificadas con caducidad. Los runtimes Identity y Web pasan a
+  usuarios no privilegiados. ([#25](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/25), Build/CI)
+
 - **Procedencia canónica de datos** `real|test|demo` para camareros y cuentas,
   heredada de forma inmutable por establecimientos y productos. Incluye política
   segura por entorno, auditor read-only con PII redactada, diagnóstico cross-DB y
