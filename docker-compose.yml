@@ -117,6 +117,7 @@ services:
       FOTOS_DIR: /tmp/identity-test-fotos
       OPENAPI_DOCS_DIR: /docs
       RUFF_CACHE_DIR: /tmp/ruff-cache
+      COVERAGE_FILE: /tmp/.coverage
       INTERNAL_TRANSPORT: direct
       ALLOW_NON_REAL_DATA: "true"
     command:
