@@ -70,7 +70,8 @@ PersonalHosteleriaServer/
 │   ├── changelog.md          # changelog v0.1
 │   ├── openapi-camareros.json
 │   └── openapi-negocio.json  # contratos OpenAPI versionados
-├── .github/workflows/        # checks requeridos quality + integration
+├── .github/workflows/        # checks requeridos quality + integration + security
+├── security/                 # política, excepciones caducables y documentación SBOM
 ├── services/identity/        # API FastAPI (identidad, QR, foto, OpenAPI)
 │   ├── Dockerfile            # etapas runtime/test; producción sin tooling dev
 │   ├── requirements.txt      # dependencias de ejecución
@@ -94,6 +95,17 @@ PersonalHosteleriaServer/
 
 `docker compose up --build` levanta Postgres 16 + APIs en `:8080` y `:8082` +
 Identity Web (página de invitaciones) en `:8081` + worker de email.
+
+CI fija acciones por SHA e imágenes base por digest. El job `security` aplica
+`pip-audit`, `actionlint`, `zizmor` y Trivy, y publica SARIF + SBOM SPDX durante
+30 días. Sus umbrales y excepciones caducables viven en `security/`; no se deben
+suprimir hallazgos directamente en el workflow. CodeQL usa default setup para
+Python y Dependabot mantiene pip, Docker, Compose y Actions.
+
+Los servicios de API usan UID/GID 10001 y Identity Web usa `nginx` (101). La
+tarea Compose `fotos-permissions` es la única excepción root: es efímera,
+idempotente, solo hace `chown` del volumen heredado y debe completar antes de
+arrancar las APIs.
 
 - `GET /health` → `{ "ok": true }`
 - `GET /v1/meta` → servicio, rol `identity`, `status: schema`

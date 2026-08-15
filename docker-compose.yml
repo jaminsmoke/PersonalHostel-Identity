@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:44c4ee9810eff91f7eab4d822642e01115b1a9eccce4bcbdde7604752d68eac6
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-hosteleria}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devlocal}
@@ -36,6 +36,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      fotos-permissions:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health')\""]
       interval: 5s
@@ -65,6 +67,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      fotos-permissions:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health')\""]
       interval: 5s
@@ -90,6 +94,16 @@ services:
       identity-negocio:
         condition: service_healthy
 
+  fotos-permissions:
+    build:
+      context: ./services/identity
+      target: runtime
+    user: "0:0"
+    command: ["sh", "-c", "chown -R 10001:10001 /app/data/fotos"]
+    volumes:
+      - fotos:/app/data/fotos
+    restart: "no"
+
   identity-tests:
     profiles: ["test"]
     build:
@@ -102,6 +116,8 @@ services:
       QR_SIGNING_KEY: ${QR_SIGNING_KEY:-osYIdBW7fkucKVqY9St5yQKpLpDuAzJ4PeRaFMXbtDI=}
       FOTOS_DIR: /tmp/identity-test-fotos
       OPENAPI_DOCS_DIR: /docs
+      RUFF_CACHE_DIR: /tmp/ruff-cache
+      COVERAGE_FILE: /tmp/.coverage
       INTERNAL_TRANSPORT: direct
       ALLOW_NON_REAL_DATA: "true"
     command:
@@ -128,7 +144,7 @@ services:
   identity-web:
     build: ./services/identity-web
     ports:
-      - "${IDENTITY_WEB_PORT:-8081}:80"
+      - "${IDENTITY_WEB_PORT:-8081}:8080"
     environment:
       IDENTITY_API_URL: ${IDENTITY_API_URL:-http://localhost:8082}
     depends_on:

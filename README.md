@@ -41,6 +41,23 @@ docker compose up --build
 - Postgres: `localhost:5432` (usuario `hosteleria`; bases `identity_camareros` y `identity_negocio`)
 - Esquema: aplicado por Alembic al arrancar; una cadena por BD (`alembic` para camareros, `alembic_negocio` para negocio)
 
+## Seguridad de CI y cadena de suministro
+
+Los PR y `main` ejecutan tres checks requeridos: `quality`, `integration` y
+`security`. El tercero audita dependencias Python, workflows, Dockerfiles,
+configuración e imágenes; genera SARIF y un SBOM SPDX por runtime Identity,
+Identity Web y PostgreSQL. Las acciones se fijan por SHA, las bases Docker por
+digest y los servicios de aplicación se ejecutan sin root.
+
+La política, los umbrales y el formato de excepciones con caducidad están en
+[`security/README.md`](security/README.md). Dependabot cubre pip, Docker, Compose
+y GitHub Actions. CodeQL usa el default setup de GitHub para Python. En local,
+la ruta soportada sigue siendo `docker compose up --build`.
+
+Para migrar volúmenes `fotos` creados por versiones antiguas, Compose ejecuta
+una tarea efímera `fotos-permissions` como root que solo ajusta ownership y
+termina. Las APIs nunca heredan ese usuario: arrancan después como UID/GID 10001.
+
 ## API v1
 
 ### OpenAPI y contrato versionado
