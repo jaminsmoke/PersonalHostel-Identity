@@ -16,7 +16,7 @@ jobs:
   integration:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Prepare report directory
         run: mkdir -p build/reports
       - name: Build and start Identity with PostgreSQL 16
@@ -35,7 +35,7 @@ jobs:
         run: docker compose exec -T identity-camareros python -m app.data_audit --format json --fail-on-detected
       - name: Upload test and coverage reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: identity-test-reports
           path: build/reports
