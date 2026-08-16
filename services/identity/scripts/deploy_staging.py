@@ -26,6 +26,24 @@ ENV_FILE = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".env")
 )
 
+# Clave de host del VPS de staging (pinned, anti-MITM). Si el VPS se reinstala
+# y cambia la clave, actualiza este valor con `ssh-keyscan -t ed25519 <host>`.
+EXPECTED_HOST_KEY = (
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC97NggHRUpdK1Q2VM1zi0r9nu/yPdEb/P2lNGLq9Ssa"
+)
+
+
+class PinnedHostKey(paramiko.MissingHostKeyPolicy):
+    """Acepta solo la clave de host esperada; rechaza cualquier otra (anti-MITM)."""
+
+    def missing_host_key(self, client, hostname, key):
+        presented = f"{key.get_name()} {key.get_base64()}"
+        if presented != EXPECTED_HOST_KEY:
+            raise paramiko.SSHException(
+                f"Clave de host inesperada para {hostname}: {presented}. "
+                "Posible MITM o VPS reinstalado; actualiza EXPECTED_HOST_KEY."
+            )
+
 
 def env_value(key: str) -> str:
     try:
@@ -48,7 +66,7 @@ def main() -> int:
         return 1
 
     client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.set_missing_host_key_policy(PinnedHostKey())
     client.connect(
         host,
         username=user,
