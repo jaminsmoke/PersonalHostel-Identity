@@ -14,7 +14,7 @@ from app.errors import (
 )
 from app.models import Camarero
 from app.schemas import ErrorResponse, LoginRequest, LoginResponse
-from app.security import build_qr_payload, get_session_secret, get_signing_key
+from app.security import build_qr_payload, ficha_url, get_session_secret, get_signing_key
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
@@ -70,4 +70,4 @@ def login(payload: LoginRequest, db: Session = Depends(get_camarero_db)) -> Logi
     secret = get_session_secret(db)
     token = create_access_token(camarero.id, secret)
     qr = build_qr_payload(camarero.id, credencial.id, get_signing_key(db))
-    return LoginResponse(token=token, camarero=camarero, qr=qr)
+    return LoginResponse(token=token, camarero=camarero, qr=qr, ficha_url=ficha_url(qr))

@@ -66,3 +66,28 @@ body {
   font-size: 34px;
   margin-bottom: 10px;
 }
+
+.avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin: 0 auto 16px;
+  border: 2px solid var(--accent);
+  background: #0f172a;
+}
+
+.avatar-empty {
+  display: grid;
+  place-items: center;
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.nick {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+}

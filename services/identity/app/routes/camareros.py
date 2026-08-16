@@ -55,6 +55,7 @@ from app.schemas import (
 )
 from app.security import (
     build_qr_payload,
+    ficha_url,
     get_signing_key,
     get_verify_key,
     parse_and_verify_qr_payload,
@@ -137,7 +138,9 @@ def registrar_camarero(
         raise
 
     qr = build_qr_payload(camarero.id, credencial.id, signing_key)
-    return RegistroResponse(id=camarero.id, qr=qr, data_origin=camarero.data_origin)
+    return RegistroResponse(
+        id=camarero.id, qr=qr, ficha_url=ficha_url(qr), data_origin=camarero.data_origin
+    )
 
 
 @router.get(
@@ -315,7 +318,7 @@ def me_qr(
             detail=CLAVE_REVOCADA,
         )
     qr = build_qr_payload(camarero.id, credencial.id, get_signing_key(db))
-    return QrResponse(qr=qr)
+    return QrResponse(qr=qr, ficha_url=ficha_url(qr))
 
 
 @router.post(

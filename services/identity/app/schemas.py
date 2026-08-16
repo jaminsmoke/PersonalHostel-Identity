@@ -29,6 +29,9 @@ class RegistroResponse(BaseModel):
 
     id: uuid.UUID = Field(..., examples=["3fa85f64-5717-4562-b3fc-2c963f66afa6"])
     qr: str = Field(..., examples=["phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"])
+    ficha_url: str | None = Field(
+        default=None, examples=["https://ficha.example/ficha?qr=phid1:..."]
+    )
     data_origin: DataOrigin
 
 
@@ -100,12 +103,18 @@ class LoginResponse(BaseModel):
     token: str = Field(..., examples=["<jwt>"])
     camarero: CamareroPerfil
     qr: str = Field(..., examples=["phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"])
+    ficha_url: str | None = Field(
+        default=None, examples=["https://ficha.example/ficha?qr=phid1:..."]
+    )
 
 
 class QrResponse(BaseModel):
-    """Payload para pintar el QR permanente."""
+    """Payload para pintar el QR permanente y su URL pública de ficha."""
 
     qr: str = Field(..., examples=["phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"])
+    ficha_url: str | None = Field(
+        default=None, examples=["https://ficha.example/ficha?qr=phid1:..."]
+    )
 
 
 class RevocarRequest(BaseModel):

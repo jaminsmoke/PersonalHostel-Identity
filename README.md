@@ -150,10 +150,14 @@ Toda respuesta de error lleva `detail` (mensaje en español) y `code` (código e
 {
   "id": "<uuid del camarero>",
   "data_origin": "real",
-  "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"
+  "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>",
+  "ficha_url": "https://ficha.example/ficha?qr=phid1:..."
 }
 ```
 
+- `ficha_url` es la URL pública de la ficha (configurable con `FICHA_URL_BASE`);
+  los clientes pueden emitir el QR como esta URL para que escanearlo abra la web.
+- La verificación del QR acepta tanto `phid1:...` como `https://...?qr=phid1:...`.
 - `data_origin` es opcional y vale `real` por defecto. `test` y `demo` solo se
   admiten cuando el servidor tiene `ALLOW_NON_REAL_DATA=true`; en el VPS debe
   permanecer `false`. Es linaje inmutable, no un rol ni una autorización.
@@ -186,11 +190,12 @@ Respuesta `200`:
     "nick": "Anita",
     "data_origin": "real"
   },
-  "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"
+  "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>",
+  "ficha_url": "https://ficha.example/ficha?qr=phid1:..."
 }
 ```
 
-- El `qr` es el de la **credencial activa**: tras reinstalar (sin renovar), login → misma identidad y mismo QR.
+- El `qr` es el de la **credencial activa**: tras reinstalar (sin renovar), login → misma identidad y mismo QR. `ficha_url` acompaña siempre al `qr`.
 - `401` con `Email o contraseña incorrectos` si el email no existe, la password no cuadra o el camarero aún no tiene password.
 - `409` con `Clave revocada. Renueva la clave` si la cuenta no tiene credencial activa.
 - JWT HS256, TTL 30 días por defecto (`SESSION_TTL_DAYS`); secreto `SESSION_SECRET` (env) o generado y persistido en `app_config` (local).
@@ -222,6 +227,17 @@ privados (opt-in).
   solo si `foto=true` y existe, con `Cache-Control: public` + `ETag`. Sin token;
   el QR es la llave. `404 identity.foto_inexistente` si no hay foto o no es
   visible; `422`/`409` igual que la ficha.
+- La verificación del QR acepta tanto `phid1:...` como la URL
+  `https://...?qr=phid1:...` (extrae el parámetro `qr`).
+
+### Web de ficha pública
+
+`identity-web` (SPA vanilla, nginx) sirve, además de `/invitaciones/<token>`,
+la página pública `/ficha?qr=<phid1>` que pinta el nombre, el nick y la foto
+(cuando es visible) del camarero. En staging vive en
+`https://ficha.siberia.solutions`; el origen se autoriza vía CORS en el servicio
+de camareros (`IDENTITY_WEB_ORIGIN`) y la base pública la configura
+`FICHA_URL_BASE`.
 
 ### Foto de perfil
 
