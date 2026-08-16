@@ -1,6 +1,7 @@
 import secrets
 import uuid
 from datetime import UTC, datetime
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 from sqlalchemy.exc import IntegrityError
@@ -193,18 +194,8 @@ def actualizar_visibilidad(
     return _visibilidad_actual(camarero)
 
 
-@router.get(
-    "/ficha",
-    response_model=CamareroFichaPublica,
-    response_model_exclude_none=True,
-    responses={
-        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
-    },
-)
-def ficha_publica(qr: str, db: Session = Depends(get_camarero_db)) -> dict:
-    """Ficha pública por QR `phid1` (sin token): solo campos visibles."""
+def _camarero_por_qr(qr: str, db: Session) -> Camarero:
+    """Devuelve el camarero si el QR es válido y su credencial está activa."""
     parsed = parse_and_verify_qr_payload(qr, get_verify_key(db))
     if parsed is None:
         raise ApiError(
@@ -231,6 +222,22 @@ def ficha_publica(qr: str, db: Session = Depends(get_camarero_db)) -> dict:
             code=CAMARERO_NOT_FOUND,
             detail="Camarero no encontrado",
         )
+    return camarero
+
+
+@router.get(
+    "/ficha",
+    response_model=CamareroFichaPublica,
+    response_model_exclude_none=True,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
+    },
+)
+def ficha_publica(qr: str, db: Session = Depends(get_camarero_db)) -> dict:
+    """Ficha pública por QR `phid1` (sin token): solo campos visibles."""
+    camarero = _camarero_por_qr(qr, db)
 
     ficha: dict = {
         "camarero_id": camarero.id,
@@ -243,6 +250,8 @@ def ficha_publica(qr: str, db: Session = Depends(get_camarero_db)) -> dict:
         ficha["email"] = camarero.email
     if camarero.campo_visible("telefono"):
         ficha["telefono"] = camarero.telefono
+    if camarero.campo_visible("foto") and camarero.foto_clave:
+        ficha["foto_url"] = f"/v1/camareros/ficha/foto?qr={quote(qr)}"
     return ficha
 
 
@@ -470,6 +479,41 @@ def borrar_foto(
     camarero.foto_actualizada_en = None
     db.commit()
     return FotoResponse(foto_url=None)
+
+
+@router.get(
+    "/ficha/foto",
+    responses={
+        status.HTTP_200_OK: _FOTO_200,
+        status.HTTP_404_NOT_FOUND: _NOT_FOUND,
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
+    },
+)
+def ficha_foto(qr: str, db: Session = Depends(get_camarero_db)) -> Response:
+    """Foto pública por QR (sin token): solo si `foto=true` y existe."""
+    camarero = _camarero_por_qr(qr, db)
+    if not camarero.campo_visible("foto") or not camarero.foto_clave:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=FOTO_INEXISTENTE,
+            detail="La foto no está disponible",
+        )
+    data = get_foto_storage().leer(camarero.foto_clave)
+    if data is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=FOTO_INEXISTENTE,
+            detail="La foto no está disponible",
+        )
+    return Response(
+        content=data,
+        media_type=camarero.foto_mimetype or "image/webp",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "ETag": f'"{camarero.foto_clave}"',
+        },
+    )
 
 
 @router.delete(
