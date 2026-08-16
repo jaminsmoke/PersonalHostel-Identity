@@ -280,6 +280,8 @@ Rutas principales:
 - `PUT/GET /v1/establecimientos/{id}/layout` → **copia de respaldo del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la cuenta de negocio dueña.
 - `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`ficha_negocio | carta`) y `slug` opcional (si no, se deriva del nombre + tipo).
 - `GET /v1/enlaces/{slug}` → resolución pública **sin token**: devuelve `{ tipo, establecimiento_id }` con cache pública (`max-age=300`). Slug inexistente → `404`, revocado → `410`.
+- `GET /v1/negocio/ficha?slug=<enlace>` → ficha pública del negocio **sin token**: `nombre`, `tipo_establecimiento`, `logo_url` (si hay logo) y `establecimientos`. Enlace `carta` o inexistente → `404`, revocado → `410`.
+- `GET /v1/negocio/ficha/logo?slug=<enlace>` → logo público (WebP) con cache pública (`max-age=86400` + `ETag`).
 
 El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar.
 

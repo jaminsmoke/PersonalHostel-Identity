@@ -439,3 +439,19 @@ class EnlacePublicoResolucion(BaseModel):
 
     tipo: str
     establecimiento_id: uuid.UUID
+
+
+class EstablecimientoFichaPublica(BaseModel):
+    """Establecimiento en la ficha pública del negocio (id + nombre)."""
+
+    id: uuid.UUID
+    nombre: str
+
+
+class NegocioFichaPublica(BaseModel):
+    """Ficha pública del negocio por enlace: solo campos públicos."""
+
+    nombre: str
+    tipo_establecimiento: str | None = None
+    logo_url: str | None = None
+    establecimientos: list[EstablecimientoFichaPublica]

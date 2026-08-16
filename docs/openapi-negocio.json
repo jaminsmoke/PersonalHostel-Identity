@@ -505,6 +505,26 @@
         "title": "EstablecimientoCreateRequest",
         "type": "object"
       },
+      "EstablecimientoFichaPublica": {
+        "description": "Establecimiento en la ficha pública del negocio (id + nombre).",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre"
+        ],
+        "title": "EstablecimientoFichaPublica",
+        "type": "object"
+      },
       "EstablecimientoResponse": {
         "properties": {
           "cuenta_negocio_id": {
@@ -820,6 +840,50 @@
           "estado"
         ],
         "title": "MembresiaResponse",
+        "type": "object"
+      },
+      "NegocioFichaPublica": {
+        "description": "Ficha pública del negocio por enlace: solo campos públicos.",
+        "properties": {
+          "establecimientos": {
+            "items": {
+              "$ref": "#/components/schemas/EstablecimientoFichaPublica"
+            },
+            "title": "Establecimientos",
+            "type": "array"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "tipo_establecimiento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo Establecimiento"
+          }
+        },
+        "required": [
+          "nombre",
+          "establecimientos"
+        ],
+        "title": "NegocioFichaPublica",
         "type": "object"
       },
       "NotificacionNegocioResponse": {
@@ -3982,6 +4046,129 @@
           }
         },
         "summary": "Meta"
+      }
+    },
+    "/v1/negocio/ficha": {
+      "get": {
+        "operationId": "ficha_negocio_v1_negocio_ficha_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NegocioFichaPublica"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ficha Negocio",
+        "tags": [
+          "negocio público"
+        ]
+      }
+    },
+    "/v1/negocio/ficha/logo": {
+      "get": {
+        "operationId": "ficha_negocio_logo_v1_negocio_ficha_logo_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ficha Negocio Logo",
+        "tags": [
+          "negocio público"
+        ]
       }
     }
   }
