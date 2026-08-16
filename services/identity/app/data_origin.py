@@ -21,7 +21,7 @@ def ensure_data_origin_allowed(origin: DataOrigin) -> None:
 
     if origin is not DataOrigin.real and not non_real_data_allowed():
         raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=NON_REAL_DATA_FORBIDDEN,
             detail="La procedencia test o demo no está permitida en este entorno",
         )

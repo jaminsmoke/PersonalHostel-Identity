@@ -97,7 +97,7 @@ def _visibilidad_actual(camarero: Camarero) -> dict:
             "model": ErrorResponse,
             "description": "Ya existe un camarero con ese email.",
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
+        status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
     },
 )
 def registrar_camarero(
@@ -202,7 +202,7 @@ def _camarero_por_qr(qr: str, db: Session) -> Camarero:
     parsed = parse_and_verify_qr_payload(qr, get_verify_key(db))
     if parsed is None:
         raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=QR_INVALIDO,
             detail="El QR no es válido",
         )
@@ -235,7 +235,7 @@ def _camarero_por_qr(qr: str, db: Session) -> Camarero:
     responses={
         status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
         status.HTTP_409_CONFLICT: {"model": ErrorResponse},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
+        status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
     },
 )
 def ficha_publica(qr: str, db: Session = Depends(get_camarero_db)) -> dict:
@@ -360,7 +360,7 @@ def renovar(
     responses={
         status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
         status.HTTP_409_CONFLICT: _CONFLICT,
-        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
+        status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
     },
 )
 def revocar(
@@ -402,7 +402,7 @@ _NOT_FOUND = {
     response_model=FotoResponse,
     responses={
         status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
-        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
+        status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
     },
 )
 async def subir_foto(
@@ -415,7 +415,7 @@ async def subir_foto(
         payload, mimetype, size = normalizar_foto(data)
     except FotoInvalida as exc:
         raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=FOTO_INVALIDA,
             detail=str(exc),
         ) from exc
@@ -490,7 +490,7 @@ def borrar_foto(
         status.HTTP_200_OK: _FOTO_200,
         status.HTTP_404_NOT_FOUND: _NOT_FOUND,
         status.HTTP_409_CONFLICT: {"model": ErrorResponse},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
+        status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
     },
 )
 def ficha_foto(qr: str, db: Session = Depends(get_camarero_db)) -> Response:
@@ -524,7 +524,7 @@ def ficha_foto(qr: str, db: Session = Depends(get_camarero_db)) -> Response:
     response_model=SupresionResponse,
     responses={
         status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
-        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
+        status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
     },
 )
 def suprimir_cuenta(

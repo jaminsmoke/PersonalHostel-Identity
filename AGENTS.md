@@ -154,6 +154,8 @@ Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento
 
 Bar y Commander **no** copian usuarios a SQLite como fuente de verdad. Cachean la sesión. La verdad está aquí.
 
+El transporte interno entre servicios (`INTERNAL_TRANSPORT=http`, rutas `/internal/*`) usa **`httpx2`** (fork mantenido por Pydantic; `httpx` quedó sin mantenimiento en 2024). No reintroducir `httpx`. El status 422 se referencia como `HTTP_422_UNPROCESSABLE_CONTENT` (el nombre anterior está deprecado).
+
 La procedencia de datos también es canónica aquí: camareros y cuentas aceptan
 `data_origin = real|test|demo` al registrarse (`real` por defecto); establecimiento
 y producto la heredan en servidor. `test/demo` requieren `ALLOW_NON_REAL_DATA=true`

@@ -59,7 +59,7 @@ def registrar_negocio(
             )
         if linked_waiter["data_origin"] != payload.data_origin.value:
             raise ApiError(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 code=DATA_ORIGIN_MISMATCH,
                 detail="La cuenta y el camarero vinculado deben tener la misma procedencia",
             )
@@ -127,7 +127,7 @@ def suprimir_negocio(
     response_model=LogoNegocioResponse,
     responses={
         status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse},
     },
 )
 async def subir_logo(
@@ -140,7 +140,7 @@ async def subir_logo(
         payload, mimetype, size = normalizar_foto(data)
     except FotoInvalida as exc:
         raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=FOTO_INVALIDA,
             detail=str(exc),
         ) from exc

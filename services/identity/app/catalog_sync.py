@@ -99,26 +99,26 @@ def _payload_dict(payload: ProductoPayload | None) -> dict | None:
 def _validate_request(payload: OperacionSyncRequest) -> None:
     if payload.aggregate_type != "producto":
         raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=SYNC_OPERATION_UNSUPPORTED,
             detail="El tipo de operación todavía no está soportado",
         )
     if payload.action != "archivar" and payload.payload is None:
         raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=VALIDATION_ERROR,
             detail="Crear o actualizar un producto requiere el payload completo",
         )
     if payload.client_created_at.utcoffset() is None:
         raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=VALIDATION_ERROR,
             detail="client_created_at debe incluir zona horaria",
         )
     raw = payload.model_dump_json().encode("utf-8")
     if len(raw) > MAX_OPERATION_BYTES:
         raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=VALIDATION_ERROR,
             detail="La operación supera el tamaño máximo de 1 MB",
         )

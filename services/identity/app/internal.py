@@ -18,7 +18,7 @@ import os
 import uuid
 from typing import Protocol
 
-import httpx
+import httpx2 as httpx
 from fastapi import status
 
 from app.db import CamareroSessionLocal, NegocioSessionLocal
@@ -97,7 +97,7 @@ class DirectCamarerosInternal:
             parsed = parse_and_verify_qr_payload(qr, get_verify_key(db))
             if parsed is None:
                 raise ApiError(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     code=QR_INVALIDO,
                     detail="El QR no es válido",
                 )

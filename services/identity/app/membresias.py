@@ -57,7 +57,7 @@ def _add_or_reactivate_membership(
         )
     if waiter["data_origin"] != establecimiento.data_origin.value:
         raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=DATA_ORIGIN_MISMATCH,
             detail="El camarero y el establecimiento deben tener la misma procedencia",
         )
