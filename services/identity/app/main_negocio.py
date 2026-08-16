@@ -8,6 +8,8 @@ from sqlalchemy import text
 from app.db import negocio_engine
 from app.http import register_error_handlers
 from app.routes.catalogo import router as catalogo_router
+from app.routes.enlaces import public_router as enlaces_public_router
+from app.routes.enlaces import router as enlaces_router
 from app.routes.establecimientos import (
     invitations_router,
 )
@@ -54,6 +56,8 @@ if _web_origins:
 app.include_router(negocio_auth_router)
 app.include_router(establecimientos_router)
 app.include_router(catalogo_router)
+app.include_router(enlaces_router)
+app.include_router(enlaces_public_router)
 app.include_router(invitations_router)
 app.include_router(negocio_internal_router)
 

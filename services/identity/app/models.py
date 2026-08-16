@@ -60,6 +60,18 @@ class ProductoDestino(str, enum.Enum):
     cocina = "cocina"
 
 
+class EnlaceTipo(str, enum.Enum):
+    """Tipos de enlace público (crece sin migración)."""
+
+    ficha_negocio = "ficha_negocio"
+    carta = "carta"
+
+
+class EnlaceEstado(str, enum.Enum):
+    activo = "activo"
+    revocado = "revocado"
+
+
 class SyncAccion(str, enum.Enum):
     crear = "crear"
     actualizar = "actualizar"
@@ -289,6 +301,9 @@ class Establecimiento(NegocioBase):
     productos: Mapped[list[ProductoCatalogo]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
+    enlaces: Mapped[list[EnlacePublico]] = relationship(
+        back_populates="establecimiento", cascade="all, delete-orphan"
+    )
 
 
 class ProductoCatalogo(NegocioBase):
@@ -334,6 +349,52 @@ class ProductoCatalogo(NegocioBase):
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     establecimiento: Mapped[Establecimiento] = relationship(back_populates="productos")
+
+
+class EnlacePublico(NegocioBase):
+    """Enlace público revocable (ficha de negocio, carta, futuros compartibles).
+
+    Público por diseño: sin firma; se resuelve por ``slug`` opaco y se revoca
+    con un toggle. ``tipo``/``estado`` son strings acotados validados en la API
+    (no enums de Postgres) para poder crecer sin migración.
+    """
+
+    __tablename__ = "enlaces_publicos"
+    __table_args__ = (
+        UniqueConstraint("slug", name="uq_enlaces_publicos_slug"),
+        Index(
+            "ix_enlaces_publicos_activos",
+            "establecimiento_id",
+            "tipo",
+            postgresql_where=text("estado = 'activo'"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tipo: Mapped[str] = mapped_column(String(50), nullable=False)
+    slug: Mapped[str] = mapped_column(String(100), nullable=False)
+    estado: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=EnlaceEstado.activo.value,
+        server_default=EnlaceEstado.activo.value,
+    )
+    expira_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    creada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    actualizada_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    establecimiento: Mapped[Establecimiento] = relationship(back_populates="enlaces")
 
 
 class OperacionSync(NegocioBase):

@@ -278,6 +278,8 @@ Rutas principales:
 - `POST /v1/establecimientos/{id}/invitaciones` → crea una invitación por email.
 - `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT (magic-link desde el email): token one-time + TTL 72h.
 - `PUT/GET /v1/establecimientos/{id}/layout` → **copia de respaldo del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la cuenta de negocio dueña.
+- `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`ficha_negocio | carta`) y `slug` opcional (si no, se deriva del nombre + tipo).
+- `GET /v1/enlaces/{slug}` → resolución pública **sin token**: devuelve `{ tipo, establecimiento_id }` con cache pública (`max-age=300`). Slug inexistente → `404`, revocado → `410`.
 
 El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar.
 

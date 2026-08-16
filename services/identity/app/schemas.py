@@ -414,3 +414,28 @@ class NotificacionNegocioResponse(BaseModel):
     payload: dict[str, Any]
     created_at: datetime
     read_at: datetime | None = None
+
+
+class EnlacePublicoCreateRequest(BaseModel):
+    """Alta de un enlace público para un establecimiento."""
+
+    tipo: str = Field(..., pattern="^(ficha_negocio|carta)$")
+    slug: str | None = Field(default=None, min_length=1, max_length=100, pattern="^[a-z0-9-]+$")
+
+
+class EnlacePublicoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    establecimiento_id: uuid.UUID
+    tipo: str
+    slug: str
+    estado: str
+    expira_en: datetime | None = None
+
+
+class EnlacePublicoResolucion(BaseModel):
+    """Resolución pública de un enlace: tipo + destino (sin PII)."""
+
+    tipo: str
+    establecimiento_id: uuid.UUID
