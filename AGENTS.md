@@ -499,6 +499,16 @@ Same family as Commander: public MIT. Do not put paid premium code in this publi
 Ver `README.md`. Desde esta carpeta: `docker compose up --build` para el stack y
 `docker compose run --rm identity-tests` para la suite aislada.
 
+## Observabilidad (solo staging/producción)
+
+Las APIs exponen `/metrics` (Prometheus, solo red interna) y un access log JSON.
+El stack de observabilidad vive en `docker-compose.observability.yml` (Prometheus,
+Grafana, Loki, Promtail, node_exporter, postgres_exporter y Alertmanager) y **no**
+forma parte del `up` de desarrollo. Se levanta en el VPS apilando el tercer fichero;
+Grafana se expone en `grafana.siberia.solutions` con `basic_auth` de Caddy. Ver
+`README.md → Observabilidad en el VPS`. El smoke sintético es `k6`
+(`services/identity/scripts/k6/smoke.js`).
+
 ## Dev tools
 
 ```

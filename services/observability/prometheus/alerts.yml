@@ -1,0 +1,54 @@
+groups:
+  - name: identity
+    rules:
+      - alert: IdentityTargetDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Target caído: {{ $labels.instance }} ({{ $labels.job }})"
+          description: "El target {{ $labels.instance }} lleva caído más de 1 minuto."
+
+      - alert: IdentityHighErrorRate
+        expr: |
+          (
+            sum by (job) (rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum by (job) (rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tasa de errores 5xx alta en {{ $labels.job }}"
+          description: "Más del 5% de 5xx en los últimos 5 minutos."
+
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL no responde"
+          description: "El exporter no alcanza la base de datos."
+
+      - alert: HostHighCPU
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU alta en {{ $labels.instance }}"
+          description: "Uso de CPU por encima del 90% durante 10 minutos."
+
+      - alert: HostLowDiskSpace
+        expr: |
+          (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay",mountpoint="/"} /
+           node_filesystem_size_bytes{fstype!~"tmpfs|overlay",mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disco bajo en {{ $labels.instance }}"
+          description: "Menos del 10% de disco libre en /."

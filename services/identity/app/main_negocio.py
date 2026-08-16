@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from app.db import negocio_engine
 from app.http import register_error_handlers
+from app.observability import mount_access_log, mount_metrics
 from app.routes.catalogo import router as catalogo_router
 from app.routes.enlaces import public_router as enlaces_public_router
 from app.routes.enlaces import router as enlaces_router
@@ -40,6 +41,8 @@ app = FastAPI(
 )
 
 register_error_handlers(app)
+mount_metrics(app)
+mount_access_log(app)
 
 _web_origins = [
     o.strip()
