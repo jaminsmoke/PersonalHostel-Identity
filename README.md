@@ -216,8 +216,12 @@ privados (opt-in).
 - `GET /v1/camareros/ficha?qr=<phid1>` → ficha **pública, sin token**: el QR
   verificado (firma Ed25519 + credencial activa) es la llave. Devuelve solo los
   campos visibles. `422 identity.qr_invalido` si el QR no es válido; `409
-  identity.credencial_inactiva` si la credencial está revocada. La foto no se
-  expone por esta ruta (queda para un follow-up aparte).
+  identity.credencial_inactiva` si la credencial está revocada. Incluye
+  `foto_url` (relativa) solo si `foto=true` y existe foto.
+- `GET /v1/camareros/ficha/foto?qr=<phid1>` → sirve la foto **pública** (WebP)
+  solo si `foto=true` y existe, con `Cache-Control: public` + `ETag`. Sin token;
+  el QR es la llave. `404 identity.foto_inexistente` si no hay foto o no es
+  visible; `422`/`409` igual que la ficha.
 
 ### Foto de perfil
 

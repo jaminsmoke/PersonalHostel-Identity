@@ -16,7 +16,7 @@
         "type": "object"
       },
       "CamareroFichaPublica": {
-        "description": "Ficha pública del camarero: solo campos visibles (sin foto).",
+        "description": "Ficha pública del camarero: solo campos visibles (foto opt-in).",
         "properties": {
           "apellidos": {
             "title": "Apellidos",
@@ -37,6 +37,17 @@
               }
             ],
             "title": "Email"
+          },
+          "foto_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foto Url"
           },
           "nick": {
             "anyOf": [
@@ -1140,6 +1151,68 @@
           }
         },
         "summary": "Ficha Publica",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/ficha/foto": {
+      "get": {
+        "description": "Foto pública por QR (sin token): solo si `foto=true` y existe.",
+        "operationId": "ficha_foto_v1_camareros_ficha_foto_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "qr",
+            "required": true,
+            "schema": {
+              "title": "Qr",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Imagen de perfil (WebP)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "El camarero no tiene foto de perfil."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Cuerpo de la petición inválido."
+          }
+        },
+        "summary": "Ficha Foto",
         "tags": [
           "camareros"
         ]

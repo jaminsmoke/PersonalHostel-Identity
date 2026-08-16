@@ -70,7 +70,7 @@ class VisibilidadUpdateRequest(BaseModel):
 
 
 class CamareroFichaPublica(BaseModel):
-    """Ficha pública del camarero: solo campos visibles (sin foto)."""
+    """Ficha pública del camarero: solo campos visibles (foto opt-in)."""
 
     camarero_id: uuid.UUID
     nombre: str
@@ -78,6 +78,7 @@ class CamareroFichaPublica(BaseModel):
     nick: str | None = None
     email: str | None = None
     telefono: str | None = None
+    foto_url: str | None = None
 
 
 class PerfilUpdateRequest(BaseModel):
