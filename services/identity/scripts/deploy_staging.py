@@ -14,6 +14,7 @@ primera vez a mano (bootstrap). Este script aborta si falta.
 
 Requiere: paramiko (pip install paramiko).
 """
+
 import os
 import sys
 
@@ -49,8 +50,12 @@ def main() -> int:
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     client.connect(
-        host, username=user, password=password, timeout=30,
-        look_for_keys=False, allow_agent=False,
+        host,
+        username=user,
+        password=password,
+        timeout=30,
+        look_for_keys=False,
+        allow_agent=False,
     )
 
     def run(cmd: str, check: bool = True) -> str:
@@ -69,9 +74,12 @@ def main() -> int:
     try:
         run(f"test -d {REMOTE_DIR} || git clone {REPO} {REMOTE_DIR}")
 
-        has_env = run(
-            f"test -f {REMOTE_DIR}/.env && echo yes || echo no", check=False
-        ).strip().splitlines()[-1].strip()
+        has_env = (
+            run(f"test -f {REMOTE_DIR}/.env && echo yes || echo no", check=False)
+            .strip()
+            .splitlines()[-1]
+            .strip()
+        )
         if has_env != "yes":
             print(
                 f"Falta {REMOTE_DIR}/.env en el VPS. "
