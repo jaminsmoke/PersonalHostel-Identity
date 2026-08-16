@@ -18,6 +18,7 @@ from app.routes.establecimientos import (
 )
 from app.routes.internal import negocio_internal_router
 from app.routes.negocio_auth import router as negocio_auth_router
+from app.routes.negocio_ficha import router as negocio_ficha_router
 
 
 @asynccontextmanager
@@ -54,6 +55,7 @@ if _web_origins:
     )
 
 app.include_router(negocio_auth_router)
+app.include_router(negocio_ficha_router)
 app.include_router(establecimientos_router)
 app.include_router(catalogo_router)
 app.include_router(enlaces_router)
