@@ -99,7 +99,7 @@ PersonalHosteleriaServer/
 ├── services/identity-web/    # página de invitaciones (nginx + SPA vanilla, :8081)
 │   ├── Dockerfile
 │   ├── nginx.conf
-│   ├── 20-identity-web.sh    # genera config.js en runtime (IDENTITY_API_URL)
+│   ├── 20-identity-web.sh    # genera config.js en runtime (IDENTITY/CAMAREROS/NEGOCIO_API_URL)
 │   └── static/               # index.html, style.css, app.js
 └── tools/
     ├── README.md
@@ -147,6 +147,8 @@ Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores l
 | DELETE | `/v1/camareros/me/foto` | Borra la foto |
 
 El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>`, **estable** entre reinstalaciones. La foto no viaja en el QR. Las respuestas que devuelven `qr` incluyen también `ficha_url` (`FICHA_URL_BASE` + `/ficha?qr=`), y la verificación acepta tanto `phid1:...` como la URL `https://...?qr=phid1:...`. La web pública de la ficha (`identity-web`, ruta `/ficha?qr=`) vive en `ficha.siberia.solutions`; el servicio de camareros autoriza su origen por CORS (`IDENTITY_WEB_ORIGIN`).
+
+`identity-web` también sirve la **ficha pública del negocio** (`/negocio?slug=`, en `ficha.siberia.solutions/negocio`) y la **carta pública del establecimiento** (`/carta?slug=`, en `carta.siberia.solutions/carta`). Ambas llaman al servicio de negocio (`NEGOCIO_API_URL`) sin token, usando el enlace público revocable por `slug`; el logo del negocio es público por diseño y el precio de la carta siempre visible.
 
 Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones (con Identity Web `:8081` para aceptar por magic-link sin JWT); el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar. Identity solo guarda un **espejo de respaldo** del layout de Bar (`PUT/GET /v1/establecimientos/{id}/layout`, tabla `layouts_establecimiento`) para restaurar el mapa en un dispositivo nuevo; no lo interpreta ni lo sirve a Commander.
 

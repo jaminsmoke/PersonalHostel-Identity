@@ -45,7 +45,7 @@ docker compose up --build
 
 El staging es producción en configuración (HTTPS, secretos reales, datos borrables). Corre en el VPS de Hostinger (la IP vive en `.env`, no en este README), detrás del **Caddy** ya instalado (que también sirve la landing `siberia.solutions`).
 
-- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `invitaciones.siberia.solutions` (:8081).
+- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `invitaciones.siberia.solutions` (:8081), `ficha.siberia.solutions` (:8081, ficha del camarero) y `carta.siberia.solutions` (:8081, carta pública del negocio).
 - `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
 - El `.env` de producción vive en `/opt/identity/.env` (gitignored): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
 
@@ -55,7 +55,7 @@ python services/identity/scripts/deploy_staging.py
 ```
 
 - Backup diario: `services/identity/scripts/backup_staging.sh` (cron en el VPS; dumps de ambas BD a `/opt/identity/backups`, retención 7 días).
-- Caddyfile: 3 bloques `reverse_proxy 127.0.0.1:8080/8082/8081` añadidos a `/etc/caddy/Caddyfile` (la landing queda intacta).
+- Caddyfile: bloques `reverse_proxy 127.0.0.1:8080` (camareros), `:8082` (negocio) y `:8081` (web — invitaciones, ficha y carta) añadidos a `/etc/caddy/Caddyfile` (la landing queda intacta).
 
 ## Cuentas de prueba canónicas (seed)
 
@@ -233,11 +233,18 @@ privados (opt-in).
 ### Web de ficha pública
 
 `identity-web` (SPA vanilla, nginx) sirve, además de `/invitaciones/<token>`,
-la página pública `/ficha?qr=<phid1>` que pinta el nombre, el nick y la foto
-(cuando es visible) del camarero. En staging vive en
-`https://ficha.siberia.solutions`; el origen se autoriza vía CORS en el servicio
-de camareros (`IDENTITY_WEB_ORIGIN`) y la base pública la configura
-`FICHA_URL_BASE`.
+las páginas públicas:
+
+- `/ficha?qr=<phid1>` — ficha del camarero (nombre, nick y foto opt-in).
+  Staging: `https://ficha.siberia.solutions`. Origen autorizado por CORS en el
+  servicio de camareros (`IDENTITY_WEB_ORIGIN`); base configurada con `FICHA_URL_BASE`.
+- `/negocio?slug=<slug>` — ficha pública del negocio (logo, nombre, tipo y
+  establecimientos). Staging: `https://ficha.siberia.solutions/negocio?slug=`.
+- `/carta?slug=<slug>` — carta pública del establecimiento (categorías y
+  productos con precio). Staging: `https://carta.siberia.solutions/carta?slug=`.
+
+Ficha de negocio y carta llaman al servicio de negocio (`NEGOCIO_API_URL`);
+el origen web se autoriza por CORS (`IDENTITY_WEB_ORIGIN`).
 
 ### Foto de perfil
 
