@@ -25,6 +25,12 @@ import sys
 
 import paramiko
 
+# En consolas Windows (cp1252) el output de `docker compose` trae caracteres
+# Unicode (barras de progreso, flechas) que rompen print(); forzamos UTF-8.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 REPO = "https://github.com/jaminsmoke/PersonalHostel-Identity.git"
 REMOTE_DIR = "/opt/identity"
 ENV_FILE = os.path.normpath(
