@@ -282,6 +282,7 @@ Rutas principales:
 - `GET /v1/enlaces/{slug}` → resolución pública **sin token**: devuelve `{ tipo, establecimiento_id }` con cache pública (`max-age=300`). Slug inexistente → `404`, revocado → `410`.
 - `GET /v1/negocio/ficha?slug=<enlace>` → ficha pública del negocio **sin token**: `nombre`, `tipo_establecimiento`, `logo_url` (si hay logo) y `establecimientos`. Enlace `carta` o inexistente → `404`, revocado → `410`.
 - `GET /v1/negocio/ficha/logo?slug=<enlace>` → logo público (WebP) con cache pública (`max-age=86400` + `ETag`).
+- `GET /v1/negocio/carta?slug=<enlace>` → carta pública **sin token**: productos disponibles agrupados por categoría, con `precio_centimos` + `moneda`. Solo lectura; no expone `destino`/`revision`. Enlace `ficha_negocio` o inexistente → `404`, revocado → `410`.
 
 El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar.
 

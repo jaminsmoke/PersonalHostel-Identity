@@ -24,6 +24,7 @@ NEGOCIO_RUTAS = [
     "/v1/auth/negocio/login",
     "/v1/negocio/ficha",
     "/v1/negocio/ficha/logo",
+    "/v1/negocio/carta",
     "/v1/establecimientos",
     "/v1/establecimientos/mios",
     "/v1/establecimientos/{establecimiento_id}",

@@ -455,3 +455,22 @@ class NegocioFichaPublica(BaseModel):
     tipo_establecimiento: str | None = None
     logo_url: str | None = None
     establecimientos: list[EstablecimientoFichaPublica]
+
+
+class ProductoCartaPublica(BaseModel):
+    """Producto visible en la carta pública (sin campos internos)."""
+
+    nombre: str
+    precio_centimos: int
+    moneda: str
+
+
+class CategoriaCartaPublica(BaseModel):
+    nombre: str
+    productos: list[ProductoCartaPublica]
+
+
+class CartaPublicaResponse(BaseModel):
+    establecimiento_id: uuid.UUID
+    nombre: str
+    categorias: list[CategoriaCartaPublica]
