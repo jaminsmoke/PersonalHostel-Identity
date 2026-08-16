@@ -7,7 +7,7 @@
 - GitHub repo: `jaminsmoke/PersonalHostel-Identity`
 - Local folder: `AndroidStudioProjects/PersonalHosteleriaServer` (sibling of `PersonalComander` and `PersonalBar`)
 - Version target: **v0.1** (no releases yet — `gh release list`; next version must be > latest)
-- Local tests: **Docker Compose on this machine**. Production: VPS (not yet).
+- Local tests: **Docker Compose on this machine**. Staging/producción: VPS de Hostinger (Caddy + subdominios `siberia.solutions`).
 
 If you are the agent continuing here: read this **entire** file before writing code. Do not implement rankings, marketplace, or table/round sync.
 
