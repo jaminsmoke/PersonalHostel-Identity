@@ -31,6 +31,8 @@ services:
       INTERNAL_TRANSPORT: http
       NEGOCIO_INTERNAL_URL: http://identity-negocio:8080
       ALLOW_NON_REAL_DATA: ${ALLOW_NON_REAL_DATA:-true}
+      IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:8081}
+      FICHA_URL_BASE: ${FICHA_URL_BASE:-http://localhost:8081}
     volumes:
       - fotos:/app/data/fotos
     depends_on:
@@ -147,6 +149,7 @@ services:
       - "${IDENTITY_WEB_PORT:-8081}:8080"
     environment:
       IDENTITY_API_URL: ${IDENTITY_API_URL:-http://localhost:8082}
+      CAMAREROS_API_URL: ${CAMAREROS_API_URL:-http://localhost:8080}
     depends_on:
       identity-negocio:
         condition: service_healthy

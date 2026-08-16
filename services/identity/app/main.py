@@ -1,6 +1,8 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.db import camarero_engine
@@ -26,6 +28,20 @@ app = FastAPI(
 )
 
 register_error_handlers(app)
+
+_web_origins = [
+    o.strip()
+    for o in os.environ.get("IDENTITY_WEB_ORIGIN", "http://localhost:8081").split(",")
+    if o.strip()
+]
+if _web_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_web_origins,
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["*"],
+        allow_credentials=False,
+    )
 
 app.include_router(camareros_router)
 app.include_router(auth_router)

@@ -3,6 +3,7 @@ import hashlib
 import os
 import secrets
 import uuid
+from urllib.parse import parse_qs, quote, urlparse
 
 import nacl.secret
 import nacl.signing
@@ -16,6 +17,7 @@ CONFIG_KEY_SESSION = "session_secret"
 
 SIGNING_KEY_ENV = "QR_SIGNING_KEY"
 SESSION_SECRET_ENV = "SESSION_SECRET"
+FICHA_URL_BASE_ENV = "FICHA_URL_BASE"
 
 
 def _load_signing_key(encoded: str) -> nacl.signing.SigningKey:
@@ -84,6 +86,24 @@ def build_qr_payload(
     return f"{QR_PREFIX}:{camarero_id}:{credencial_id}:{sig_b64}"
 
 
+def ficha_url(qr: str) -> str | None:
+    """URL pública de la ficha para el QR, o ``None`` si no está configurada."""
+    base = os.environ.get(FICHA_URL_BASE_ENV)
+    if not base:
+        return None
+    return f"{base.rstrip('/')}/ficha?qr={quote(qr)}"
+
+
+def _extract_qr_payload(payload: str) -> str:
+    """Acepta ``phid1:...`` o una URL ``https://...?qr=phid1:...``."""
+    if payload.startswith(("http://", "https://")):
+        parsed = urlparse(payload)
+        values = parse_qs(parsed.query).get("qr", [])
+        if values:
+            return values[0]
+    return payload
+
+
 def verify_qr_payload(payload: str, verify_key: nacl.signing.VerifyKey) -> bool:
     return parse_and_verify_qr_payload(payload, verify_key) is not None
 
@@ -91,6 +111,7 @@ def verify_qr_payload(payload: str, verify_key: nacl.signing.VerifyKey) -> bool:
 def parse_and_verify_qr_payload(
     payload: str, verify_key: nacl.signing.VerifyKey
 ) -> tuple[uuid.UUID, uuid.UUID] | None:
+    payload = _extract_qr_payload(payload)
     try:
         parts = payload.split(":")
         if len(parts) != 4:

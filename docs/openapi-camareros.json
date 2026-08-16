@@ -383,6 +383,20 @@
           "camarero": {
             "$ref": "#/components/schemas/CamareroPerfil"
           },
+          "ficha_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "https://ficha.example/ficha?qr=phid1:..."
+            ],
+            "title": "Ficha Url"
+          },
           "qr": {
             "examples": [
               "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"
@@ -495,8 +509,22 @@
         "type": "object"
       },
       "QrResponse": {
-        "description": "Payload para pintar el QR permanente.",
+        "description": "Payload para pintar el QR permanente y su URL pública de ficha.",
         "properties": {
+          "ficha_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "https://ficha.example/ficha?qr=phid1:..."
+            ],
+            "title": "Ficha Url"
+          },
           "qr": {
             "examples": [
               "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"
@@ -615,6 +643,20 @@
         "properties": {
           "data_origin": {
             "$ref": "#/components/schemas/DataOrigin"
+          },
+          "ficha_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "https://ficha.example/ficha?qr=phid1:..."
+            ],
+            "title": "Ficha Url"
           },
           "id": {
             "examples": [

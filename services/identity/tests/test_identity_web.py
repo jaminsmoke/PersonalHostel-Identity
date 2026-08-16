@@ -164,3 +164,27 @@ def test_cors_origen_no_permitido(db_ready, negocio_client):
     )
     assert response.status_code == 400
     assert "access-control-allow-origin" not in response.headers
+
+
+def test_cors_camareros_origen_permitido(db_ready, camarero_client):
+    response = camarero_client.options(
+        "/v1/camareros/ficha",
+        headers={
+            "Origin": "http://localhost:8081",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:8081"
+
+
+def test_cors_camareros_origen_no_permitido(db_ready, camarero_client):
+    response = camarero_client.options(
+        "/v1/camareros/ficha",
+        headers={
+            "Origin": "http://evil.example",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert response.status_code == 400
+    assert "access-control-allow-origin" not in response.headers
