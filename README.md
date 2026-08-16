@@ -57,6 +57,27 @@ python services/identity/scripts/deploy_staging.py
 - Backup diario: `services/identity/scripts/backup_staging.sh` (cron en el VPS; dumps de ambas BD a `/opt/identity/backups`, retención 7 días).
 - Caddyfile: bloques `reverse_proxy 127.0.0.1:8080` (camareros), `:8082` (negocio) y `:8081` (web — invitaciones, ficha y carta) añadidos a `/etc/caddy/Caddyfile` (la landing queda intacta).
 
+### Observabilidad en el VPS (staging/producción)
+
+Las APIs exponen `/metrics` (formato Prometheus, no público: Prometheus lo raspa por la red interna) y un access log JSON por request. El stack de observabilidad se levanta **solo** en el VPS, apilando un tercer fichero:
+
+```bash
+# En el VPS (/opt/identity)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+  -f docker-compose.observability.yml up -d
+```
+
+- Piezas: **Prometheus** (métricas + reglas de alerta), **Grafana** (dashboards), **Loki + Promtail** (logs de contenedores), **node_exporter** (host), **postgres_exporter** (BD) y **Alertmanager** (email).
+- Acceso: Grafana en `https://grafana.siberia.solutions` con `basic_auth` de Caddy + login propio. `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` viven en `.env`.
+- Alertas: `up == 0`, 5xx, Postgres caído, CPU alta y disco bajo → email a `ALERTMANAGER_ROUTE_TO` (usa el SMTP de `EMAIL_*`).
+- Smoke sintético (no load test):
+  ```bash
+  CAMAREROS_API_URL=https://camareros.siberia.solutions \
+  NEGOCIO_API_URL=https://negocio.siberia.solutions \
+  k6 run services/identity/scripts/k6/smoke.js
+  ```
+- Fuera de alcance por ahora: cadvisor (evita montar `/var/run/docker.sock`) y tracing distribuido OTel.
+
 ## Cuentas de prueba canónicas (seed)
 
 Para probar login y flujos cross de la familia se usan dos cuentas canónicas con `data_origin=real` (staging rechaza test/demo):
