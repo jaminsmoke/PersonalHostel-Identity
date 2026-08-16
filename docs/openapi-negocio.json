@@ -132,6 +132,33 @@
         "title": "CambiosSyncResponse",
         "type": "object"
       },
+      "CartaPublicaResponse": {
+        "properties": {
+          "categorias": {
+            "items": {
+              "$ref": "#/components/schemas/CategoriaCartaPublica"
+            },
+            "title": "Categorias",
+            "type": "array"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          }
+        },
+        "required": [
+          "establecimiento_id",
+          "nombre",
+          "categorias"
+        ],
+        "title": "CartaPublicaResponse",
+        "type": "object"
+      },
       "CatalogoResponse": {
         "properties": {
           "establecimiento_id": {
@@ -163,6 +190,27 @@
           "productos"
         ],
         "title": "CatalogoResponse",
+        "type": "object"
+      },
+      "CategoriaCartaPublica": {
+        "properties": {
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "productos": {
+            "items": {
+              "$ref": "#/components/schemas/ProductoCartaPublica"
+            },
+            "title": "Productos",
+            "type": "array"
+          }
+        },
+        "required": [
+          "nombre",
+          "productos"
+        ],
+        "title": "CategoriaCartaPublica",
         "type": "object"
       },
       "ConflictoSyncResponse": {
@@ -1116,6 +1164,30 @@
           "server_received_at"
         ],
         "title": "OperacionSyncResponse",
+        "type": "object"
+      },
+      "ProductoCartaPublica": {
+        "description": "Producto visible en la carta pública (sin campos internos).",
+        "properties": {
+          "moneda": {
+            "title": "Moneda",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "precio_centimos": {
+            "title": "Precio Centimos",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "nombre",
+          "precio_centimos",
+          "moneda"
+        ],
+        "title": "ProductoCartaPublica",
         "type": "object"
       },
       "ProductoPayload": {
@@ -4046,6 +4118,68 @@
           }
         },
         "summary": "Meta"
+      }
+    },
+    "/v1/negocio/carta": {
+      "get": {
+        "operationId": "carta_negocio_v1_negocio_carta_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartaPublicaResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Carta Negocio",
+        "tags": [
+          "negocio público"
+        ]
       }
     },
     "/v1/negocio/ficha": {

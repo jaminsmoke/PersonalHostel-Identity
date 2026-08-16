@@ -189,6 +189,8 @@ con cache pública de TTL corto. La web que renderiza ficha/carta queda en los
 ítems siguientes (ficha pública del negocio y carta pública).
 La ficha pública del negocio ya está disponible: `GET /v1/negocio/ficha?slug=` y
 `GET /v1/negocio/ficha/logo?slug=` (sin token; logo siempre público).
+La carta pública también está disponible: `GET /v1/negocio/carta?slug=` (sin token,
+solo lectura, agrupada por categoría con precio).
 
 ## Qué no hacer
 
