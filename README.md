@@ -57,6 +57,25 @@ python services/identity/scripts/deploy_staging.py
 - Backup diario: `services/identity/scripts/backup_staging.sh` (cron en el VPS; dumps de ambas BD a `/opt/identity/backups`, retención 7 días).
 - Caddyfile: 3 bloques `reverse_proxy 127.0.0.1:8080/8082/8081` añadidos a `/etc/caddy/Caddyfile` (la landing queda intacta).
 
+## Cuentas de prueba canónicas (seed)
+
+Para probar login y flujos cross de la familia se usan dos cuentas canónicas con `data_origin=real` (staging rechaza test/demo):
+
+- Camarero: `camarero.test@example.com` (nick `camarero_test`)
+- Negocio: `negocio.test@example.com` (`Negocio Test`, tipo `bar`)
+
+```bash
+# Dev (localhost): alta idempotente de las dos cuentas
+python services/identity/scripts/seed_test_accounts.py
+
+# Staging: apuntando a los subdominios HTTPS
+CAMAREROS_API_URL=https://camareros.siberia.solutions \
+NEGOCIO_API_URL=https://negocio.siberia.solutions \
+python services/identity/scripts/seed_test_accounts.py
+```
+
+Las contraseñas viven en `.env` (gitignored); re-ejecutar el seed es seguro (409 → se omite).
+
 ## Seguridad de CI y cadena de suministro
 
 Los PR y `main` ejecutan tres checks requeridos: `quality`, `integration` y
