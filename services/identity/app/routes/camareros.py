@@ -15,21 +15,26 @@ from app.auth import (
 from app.data_origin import ensure_data_origin_allowed
 from app.db import get_camarero_db
 from app.errors import (
+    CAMARERO_NOT_FOUND,
+    CREDENTIAL_INACTIVE,
     CREDENTIAL_REVOKED,
     EMAIL_ALREADY_REGISTERED,
     FOTO_INEXISTENTE,
     FOTO_INVALIDA,
     PASSWORD_INCORRECTA,
+    QR_INVALIDO,
     ApiError,
 )
 from app.images import MAX_INPUT_BYTES, FotoInvalida, normalizar_foto
 from app.internal import get_negocio_internal
 from app.models import (
+    DEFAULT_VISIBILIDAD,
     Camarero,
     Credencial,
     CredencialEstado,
 )
 from app.schemas import (
+    CamareroFichaPublica,
     CamareroPerfil,
     ErrorResponse,
     EstablecimientoMembresiaResponse,
@@ -44,8 +49,15 @@ from app.schemas import (
     RevocarResponse,
     SupresionRequest,
     SupresionResponse,
+    VisibilidadCamarero,
+    VisibilidadUpdateRequest,
 )
-from app.security import build_qr_payload, get_signing_key
+from app.security import (
+    build_qr_payload,
+    get_signing_key,
+    get_verify_key,
+    parse_and_verify_qr_payload,
+)
 from app.storage import get_foto_storage
 
 router = APIRouter(prefix="/v1/camareros", tags=["camareros"])
@@ -64,6 +76,14 @@ _VALIDATION = {
     "model": ErrorResponse,
     "description": "Cuerpo de la petición inválido.",
 }
+
+
+def _visibilidad_actual(camarero: Camarero) -> dict:
+    """Visibilidad completa del camarero, fusionada con los defaults."""
+    vis = dict(DEFAULT_VISIBILIDAD)
+    if camarero.visibilidad:
+        vis.update(camarero.visibilidad)
+    return vis
 
 
 @router.post(
@@ -142,6 +162,88 @@ def actualizar_me(
     db.commit()
     db.refresh(camarero)
     return camarero
+
+
+@router.get(
+    "/me/visibilidad",
+    response_model=VisibilidadCamarero,
+    responses={status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED},
+)
+def obtener_visibilidad(
+    camarero: Camarero = Depends(get_current_camarero),
+) -> dict:
+    return _visibilidad_actual(camarero)
+
+
+@router.put(
+    "/me/visibilidad",
+    response_model=VisibilidadCamarero,
+    responses={status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED},
+)
+def actualizar_visibilidad(
+    payload: VisibilidadUpdateRequest,
+    camarero: Camarero = Depends(get_current_camarero),
+    db: Session = Depends(get_camarero_db),
+) -> dict:
+    actual = _visibilidad_actual(camarero)
+    actual.update(payload.model_dump(exclude_unset=True, exclude_none=True))
+    camarero.visibilidad = actual
+    db.commit()
+    db.refresh(camarero)
+    return _visibilidad_actual(camarero)
+
+
+@router.get(
+    "/ficha",
+    response_model=CamareroFichaPublica,
+    response_model_exclude_none=True,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: _VALIDATION,
+    },
+)
+def ficha_publica(qr: str, db: Session = Depends(get_camarero_db)) -> dict:
+    """Ficha pública por QR `phid1` (sin token): solo campos visibles."""
+    parsed = parse_and_verify_qr_payload(qr, get_verify_key(db))
+    if parsed is None:
+        raise ApiError(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            code=QR_INVALIDO,
+            detail="El QR no es válido",
+        )
+    camarero_id, credencial_id = parsed
+    credencial = db.get(Credencial, credencial_id)
+    if (
+        credencial is None
+        or credencial.camarero_id != camarero_id
+        or credencial.estado != CredencialEstado.activa
+    ):
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code=CREDENTIAL_INACTIVE,
+            detail="La credencial del QR no está activa",
+        )
+    camarero = db.get(Camarero, camarero_id)
+    if camarero is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=CAMARERO_NOT_FOUND,
+            detail="Camarero no encontrado",
+        )
+
+    ficha: dict = {
+        "camarero_id": camarero.id,
+        "nombre": camarero.nombre,
+        "apellidos": camarero.apellidos,
+    }
+    if camarero.campo_visible("nick"):
+        ficha["nick"] = camarero.nick
+    if camarero.campo_visible("email"):
+        ficha["email"] = camarero.email
+    if camarero.campo_visible("telefono"):
+        ficha["telefono"] = camarero.telefono
+    return ficha
 
 
 @router.get(

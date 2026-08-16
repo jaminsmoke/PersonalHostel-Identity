@@ -10,6 +10,8 @@ CAMAREROS_RUTAS = [
     "/v1/camareros/me/qr",
     "/v1/camareros/me/renovar",
     "/v1/camareros/me/revocar",
+    "/v1/camareros/me/visibilidad",
+    "/v1/camareros/ficha",
     "/v1/camareros/me/establecimientos",
     "/v1/camareros/me/invitaciones",
     "/v1/camareros/me/invitaciones/{invitacion_id}/aceptar",

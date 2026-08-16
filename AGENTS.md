@@ -138,6 +138,9 @@ Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores l
 | GET | `/v1/camareros/me/qr` | Payload del QR permanente |
 | POST | `/v1/camareros/me/renovar` | Nueva credencial; la anterior deja de valer |
 | POST | `/v1/camareros/me/revocar` | Invalida la credencial activa |
+| GET | `/v1/camareros/me/visibilidad` | Visibilidad pública por campo (default: sensibles privados) |
+| PUT | `/v1/camareros/me/visibilidad` | Actualiza la visibilidad (body parcial) |
+| GET | `/v1/camareros/ficha` | Ficha pública por `?qr=` verificado (sin token; solo campos visibles) |
 | POST | `/v1/camareros/me/foto` | Sube/reemplaza la foto de perfil (multipart) |
 | GET | `/v1/camareros/me/foto` | Sirve la foto (WebP) |
 | DELETE | `/v1/camareros/me/foto` | Borra la foto |

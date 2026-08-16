@@ -47,6 +47,39 @@ class CamareroPerfil(BaseModel):
     data_origin: DataOrigin
 
 
+class VisibilidadCamarero(BaseModel):
+    """Visibilidad pública por campo (default: sensibles privados)."""
+
+    nombre: bool = True
+    apellidos: bool = True
+    nick: bool = True
+    email: bool = False
+    telefono: bool = False
+    foto: bool = False
+
+
+class VisibilidadUpdateRequest(BaseModel):
+    """Actualización parcial de visibilidad (solo los campos enviados)."""
+
+    nombre: bool | None = None
+    apellidos: bool | None = None
+    nick: bool | None = None
+    email: bool | None = None
+    telefono: bool | None = None
+    foto: bool | None = None
+
+
+class CamareroFichaPublica(BaseModel):
+    """Ficha pública del camarero: solo campos visibles (sin foto)."""
+
+    camarero_id: uuid.UUID
+    nombre: str
+    apellidos: str
+    nick: str | None = None
+    email: str | None = None
+    telefono: str | None = None
+
+
 class PerfilUpdateRequest(BaseModel):
     """Campos editables de la cuenta desde Commander (no desde Bar)."""
 
