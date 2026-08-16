@@ -177,6 +177,17 @@ modales y el outbox Room se implementan en los repos Android sin cambiar este
 contrato. No extender este mecanismo a salas, mesas, rondas o colas dentro del
 ítem de catálogo.
 
+### Enlaces públicos (v0.2)
+
+Identity emite **enlaces públicos revocables** para las superficies compartibles
+del negocio (ficha, carta, futuros). Son públicos por diseño: sin firma, se
+resuelven por `slug` opaco y se revocan con un toggle. La tabla `enlaces_publicos`
+vive en la BD de negocio. `POST/GET /v1/establecimientos/{id}/enlaces` (cuenta
+titular) crean/listan; `POST .../enlaces/{enlace_id}/revocar` revoca;
+`GET /v1/enlaces/{slug}` (sin token) resuelve a `{ tipo, establecimiento_id }`
+con cache pública de TTL corto. La web que renderiza ficha/carta queda en los
+ítems siguientes (ficha pública del negocio y carta pública).
+
 ## Qué no hacer
 
 - No implementar sync de mesas, rondas ni colas de barra (eso es Bar + Commander).

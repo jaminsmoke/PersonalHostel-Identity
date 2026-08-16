@@ -359,6 +359,102 @@
         "title": "DataOrigin",
         "type": "string"
       },
+      "EnlacePublicoCreateRequest": {
+        "description": "Alta de un enlace público para un establecimiento.",
+        "properties": {
+          "slug": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z0-9-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "tipo": {
+            "pattern": "^(ficha_negocio|carta)$",
+            "title": "Tipo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tipo"
+        ],
+        "title": "EnlacePublicoCreateRequest",
+        "type": "object"
+      },
+      "EnlacePublicoResolucion": {
+        "description": "Resolución pública de un enlace: tipo + destino (sin PII).",
+        "properties": {
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "tipo": {
+            "title": "Tipo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tipo",
+          "establecimiento_id"
+        ],
+        "title": "EnlacePublicoResolucion",
+        "type": "object"
+      },
+      "EnlacePublicoResponse": {
+        "properties": {
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "estado": {
+            "title": "Estado",
+            "type": "string"
+          },
+          "expira_en": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expira En"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "tipo": {
+            "title": "Tipo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "establecimiento_id",
+          "tipo",
+          "slug",
+          "estado"
+        ],
+        "title": "EnlacePublicoResponse",
+        "type": "object"
+      },
       "ErrorResponse": {
         "description": "Respuesta de error con código estable y mensaje en español.",
         "properties": {
@@ -1731,6 +1827,68 @@
         ]
       }
     },
+    "/v1/enlaces/{slug}": {
+      "get": {
+        "operationId": "resolver_enlace_v1_enlaces__slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnlacePublicoResolucion"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolver Enlace",
+        "tags": [
+          "enlaces públicos"
+        ]
+      }
+    },
     "/v1/establecimientos": {
       "post": {
         "operationId": "crear_establecimiento_v1_establecimientos_post",
@@ -2068,6 +2226,272 @@
         "summary": "Obtener Catalogo",
         "tags": [
           "catálogo y sincronización"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/enlaces": {
+      "get": {
+        "operationId": "listar_enlaces_v1_establecimientos__establecimiento_id__enlaces_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EnlacePublicoResponse"
+                  },
+                  "title": "Response Listar Enlaces V1 Establecimientos  Establecimiento Id  Enlaces Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar Enlaces",
+        "tags": [
+          "enlaces públicos"
+        ]
+      },
+      "post": {
+        "operationId": "crear_enlace_v1_establecimientos__establecimiento_id__enlaces_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnlacePublicoCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnlacePublicoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Crear Enlace",
+        "tags": [
+          "enlaces públicos"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/enlaces/{enlace_id}/revocar": {
+      "post": {
+        "operationId": "revocar_enlace_v1_establecimientos__establecimiento_id__enlaces__enlace_id__revocar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "enlace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Enlace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnlacePublicoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Revocar Enlace",
+        "tags": [
+          "enlaces públicos"
         ]
       }
     },
