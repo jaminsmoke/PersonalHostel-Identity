@@ -116,6 +116,14 @@ CI fija acciones por SHA e imágenes base por digest. El job `security` aplica
 suprimir hallazgos directamente en el workflow. CodeQL usa default setup para
 Python y Dependabot mantiene pip, Docker, Compose y Actions.
 
+El job `family-contracts` comprueba que los clientes de la familia (Bar,
+Commander e identity-web) no piden rutas que Identity ya no expone: hace
+sparse-checkout de los repos públicos Bar y Commander, barre `app.js` y publica
+en el summary del job una tabla de rutas usadas por cada cliente y las públicas
+sin consumidor (aviso, no rojo). Falla solo si un cliente llama una ruta que el
+OpenAPI ya no tiene. Es el espejo del check de familia de Commander: cada
+miembro cuida sus propias integraciones.
+
 Los servicios de API usan UID/GID 10001 y Identity Web usa `nginx` (101). La
 tarea Compose `fotos-permissions` es la única excepción root: es efímera,
 idempotente, solo hace `chown` del volumen heredado y debe completar antes de

@@ -1,0 +1,63 @@
+name: Family contracts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  family-contracts:
+    name: family-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out Identity
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout Bar (clientes de Identity)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jaminsmoke/PersonalBar
+          ref: main
+          path: .family/bar
+          sparse-checkout: |
+            app/src/main/java/com/jaminsmoke/personalbar/lan/IdentityNegocioClient.kt
+            app/src/main/java/com/jaminsmoke/personalbar/lan/IdentityCamareroClient.kt
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout Commander (cliente de Identity)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jaminsmoke/PersonalComander
+          ref: main
+          path: .family/commander
+          sparse-checkout: |
+            app/src/main/java/com/jaminsmoke/personalcomander/data/sesion/IdentityCliente.kt
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Self-test contract checker
+        run: python services/identity/scripts/check_family_contracts.py --selftest
+
+      - name: Check family clients against Identity OpenAPI
+        run: >-
+          python services/identity/scripts/check_family_contracts.py
+          --camareros-openapi docs/openapi-camareros.json
+          --negocio-openapi docs/openapi-negocio.json
+          --bar-src .family/bar/app/src/main/java/com/jaminsmoke/personalbar/lan/IdentityNegocioClient.kt
+          --bar-src .family/bar/app/src/main/java/com/jaminsmoke/personalbar/lan/IdentityCamareroClient.kt
+          --commander-src .family/commander/app/src/main/java/com/jaminsmoke/personalcomander/data/sesion/IdentityCliente.kt
+          --web-src services/identity-web/static/app.js

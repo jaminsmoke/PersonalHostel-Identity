@@ -380,12 +380,22 @@ docker compose run --rm identity-tests ruff format --check app tests scripts
 docker compose run --rm identity-tests python scripts/export_openapi.py --check
 ```
 
-GitHub Actions ejecuta dos checks tanto en pull requests como en `main`, cancela
+GitHub Actions ejecuta los checks tanto en pull requests como en `main`, cancela
 ejecuciones obsoletas de la misma rama y usa permisos de solo lectura:
 
 - `quality`: Ruff (lint y formato) + anti-drift OpenAPI.
-- `integration`: Compose con PostgreSQL 16 + 86 tests + cobertura de ramas +
+- `integration`: Compose con PostgreSQL 16 + tests + cobertura de ramas +
   auditoría de procedencia. Conserva los informes 14 días.
+- `family-contracts`: comprueba que los clientes de la familia (Bar,
+  Commander e identity-web) no piden rutas que Identity ya no expone. Sparse-
+  checkout de los repos públicos Bar y Commander, barrido de `app.js`, e
+  informe en el summary del job con las rutas usadas por cada cliente y las
+  públicas sin consumidor (aviso, no rojo). El job solo falla si un cliente
+  llama una ruta que el OpenAPI ya no tiene. Local:
+
+  ```bash
+  docker compose run --rm identity-tests python scripts/check_family_contracts.py --selftest
+  ```
 
 ## Auditoría de procedencia (solo lectura)
 
