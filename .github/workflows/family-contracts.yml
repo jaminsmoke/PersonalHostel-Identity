@@ -29,6 +29,7 @@ jobs:
           repository: jaminsmoke/PersonalBar
           ref: main
           path: .family/bar
+          persist-credentials: false
           sparse-checkout: |
             app/src/main/java/com/jaminsmoke/personalbar/lan/IdentityNegocioClient.kt
             app/src/main/java/com/jaminsmoke/personalbar/lan/IdentityCamareroClient.kt
@@ -40,6 +41,7 @@ jobs:
           repository: jaminsmoke/PersonalComander
           ref: main
           path: .family/commander
+          persist-credentials: false
           sparse-checkout: |
             app/src/main/java/com/jaminsmoke/personalcomander/data/sesion/IdentityCliente.kt
           sparse-checkout-cone-mode: false
