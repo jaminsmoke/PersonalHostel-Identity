@@ -203,6 +203,22 @@ Respuesta `200`:
 - `GET /v1/camareros/me/establecimientos` → establecimientos activos del profesional (el servicio de camareros consulta al de negocio internamente).
 - `/me/qr` devuelve `409` si no hay credencial activa.
 
+### Visibilidad y ficha pública por QR
+
+Cada camarero controla qué campos de su ficha son **públicos**. Por defecto solo
+`nombre`, `apellidos` y `nick` son visibles; `email`, `telefono` y `foto` son
+privados (opt-in).
+
+- `GET /v1/camareros/me/visibilidad` (`Authorization: Bearer <token>`) →
+  `{ "nombre": true, "apellidos": true, "nick": true, "email": false, "telefono": false, "foto": false }`.
+- `PUT /v1/camareros/me/visibilidad` (body parcial, p. ej. `{ "email": true }`) →
+  actualiza solo los campos enviados; el resto queda igual.
+- `GET /v1/camareros/ficha?qr=<phid1>` → ficha **pública, sin token**: el QR
+  verificado (firma Ed25519 + credencial activa) es la llave. Devuelve solo los
+  campos visibles. `422 identity.qr_invalido` si el QR no es válido; `409
+  identity.credencial_inactiva` si la credencial está revocada. La foto no se
+  expone por esta ruta (queda para un follow-up aparte).
+
 ### Foto de perfil
 
 La foto se guarda normalizada a un único avatar **256×256 WebP** en un volumen Docker (`fotos`), con la metadata en `camareros`.

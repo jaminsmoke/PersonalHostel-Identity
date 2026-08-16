@@ -86,6 +86,25 @@ class DataOrigin(str, enum.Enum):
     demo = "demo"
 
 
+# ── Visibilidad pública del perfil ────────────────────────────────────────
+
+VISIBILITY_FIELDS = ("nombre", "apellidos", "nick", "email", "telefono", "foto")
+
+DEFAULT_VISIBILIDAD = {
+    "nombre": True,
+    "apellidos": True,
+    "nick": True,
+    "email": False,
+    "telefono": False,
+    "foto": False,
+}
+
+_VISIBILIDAD_SQL_DEFAULT = (
+    '\'{"nombre": true, "apellidos": true, "nick": true, '
+    '"email": false, "telefono": false, "foto": false}\'::jsonb'
+)
+
+
 # ── BD de profesionales ────────────────────────────────────────────────────
 
 
@@ -123,6 +142,12 @@ class Camarero(CamareroBase):
     foto_mimetype: Mapped[str | None] = mapped_column(String(64))
     foto_size: Mapped[int | None] = mapped_column(Integer)
     foto_actualizada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    visibilidad: Mapped[dict] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=lambda: dict(DEFAULT_VISIBILIDAD),
+        server_default=text(_VISIBILIDAD_SQL_DEFAULT),
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -138,6 +163,11 @@ class Camarero(CamareroBase):
         if not self.foto_clave:
             return None
         return "/v1/camareros/me/foto"
+
+    def campo_visible(self, field: str) -> bool:
+        """True si el campo es visible en la ficha pública (default seguro)."""
+        vis = self.visibilidad or {}
+        return bool(vis.get(field, DEFAULT_VISIBILIDAD.get(field, False)))
 
 
 class Credencial(CamareroBase):

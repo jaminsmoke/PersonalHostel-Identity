@@ -15,6 +15,64 @@
         "title": "Body_subir_foto_v1_camareros_me_foto_post",
         "type": "object"
       },
+      "CamareroFichaPublica": {
+        "description": "Ficha pública del camarero: solo campos visibles (sin foto).",
+        "properties": {
+          "apellidos": {
+            "title": "Apellidos",
+            "type": "string"
+          },
+          "camarero_id": {
+            "format": "uuid",
+            "title": "Camarero Id",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "nick": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nick"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "telefono": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefono"
+          }
+        },
+        "required": [
+          "camarero_id",
+          "nombre",
+          "apellidos"
+        ],
+        "title": "CamareroFichaPublica",
+        "type": "object"
+      },
       "CamareroPerfil": {
         "description": "Perfil público del camarero para la sesión.",
         "properties": {
@@ -683,6 +741,116 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VisibilidadCamarero": {
+        "description": "Visibilidad pública por campo (default: sensibles privados).",
+        "properties": {
+          "apellidos": {
+            "default": true,
+            "title": "Apellidos",
+            "type": "boolean"
+          },
+          "email": {
+            "default": false,
+            "title": "Email",
+            "type": "boolean"
+          },
+          "foto": {
+            "default": false,
+            "title": "Foto",
+            "type": "boolean"
+          },
+          "nick": {
+            "default": true,
+            "title": "Nick",
+            "type": "boolean"
+          },
+          "nombre": {
+            "default": true,
+            "title": "Nombre",
+            "type": "boolean"
+          },
+          "telefono": {
+            "default": false,
+            "title": "Telefono",
+            "type": "boolean"
+          }
+        },
+        "title": "VisibilidadCamarero",
+        "type": "object"
+      },
+      "VisibilidadUpdateRequest": {
+        "description": "Actualización parcial de visibilidad (solo los campos enviados).",
+        "properties": {
+          "apellidos": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apellidos"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "foto": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foto"
+          },
+          "nick": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nick"
+          },
+          "nombre": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre"
+          },
+          "telefono": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefono"
+          }
+        },
+        "title": "VisibilidadUpdateRequest",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -911,6 +1079,69 @@
         "summary": "Login",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/v1/camareros/ficha": {
+      "get": {
+        "description": "Ficha pública por QR `phid1` (sin token): solo campos visibles.",
+        "operationId": "ficha_publica_v1_camareros_ficha_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "qr",
+            "required": true,
+            "schema": {
+              "title": "Qr",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CamareroFichaPublica"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Cuerpo de la petición inválido."
+          }
+        },
+        "summary": "Ficha Publica",
+        "tags": [
+          "camareros"
         ]
       }
     },
@@ -1519,6 +1750,96 @@
           }
         ],
         "summary": "Revocar",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/me/visibilidad": {
+      "get": {
+        "operationId": "obtener_visibilidad_v1_camareros_me_visibilidad_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisibilidadCamarero"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Visibilidad",
+        "tags": [
+          "camareros"
+        ]
+      },
+      "put": {
+        "operationId": "actualizar_visibilidad_v1_camareros_me_visibilidad_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisibilidadUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisibilidadCamarero"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Actualizar Visibilidad",
         "tags": [
           "camareros"
         ]
