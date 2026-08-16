@@ -1,0 +1,24 @@
+# Override para staging/producción (VPS). Se aplica encima de docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Diferencias con dev:
+#   - Las APIs y la web publican SOLO en 127.0.0.1 (Caddy las expone por 80/443).
+#     Esto evita que Docker eluda UFW publicando en 0.0.0.0.
+#   - Postgres NO publica puerto (solo red interna Docker).
+#   - El resto (secretos, ALLOW_NON_REAL_DATA=false, URLs públicas) se controla
+#     con el `.env` del VPS, no aquí.
+services:
+  db:
+    ports: !reset []
+
+  identity-camareros:
+    ports: !override
+      - "127.0.0.1:8080:8080"
+
+  identity-negocio:
+    ports: !override
+      - "127.0.0.1:8082:8080"
+
+  identity-web:
+    ports: !override
+      - "127.0.0.1:8081:8080"

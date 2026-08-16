@@ -41,6 +41,22 @@ docker compose up --build
 - Postgres: `localhost:5432` (usuario `hosteleria`; bases `identity_camareros` y `identity_negocio`)
 - Esquema: aplicado por Alembic al arrancar; una cadena por BD (`alembic` para camareros, `alembic_negocio` para negocio)
 
+## Despliegue en staging (VPS)
+
+El staging es producción en configuración (HTTPS, secretos reales, datos borrables). Corre en el VPS de Hostinger (`31.97.53.169`), detrás del **Caddy** ya instalado (que también sirve la landing `siberia.solutions`).
+
+- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `invitaciones.siberia.solutions` (:8081).
+- `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
+- El `.env` de producción vive en `/opt/identity/.env` (gitignored): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
+
+```bash
+# Deploy (igual que dev, pero en el VPS): pull + up --build
+python services/identity/scripts/deploy_staging.py
+```
+
+- Backup diario: `services/identity/scripts/backup_staging.sh` (cron en el VPS; dumps de ambas BD a `/opt/identity/backups`, retención 7 días).
+- Caddyfile: 3 bloques `reverse_proxy 127.0.0.1:8080/8082/8081` añadidos a `/etc/caddy/Caddyfile` (la landing queda intacta).
+
 ## Seguridad de CI y cadena de suministro
 
 Los PR y `main` ejecutan tres checks requeridos: `quality`, `integration` y
