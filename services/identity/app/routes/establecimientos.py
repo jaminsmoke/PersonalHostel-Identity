@@ -214,7 +214,7 @@ def obtener_establecimiento(
         status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
         status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
         status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse},
     },
 )
 def guardar_layout(
@@ -227,7 +227,7 @@ def guardar_layout(
     _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     if len(payload.model_dump_json().encode("utf-8")) > 1_000_000:
         raise ApiError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code=VALIDATION_ERROR,
             detail="El layout supera el tamaño máximo de 1 MB",
         )

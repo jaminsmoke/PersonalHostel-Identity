@@ -40,7 +40,7 @@ _LOGIN_422 = {
     responses={
         status.HTTP_401_UNAUTHORIZED: _LOGIN_401,
         status.HTTP_409_CONFLICT: _LOGIN_409,
-        status.HTTP_422_UNPROCESSABLE_ENTITY: _LOGIN_422,
+        status.HTTP_422_UNPROCESSABLE_CONTENT: _LOGIN_422,
     },
 )
 def login(payload: LoginRequest, db: Session = Depends(get_camarero_db)) -> LoginResponse:
