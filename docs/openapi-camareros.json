@@ -160,6 +160,11 @@
               "+34600000000"
             ],
             "title": "Telefono"
+          },
+          "visible_otros_establecimientos": {
+            "$ref": "#/components/schemas/VisibleOtrosEstablecimientos",
+            "default": "nunca",
+            "description": "Preferencia de aparecer en el directorio de otros establecimientos."
           }
         },
         "required": [
@@ -832,6 +837,20 @@
         "title": "VisibilidadCamarero",
         "type": "object"
       },
+      "VisibilidadEstablecimientosUpdateRequest": {
+        "description": "Preferencia del camarero sobre el directorio de otros establecimientos.",
+        "properties": {
+          "visible": {
+            "$ref": "#/components/schemas/VisibleOtrosEstablecimientos",
+            "description": "siempre | solo_libre | nunca (default seguro: nunca)."
+          }
+        },
+        "required": [
+          "visible"
+        ],
+        "title": "VisibilidadEstablecimientosUpdateRequest",
+        "type": "object"
+      },
       "VisibilidadUpdateRequest": {
         "description": "Actualización parcial de visibilidad (solo los campos enviados).",
         "properties": {
@@ -904,6 +923,16 @@
         },
         "title": "VisibilidadUpdateRequest",
         "type": "object"
+      },
+      "VisibleOtrosEstablecimientos": {
+        "description": "Preferencia del camarero sobre aparecer en el directorio de otros\nestablecimientos (para invitación). Default seguro: nunca.\n\nSe persiste como string acotado (no enum de Postgres) para poder crecer\nsin migración, igual que ``EnlaceTipo``.",
+        "enum": [
+          "siempre",
+          "solo_libre",
+          "nunca"
+        ],
+        "title": "VisibleOtrosEstablecimientos",
+        "type": "string"
       }
     },
     "securitySchemes": {
@@ -981,6 +1010,33 @@
           }
         },
         "summary": "Internal Buscar",
+        "tags": [
+          "internal"
+        ]
+      }
+    },
+    "/internal/camareros/directorio": {
+      "get": {
+        "description": "Camareros que han optado por ser visibles en el directorio (≠ nunca).",
+        "operationId": "internal_directorio_internal_camareros_directorio_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Internal Directorio Internal Camareros Directorio Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Internal Directorio",
         "tags": [
           "internal"
         ]
@@ -1255,6 +1311,59 @@
           }
         },
         "summary": "Ficha Foto",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/ficha/foto/{camarero_id}": {
+      "get": {
+        "description": "Foto pública por id (para el directorio): solo si `foto=true` y existe.",
+        "operationId": "ficha_foto_por_id_v1_camareros_ficha_foto__camarero_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "camarero_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Camarero Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Imagen de perfil (WebP)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "El camarero no tiene foto de perfil."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ficha Foto Por Id",
         "tags": [
           "camareros"
         ]
@@ -1955,6 +2064,63 @@
           }
         ],
         "summary": "Actualizar Visibilidad",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/me/visibilidad-establecimientos": {
+      "put": {
+        "description": "Preferencia del camarero sobre aparecer en el directorio de otros\nestablecimientos (siempre / solo cuando está libre / nunca).",
+        "operationId": "actualizar_visibilidad_establecimientos_v1_camareros_me_visibilidad_establecimientos_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisibilidadEstablecimientosUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CamareroPerfil"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Actualizar Visibilidad Establecimientos",
         "tags": [
           "camareros"
         ]

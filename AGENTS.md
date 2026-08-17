@@ -155,6 +155,8 @@ Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores l
 | POST | `/v1/camareros/me/revocar` | Invalida la credencial activa |
 | GET | `/v1/camareros/me/visibilidad` | Visibilidad pública por campo (default: sensibles privados) |
 | PUT | `/v1/camareros/me/visibilidad` | Actualiza la visibilidad (body parcial) |
+| PUT | `/v1/camareros/me/visibilidad-establecimientos` | Preferencia del camarero para el directorio de otros establecimientos: `siempre \| solo_libre \| nunca` (default `nunca`) |
+| GET | `/v1/camareros/ficha/foto/{id}` | Foto pública por id (directorio) solo si `foto=true` y existe |
 | GET | `/v1/camareros/ficha` | Ficha pública por `?qr=` verificado (sin token; solo campos visibles) |
 | GET | `/v1/camareros/ficha/foto` | Foto pública por `?qr=` (solo si `foto=true` y existe; cache pública) |
 | POST | `/v1/camareros/me/foto` | Sube/reemplaza la foto de perfil (multipart) |
@@ -166,6 +168,8 @@ El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>
 `identity-web` también sirve la **ficha pública del negocio** (`/negocio?slug=`, en `ficha.siberia.solutions/negocio`) y la **carta pública del establecimiento** (`/carta?slug=`, en `carta.siberia.solutions/carta`). Ambas llaman al servicio de negocio (`NEGOCIO_API_URL`) sin token, usando el enlace público revocable por `slug`; el logo del negocio es público por diseño y el precio de la carta siempre visible.
 
 Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones (con Identity Web `:8081` para aceptar por magic-link sin JWT); el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar. Identity solo guarda un **espejo de respaldo** del layout de Bar (`PUT/GET /v1/establecimientos/{id}/layout`, tabla `layouts_establecimiento`) para restaurar el mapa en un dispositivo nuevo; no lo interpreta ni lo sirve a Commander.
+
+El **directorio de camareros** para invitar (`GET /v1/establecimientos/{id}/camareros/directorio`) devuelve un DTO **sin email** (privacidad/PII). Solo aparecen camareros que han optado por ser vistos (`siempre` o `solo_libre`); **los dueños de establecimiento nunca aparecen** (pertenecen al dominio de establecimientos, dominio de Bar — otro ítem). `libre` = sin membresía activa en ningún establecimiento (computable en BD negocio). La invitación acepta `camarero_id` (el email se resuelve en servidor) o `email` (flujo clásico).
 
 Bar y Commander **no** copian usuarios a SQLite como fuente de verdad. Cachean la sesión. La verdad está aquí.
 

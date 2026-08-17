@@ -2,9 +2,9 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
-from app.models import DataOrigin
+from app.models import DataOrigin, VisibleOtrosEstablecimientos
 
 
 class RegistroRequest(BaseModel):
@@ -48,6 +48,19 @@ class CamareroPerfil(BaseModel):
     foto_url: str | None = Field(default=None, examples=["/v1/camareros/me/foto"])
     nick: str | None = Field(default=None, examples=["Anita"])
     data_origin: DataOrigin
+    visible_otros_establecimientos: VisibleOtrosEstablecimientos = Field(
+        default=VisibleOtrosEstablecimientos.nunca,
+        description="Preferencia de aparecer en el directorio de otros establecimientos.",
+    )
+
+
+class VisibilidadEstablecimientosUpdateRequest(BaseModel):
+    """Preferencia del camarero sobre el directorio de otros establecimientos."""
+
+    visible: VisibleOtrosEstablecimientos = Field(
+        ...,
+        description="siempre | solo_libre | nunca (default seguro: nunca).",
+    )
 
 
 class VisibilidadCamarero(BaseModel):
@@ -256,9 +269,39 @@ class CamareroSearchResponse(BaseModel):
     data_origin: DataOrigin
 
 
+class CamareroDirectorioResponse(BaseModel):
+    """Entrada del directorio de camareros para invitar.
+
+    Sin email por privacidad: solo lo que un establecimiento necesita para
+    decidir invitar. ``libre`` indica si el camarero no tiene membresía activa
+    en ningún establecimiento.
+    """
+
+    id: uuid.UUID
+    nombre: str
+    apellidos: str
+    nick: str | None = None
+    foto_url: str | None = None
+    libre: bool
+    visibilidad: VisibleOtrosEstablecimientos
+
+
 class InvitacionCreateRequest(BaseModel):
-    email: EmailStr
+    email: EmailStr | None = Field(
+        default=None,
+        description="Email del camarero (flujo por email). Alternativo a camarero_id.",
+    )
+    camarero_id: uuid.UUID | None = Field(
+        default=None,
+        description="Id del camarero (flujo por directorio); el email se resuelve en servidor.",
+    )
     rol: str = Field(default="staff", pattern="^(dueno|staff)$")
+
+    @model_validator(mode="after")
+    def _exige_email_o_camarero(self) -> InvitacionCreateRequest:
+        if self.email is None and self.camarero_id is None:
+            raise ValueError("Se requiere email o camarero_id para invitar")
+        return self
 
 
 class InvitacionResponse(BaseModel):

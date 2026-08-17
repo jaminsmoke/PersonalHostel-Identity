@@ -111,6 +111,20 @@ DEFAULT_VISIBILIDAD = {
     "foto": False,
 }
 
+
+class VisibleOtrosEstablecimientos(str, enum.Enum):
+    """Preferencia del camarero sobre aparecer en el directorio de otros
+    establecimientos (para invitación). Default seguro: nunca.
+
+    Se persiste como string acotado (no enum de Postgres) para poder crecer
+    sin migración, igual que ``EnlaceTipo``.
+    """
+
+    siempre = "siempre"
+    solo_libre = "solo_libre"
+    nunca = "nunca"
+
+
 _VISIBILIDAD_SQL_DEFAULT = (
     '\'{"nombre": true, "apellidos": true, "nick": true, '
     '"email": false, "telefono": false, "foto": false}\'::jsonb'
@@ -159,6 +173,12 @@ class Camarero(CamareroBase):
         nullable=False,
         default=lambda: dict(DEFAULT_VISIBILIDAD),
         server_default=text(_VISIBILIDAD_SQL_DEFAULT),
+    )
+    visible_otros_establecimientos: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=VisibleOtrosEstablecimientos.nunca.value,
+        server_default=VisibleOtrosEstablecimientos.nunca.value,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

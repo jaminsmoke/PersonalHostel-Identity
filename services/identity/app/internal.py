@@ -53,6 +53,24 @@ def _perfil_dict(c: Camarero) -> dict:
         "email": c.email,
         "nick": c.nick,
         "data_origin": c.data_origin.value,
+        "visible_otros_establecimientos": c.visible_otros_establecimientos,
+    }
+
+
+def _directorio_dict(c: Camarero) -> dict:
+    """Entrada del directorio de camareros que han optado por ser visibles.
+
+    Sin email (privacidad). ``foto_publica`` indica si la foto es pública
+    (opt-in) y existe, para que el servicio de negocio construya la URL.
+    """
+    return {
+        "id": str(c.id),
+        "nombre": c.nombre,
+        "apellidos": c.apellidos,
+        "nick": c.nick,
+        "foto_publica": bool(c.campo_visible("foto") and c.foto_clave),
+        "visible_otros_establecimientos": c.visible_otros_establecimientos,
+        "data_origin": c.data_origin.value,
     }
 
 
@@ -67,6 +85,13 @@ class CamarerosInternal(Protocol):
         """Devuelve ``camarero_id`` si el QR es válido y su credencial activa.
 
         Lanza 422 ``qr_invalido`` o 409 ``credencial_inactiva``.
+        """
+
+    def directorio(self) -> list[dict]:
+        """Camareros que han optado por ser visibles en el directorio (≠ nunca).
+
+        Sin email; el servicio de negocio aplica los filtros de "libre", dueños,
+        miembros propios y ``data_origin``.
         """
 
 
@@ -114,6 +139,16 @@ class DirectCamarerosInternal:
                     detail="La credencial del QR no está activa",
                 )
             return camarero_id
+
+    def directorio(self) -> list[dict]:
+        with CamareroSessionLocal() as db:
+            rows = (
+                db.query(Camarero)
+                .filter(Camarero.visible_otros_establecimientos != "nunca")
+                .order_by(Camarero.nombre, Camarero.apellidos)
+                .all()
+            )
+        return [_directorio_dict(c) for c in rows]
 
 
 class DirectNegocioInternal:
@@ -197,6 +232,12 @@ class HttpCamarerosInternal:
         if response.status_code != 200:
             _raise_from_response(response, QR_INVALIDO)
         return uuid.UUID(response.json()["camarero_id"])
+
+    def directorio(self) -> list[dict]:
+        response = self._request("GET", "/internal/camareros/directorio")
+        if response.status_code != 200:
+            _raise_from_response(response, "identity.internal_error")
+        return response.json()
 
 
 class HttpNegocioInternal:

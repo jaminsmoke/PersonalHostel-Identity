@@ -239,6 +239,10 @@ privados (opt-in).
   `{ "nombre": true, "apellidos": true, "nick": true, "email": false, "telefono": false, "foto": false }`.
 - `PUT /v1/camareros/me/visibilidad` (body parcial, p. ej. `{ "email": true }`) →
   actualiza solo los campos enviados; el resto queda igual.
+- `PUT /v1/camareros/me/visibilidad-establecimientos` (body `{ "visible": "..." }`)
+  → preferencia del camarero sobre **aparecer en el directorio de otros
+  establecimientos** (para invitación): `siempre | solo_libre | nunca` (default
+  `nunca`, privacidad segura). Se gestiona desde Commander.
 - `GET /v1/camareros/ficha?qr=<phid1>` → ficha **pública, sin token**: el QR
   verificado (firma Ed25519 + credencial activa) es la llave. Devuelve solo los
   campos visibles. `422 identity.qr_invalido` si el QR no es válido; `409
@@ -303,7 +307,16 @@ Rutas principales:
 - `GET /v1/keys/qr` → clave pública Ed25519 (en el servicio de camareros, `:8080`).
 - `POST /v1/establecimientos/{id}/miembros/qr` → valida un QR (delegado al servicio de camareros) y crea la membresía.
 - `GET /v1/establecimientos/{id}/camareros/buscar?email=...` → búsqueda exacta autorizada.
-- `POST /v1/establecimientos/{id}/invitaciones` → crea una invitación por email.
+- `GET /v1/establecimientos/{id}/camareros/directorio?q=&limit=` → **directorio de
+  camareros visibles para invitar**, **sin email** (privacidad). Solo camareros
+  que han optado por ser vistos (`siempre` o `solo_libre`); **los dueños de
+  establecimiento nunca aparecen** (pertenecen al dominio de establecimientos),
+  y se excluyen los miembros del propio establecimiento y los de distinta
+  `data_origin`. `libre` indica si el camarero no tiene membresía activa en
+  ningún establecimiento; `foto_url` solo si la foto es pública (opt-in).
+- `POST /v1/establecimientos/{id}/invitaciones` → crea una invitación. Acepta
+  `email` (flujo clásico) **o** `camarero_id` (flujo por directorio: el email se
+  resuelve en servidor y nunca se expone).
 - `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT (magic-link desde el email): token one-time + TTL 72h.
 - `PUT/GET /v1/establecimientos/{id}/layout` → **copia de respaldo del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la cuenta de negocio dueña.
 - `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`ficha_negocio | carta`) y `slug` opcional (si no, se deriva del nombre + tipo).

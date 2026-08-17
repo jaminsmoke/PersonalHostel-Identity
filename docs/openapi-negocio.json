@@ -15,6 +15,62 @@
         "title": "Body_subir_logo_v1_auth_negocio_me_logo_post",
         "type": "object"
       },
+      "CamareroDirectorioResponse": {
+        "description": "Entrada del directorio de camareros para invitar.\n\nSin email por privacidad: solo lo que un establecimiento necesita para\ndecidir invitar. ``libre`` indica si el camarero no tiene membresía activa\nen ningún establecimiento.",
+        "properties": {
+          "apellidos": {
+            "title": "Apellidos",
+            "type": "string"
+          },
+          "foto_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foto Url"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "libre": {
+            "title": "Libre",
+            "type": "boolean"
+          },
+          "nick": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nick"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "visibilidad": {
+            "$ref": "#/components/schemas/VisibleOtrosEstablecimientos"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "apellidos",
+          "libre",
+          "visibilidad"
+        ],
+        "title": "CamareroDirectorioResponse",
+        "type": "object"
+      },
       "CamareroSearchResponse": {
         "properties": {
           "apellidos": {
@@ -635,10 +691,31 @@
       },
       "InvitacionCreateRequest": {
         "properties": {
+          "camarero_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Id del camarero (flujo por directorio); el email se resuelve en servidor.",
+            "title": "Camarero Id"
+          },
           "email": {
-            "format": "email",
-            "title": "Email",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Email del camarero (flujo por email). Alternativo a camarero_id.",
+            "title": "Email"
           },
           "rol": {
             "default": "staff",
@@ -647,9 +724,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "email"
-        ],
         "title": "InvitacionCreateRequest",
         "type": "object"
       },
@@ -1513,6 +1587,16 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VisibleOtrosEstablecimientos": {
+        "description": "Preferencia del camarero sobre aparecer en el directorio de otros\nestablecimientos (para invitación). Default seguro: nunca.\n\nSe persiste como string acotado (no enum de Postgres) para poder crecer\nsin migración, igual que ``EnlaceTipo``.",
+        "enum": [
+          "siempre",
+          "solo_libre",
+          "nunca"
+        ],
+        "title": "VisibleOtrosEstablecimientos",
+        "type": "string"
       }
     },
     "securitySchemes": {
@@ -2282,6 +2366,118 @@
           }
         ],
         "summary": "Buscar Camarero",
+        "tags": [
+          "establecimientos"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/camareros/directorio": {
+      "get": {
+        "description": "Directorio de camareros visibles para invitar (sin email).\n\nSolo camareros que han optado por ser vistos (``siempre`` o ``solo_libre``).\nLos dueños de establecimiento nunca aparecen: pertenecen al dominio de\nestablecimientos, no al de camareros. Quedan fuera también los miembros del\npropio establecimiento y los de distinta ``data_origin``.",
+        "operationId": "directorio_camareros_v1_establecimientos__establecimiento_id__camareros_directorio_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CamareroDirectorioResponse"
+                  },
+                  "title": "Response Directorio Camareros V1 Establecimientos  Establecimiento Id  Camareros Directorio Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Directorio Camareros",
         "tags": [
           "establecimientos"
         ]

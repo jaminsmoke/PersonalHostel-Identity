@@ -18,6 +18,7 @@ from app.auth import (
 from app.db import get_negocio_db
 from app.errors import (
     CAMARERO_NOT_FOUND,
+    DATA_ORIGIN_MISMATCH,
     EMAIL_NOT_FOUND,
     ESTABLECIMIENTO_NOT_FOUND,
     INVITACION_DUPLICATE,
@@ -41,8 +42,10 @@ from app.models import (
     Membresia,
     MembresiaEstado,
     MembresiaRol,
+    VisibleOtrosEstablecimientos,
 )
 from app.schemas import (
+    CamareroDirectorioResponse,
     CamareroSearchResponse,
     ErrorResponse,
     EstablecimientoCreateRequest,
@@ -360,6 +363,106 @@ def buscar_camarero(
     return camarero
 
 
+@router.get(
+    "/{establecimiento_id}/camareros/directorio",
+    response_model=list[CamareroDirectorioResponse],
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def directorio_camareros(
+    establecimiento_id: uuid.UUID,
+    q: str | None = Query(default=None, max_length=100),
+    limit: int = Query(default=100, ge=1, le=200),
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_negocio_db),
+) -> list[dict]:
+    """Directorio de camareros visibles para invitar (sin email).
+
+    Solo camareros que han optado por ser vistos (``siempre`` o ``solo_libre``).
+    Los dueños de establecimiento nunca aparecen: pertenecen al dominio de
+    establecimientos, no al de camareros. Quedan fuera también los miembros del
+    propio establecimiento y los de distinta ``data_origin``.
+    """
+    establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+
+    # Dueños: vinculados a una cuenta de negocio o con membresía de dueño activa.
+    owner_ids = {
+        row[0]
+        for row in db.query(CuentaNegocio.camarero_vinculado_id)
+        .filter(CuentaNegocio.camarero_vinculado_id.isnot(None))
+        .all()
+    }
+    owner_ids |= {
+        row[0]
+        for row in db.query(Membresia.camarero_id)
+        .filter(
+            Membresia.rol == MembresiaRol.dueno,
+            Membresia.estado == MembresiaEstado.activa,
+        )
+        .all()
+    }
+
+    # Ocupados: con membresía activa en cualquier establecimiento.
+    occupied_ids = {
+        row[0]
+        for row in db.query(Membresia.camarero_id)
+        .filter(Membresia.estado == MembresiaEstado.activa)
+        .all()
+    }
+
+    # Miembros de este establecimiento (ya en el equipo; no invitables).
+    this_members = {
+        row[0]
+        for row in db.query(Membresia.camarero_id)
+        .filter(
+            Membresia.establecimiento_id == establecimiento.id,
+            Membresia.estado == MembresiaEstado.activa,
+        )
+        .all()
+    }
+
+    candidatos = get_camareros_internal().directorio()
+    resultado: list[dict] = []
+    for entry in candidatos:
+        camarero_id = uuid.UUID(entry["id"])
+        if camarero_id in owner_ids or camarero_id in this_members:
+            continue
+        if entry["data_origin"] != establecimiento.data_origin.value:
+            continue
+        libre = camarero_id not in occupied_ids
+        if (
+            entry["visible_otros_establecimientos"] == VisibleOtrosEstablecimientos.solo_libre.value
+            and not libre
+        ):
+            continue
+        if q:
+            haystack = " ".join(
+                filter(None, [entry["nombre"], entry["apellidos"], entry["nick"]])
+            ).lower()
+            if q.lower() not in haystack:
+                continue
+        resultado.append(
+            {
+                "id": camarero_id,
+                "nombre": entry["nombre"],
+                "apellidos": entry["apellidos"],
+                "nick": entry["nick"],
+                "foto_url": (
+                    f"/v1/camareros/ficha/foto/{camarero_id}" if entry.get("foto_publica") else None
+                ),
+                "libre": libre,
+                "visibilidad": entry["visible_otros_establecimientos"],
+            }
+        )
+        if len(resultado) >= limit:
+            break
+
+    return resultado
+
+
 @router.post(
     "/{establecimiento_id}/invitaciones",
     response_model=InvitacionResponse,
@@ -378,15 +481,32 @@ def crear_invitacion(
     db: Session = Depends(get_negocio_db),
 ) -> InvitacionResponse:
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
-    email = str(payload.email).lower()
-    camarero = get_camareros_internal().buscar_por_email(email)
-    if camarero is None:
-        raise ApiError(
-            status_code=status.HTTP_404_NOT_FOUND,
-            code=EMAIL_NOT_FOUND,
-            detail="No hay un camarero registrado con ese email",
-        )
-    camarero_id = uuid.UUID(camarero["id"])
+    if payload.camarero_id is not None:
+        perfil = get_camareros_internal().perfil(payload.camarero_id)
+        if perfil is None:
+            raise ApiError(
+                status_code=status.HTTP_404_NOT_FOUND,
+                code=CAMARERO_NOT_FOUND,
+                detail="Camarero no encontrado",
+            )
+        if perfil["data_origin"] != establecimiento.data_origin.value:
+            raise ApiError(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                code=DATA_ORIGIN_MISMATCH,
+                detail="El camarero y el establecimiento deben tener la misma procedencia",
+            )
+        email = str(perfil["email"]).lower()
+        camarero_id = payload.camarero_id
+    else:
+        email = str(payload.email).lower()
+        camarero = get_camareros_internal().buscar_por_email(email)
+        if camarero is None:
+            raise ApiError(
+                status_code=status.HTTP_404_NOT_FOUND,
+                code=EMAIL_NOT_FOUND,
+                detail="No hay un camarero registrado con ese email",
+            )
+        camarero_id = uuid.UUID(camarero["id"])
     active_membership = (
         db.query(Membresia)
         .filter_by(
