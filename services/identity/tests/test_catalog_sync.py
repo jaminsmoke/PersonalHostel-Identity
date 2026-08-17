@@ -333,3 +333,160 @@ def test_operacion_valida_tipo_tamano_y_timestamp(negocio_client):
     response = _post_operation(negocio_client, establishment_id, headers, naive_time)
     assert response.status_code == 422
     assert response.json()["code"] == "identity.validation_error"
+
+
+def test_orden_invertido_crea_conflicto_y_no_pisa(negocio_client):
+    """La actualización llega antes que el alta: entra en conflicto (no se aplica en
+    silencio), el alta posterior aplica, y la resolución obsoleta se rechaza con 409
+    sin pisar el canónico ni perder la operación pendiente."""
+    headers, establishment_id = _create_business_and_establishment(negocio_client)
+    product_id = str(uuid.uuid4())
+
+    # La actualización (base 1) llega primero: sin producto aún -> conflicto, no aplica.
+    update = _operation(product_id, action="actualizar", base_revision=1, name="Nombre invertido")
+    conflicted = _post_operation(negocio_client, establishment_id, headers, update)
+    assert conflicted.status_code == 200
+    assert conflicted.json()["estado"] == "conflicto"
+    conflict_id = conflicted.json()["conflict_id"]
+
+    # El alta (base 0) llega después y se aplica.
+    created = _post_operation(negocio_client, establishment_id, headers, _operation(product_id))
+    assert created.status_code == 200
+    assert created.json()["estado"] == "aplicada"
+
+    # Resolver con la revisión actual (1): el canónico del conflicto era 0, así que
+    # la resolución es obsoleta y se rechaza. La operación pendiente no se pierde.
+    stale = negocio_client.post(
+        f"/v1/establecimientos/{establishment_id}/sync/conflictos/{conflict_id}/resolver",
+        headers=headers,
+        json={"decision": "aceptar", "expected_revision": 1},
+    )
+    assert stale.status_code == 409
+    assert stale.json()["code"] == "identity.resolucion_sync_obsoleta"
+
+    # El catálogo refleja solo el alta; la actualización sigue pendiente de decisión.
+    catalog = negocio_client.get(
+        f"/v1/establecimientos/{establishment_id}/catalogo", headers=headers
+    ).json()
+    assert catalog["revision"] == 1
+    assert catalog["productos"][0]["nombre"] == "Café solo"
+    conflicts = negocio_client.get(
+        f"/v1/establecimientos/{establishment_id}/sync/conflictos?estado=todos",
+        headers=headers,
+    )
+    assert [c["id"] for c in conflicts.json()] == [conflict_id]
+
+
+def test_duplicado_con_reloj_atrasado_es_idempotente(negocio_client):
+    """Reenviar la misma operación con un client_created_at menor (reloj atrasado)
+    no la reaplica ni la pisa: devuelve el mismo resultado y no crea conflicto nuevo."""
+    headers, establishment_id = _create_business_and_establishment(negocio_client)
+    product_id = str(uuid.uuid4())
+
+    first = _post_operation(negocio_client, establishment_id, headers, _operation(product_id))
+    assert first.status_code == 200
+    assert first.json()["estado"] == "aplicada"
+
+    replay = _operation(product_id, operation_id=first.json()["operation_id"])
+    replay["client_created_at"] = "2025-01-01T00:00:00+00:00"  # reloj atrasado
+    repeated = _post_operation(negocio_client, establishment_id, headers, replay)
+    assert repeated.status_code == 200
+    assert repeated.json() == first.json()
+
+    catalog = negocio_client.get(
+        f"/v1/establecimientos/{establishment_id}/catalogo", headers=headers
+    ).json()
+    assert catalog["revision"] == 1
+    assert len(catalog["productos"]) == 1
+    conflicts = negocio_client.get(
+        f"/v1/establecimientos/{establishment_id}/sync/conflictos?estado=todos",
+        headers=headers,
+    )
+    assert conflicts.status_code == 200
+    assert conflicts.json() == []
+
+
+def test_modificacion_vs_borrado_en_mismo_lote(negocio_client):
+    """Un alta y un borrado del mismo producto llegan seguidos: el borrado sobre
+    base obsoleta entra en conflicto y, al aceptarse, aplica el tombstone."""
+    headers, establishment_id = _create_business_and_establishment(negocio_client)
+    product_id = str(uuid.uuid4())
+
+    created = _post_operation(negocio_client, establishment_id, headers, _operation(product_id))
+    assert created.status_code == 200
+
+    # El borrado se basa en la revisión 1 (correcta) y se aplica.
+    archived = _post_operation(
+        negocio_client,
+        establishment_id,
+        headers,
+        _operation(product_id, action="archivar", base_revision=1),
+    )
+    assert archived.status_code == 200
+    assert archived.json()["estado"] == "aplicada"
+
+    # Una modificación con base obsoleta (revisión 1 tras el borrado) -> conflicto.
+    stale_update = _post_operation(
+        negocio_client,
+        establishment_id,
+        headers,
+        _operation(product_id, action="actualizar", base_revision=1, name="Revive"),
+    )
+    assert stale_update.status_code == 200
+    assert stale_update.json()["estado"] == "conflicto"
+
+    # Rechazar la modificación: el tombstone del borrado se mantiene.
+    rejected = negocio_client.post(
+        f"/v1/establecimientos/{establishment_id}/sync/conflictos/{stale_update.json()['conflict_id']}/resolver",
+        headers=headers,
+        json={"decision": "rechazar", "expected_revision": 2},
+    )
+    assert rejected.status_code == 200, rejected.text
+    catalog = negocio_client.get(
+        f"/v1/establecimientos/{establishment_id}/catalogo", headers=headers
+    ).json()
+    assert catalog["revision"] == 2
+    assert catalog["productos"] == []  # sigue archivado
+
+
+def test_decision_repetida_tras_resolver_es_idempotente(negocio_client):
+    """Resolver dos veces el mismo conflicto: la segunda devuelve 409 sin volver a
+    aplicar la operación ni cambiar la revisión."""
+    headers, establishment_id = _create_business_and_establishment(negocio_client)
+    product_id = str(uuid.uuid4())
+
+    assert (
+        _post_operation(
+            negocio_client, establishment_id, headers, _operation(product_id)
+        ).status_code
+        == 200
+    )
+    conflicted = _post_operation(
+        negocio_client,
+        establishment_id,
+        headers,
+        _operation(product_id, action="actualizar", base_revision=0, name="Segunda"),
+    ).json()
+    conflict_id = conflicted["conflict_id"]
+
+    first = negocio_client.post(
+        f"/v1/establecimientos/{establishment_id}/sync/conflictos/{conflict_id}/resolver",
+        headers=headers,
+        json={"decision": "aceptar", "expected_revision": 1},
+    )
+    assert first.status_code == 200
+    assert first.json()["estado"] == "aceptado"
+
+    repeat = negocio_client.post(
+        f"/v1/establecimientos/{establishment_id}/sync/conflictos/{conflict_id}/resolver",
+        headers=headers,
+        json={"decision": "aceptar", "expected_revision": 2},
+    )
+    assert repeat.status_code == 409
+    assert repeat.json()["code"] == "identity.conflicto_sync_ya_resuelto"
+
+    catalog = negocio_client.get(
+        f"/v1/establecimientos/{establishment_id}/catalogo", headers=headers
+    ).json()
+    assert catalog["revision"] == 2
+    assert catalog["productos"][0]["nombre"] == "Segunda"
