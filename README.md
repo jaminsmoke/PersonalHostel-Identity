@@ -60,7 +60,9 @@ python services/identity/scripts/deploy_staging.py --ref feature/mi-rama
 Los agentes no usan Docker local para verificar ítems. `--validate-only` ejecuta
 Ruff, formato, contrato OpenAPI, los tests con cobertura y el ciclo reversible
 de ambas cadenas Alembic dentro del VPS. Las bases activas no se modifican en
-esta fase.
+esta fase. El despliegue normal fija las URLs públicas canónicas de ficha/carta
+en el `.env` remoto sin mostrar secretos, crea un backup de ambas BD antes de
+migrar y termina comprobando health/meta de los dos servicios.
 
 - Backup diario: `services/identity/scripts/backup_staging.sh` (cron en el VPS; dumps de ambas BD a `/opt/identity/backups`, retención 7 días).
 - Caddyfile: bloques `reverse_proxy 127.0.0.1:8080` (camareros), `:8082` (negocio) y `:8081` (web — invitaciones, ficha y carta) añadidos a `/etc/caddy/Caddyfile` (la landing queda intacta).

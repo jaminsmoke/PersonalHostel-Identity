@@ -43,6 +43,10 @@ ENV_FILE = os.path.normpath(
 LOCAL_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(ENV_FILE)))
 DEFAULT_SSH_KEY = "~/.ssh/identity_vps"
 SAFE_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+STAGING_PUBLIC_URLS = {
+    "FICHA_NEGOCIO_URL_BASE": "https://ficha.siberia.solutions/negocio",
+    "CARTA_URL_BASE": "https://carta.siberia.solutions/carta",
+}
 
 
 class PinnedHostKey(paramiko.MissingHostKeyPolicy):
@@ -76,6 +80,44 @@ def env_value(key: str) -> str:
 def ssh_key_path() -> str:
     configured = env_value("VPS_SSH_KEY_PATH")
     return os.path.expanduser(configured or DEFAULT_SSH_KEY)
+
+
+def ensure_staging_public_urls(client: paramiko.SSHClient) -> bool:
+    """Actualiza atómicamente las URLs públicas no secretas del `.env` remoto."""
+    path = f"{REMOTE_DIR}/.env"
+    temp_path = f"{path}.deploy-tmp"
+    sftp = client.open_sftp()
+    try:
+        stat = sftp.stat(path)
+        with sftp.open(path, "r") as source:
+            raw = source.read()
+        text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+        lines = text.splitlines()
+        found: set[str] = set()
+        changed = False
+        for index, line in enumerate(lines):
+            for key, value in STAGING_PUBLIC_URLS.items():
+                if line.startswith(f"{key}="):
+                    found.add(key)
+                    replacement = f"{key}={value}"
+                    if line != replacement:
+                        lines[index] = replacement
+                        changed = True
+                    break
+        for key, value in STAGING_PUBLIC_URLS.items():
+            if key not in found:
+                lines.append(f"{key}={value}")
+                changed = True
+        if not changed:
+            return False
+        payload = ("\n".join(lines).rstrip("\n") + "\n").encode()
+        with sftp.open(temp_path, "wb") as target:
+            target.write(payload)
+        sftp.chmod(temp_path, stat.st_mode & 0o777)
+        sftp.posix_rename(temp_path, path)
+        return True
+    finally:
+        sftp.close()
 
 
 def main() -> int:
@@ -223,7 +265,20 @@ def main() -> int:
                 "--entrypoint python identity-tests scripts/check_migrations.py"
             )
         else:
+            changed = ensure_staging_public_urls(client)
+            print(
+                "URLs públicas de staging actualizadas en el .env remoto."
+                if changed
+                else "URLs públicas de staging ya estaban configuradas."
+            )
+            run(f"cd {remote} && bash services/identity/scripts/backup_staging.sh")
             run(f"cd {remote} && {compose} up -d --build")
+            run(
+                "curl --fail --silent --show-error http://127.0.0.1:8080/health && "
+                "curl --fail --silent --show-error http://127.0.0.1:8080/v1/meta && "
+                "curl --fail --silent --show-error http://127.0.0.1:8082/health && "
+                "curl --fail --silent --show-error http://127.0.0.1:8082/v1/meta"
+            )
     finally:
         client.close()
 
