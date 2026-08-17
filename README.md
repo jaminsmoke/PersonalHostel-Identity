@@ -27,7 +27,14 @@ un camarero) van por un **cliente interno** (`/internal/*`) con dos transportes:
 - Negocio: rutas `/v1/auth/negocio/*`, `/v1/establecimientos/*`, `/v1/invitaciones/*` → `:8082`.
 - `GET /health` y `GET /v1/meta` existen en ambos.
 
-## Levantar en local (Docker)
+## Levantar en local (Docker) — DEPRECADO
+
+> **El flujo de desarrollo Docker local ya no es soportado.** La verificación
+> oficial de ítems es `deploy_staging.py --validate-only` en el Docker del VPS y
+> la validación de calidad/migraciones corre en CI (GitHub Actions). El Compose
+> sigue vivo como **orquestación de CI y del VPS**, no como vía de desarrollo.
+> La sección se conserva solo para experimentación aislada; cualquier uso
+> productivo o de verificación debe pasar por el VPS.
 
 ```bash
 cd PersonalHosteleriaServer
@@ -100,12 +107,12 @@ Para probar login y flujos cross de la familia se usan dos cuentas canónicas co
 - Negocio: `negocio.test@example.com` (`Negocio Test`, tipo `bar`)
 
 ```bash
-# Dev (localhost): alta idempotente de las dos cuentas
-python services/identity/scripts/seed_test_accounts.py
-
-# Staging: apuntando a los subdominios HTTPS
+# Staging (vía recomendada): apuntando a los subdominios HTTPS
 CAMAREROS_API_URL=https://camareros.siberia.solutions \
 NEGOCIO_API_URL=https://negocio.siberia.solutions \
+python services/identity/scripts/seed_test_accounts.py
+
+# Dev local (legacy, solo experimentación aislada): alta idempotente de las dos cuentas
 python services/identity/scripts/seed_test_accounts.py
 ```
 
@@ -132,8 +139,9 @@ termina. Las APIs nunca heredan ese usuario: arrancan después como UID/GID 1000
 
 ### OpenAPI y contrato versionado
 
-- Camareros: http://localhost:8080/docs · http://localhost:8080/openapi.json
-- Negocio: http://localhost:8082/docs · http://localhost:8082/openapi.json
+- Camareros (staging): https://camareros.siberia.solutions/docs · https://camareros.siberia.solutions/openapi.json
+- Negocio (staging): https://negocio.siberia.solutions/docs · https://negocio.siberia.solutions/openapi.json
+- Local legacy (solo experimentación): http://localhost:8080/docs · http://localhost:8082/docs
 - `info.version` = `0.2.0` en ambos.
 - Specs versionados en git: [`docs/openapi-camareros.json`](docs/openapi-camareros.json) y [`docs/openapi-negocio.json`](docs/openapi-negocio.json). Se regeneran con:
 
@@ -386,7 +394,7 @@ Bar/Commander solo declaran procedencia al crear la entidad raíz correspondient
 
 ## Tests
 
-Los tests corren contra **bases de datos de prueba separadas** (`identity_camareros_test` y `identity_negocio_test`, creadas por `db-init`), no contra las de desarrollo.
+Los tests corren contra **bases de datos de prueba separadas** (`identity_camareros_test` y `identity_negocio_test`, creadas por `db-init`), no contra las de desarrollo. La verificación oficial es la validación remota (`deploy_staging.py --validate-only`) y el job `integration` de CI; el comando siguiente es solo una **reproducción local opcional** del runner:
 
 ```bash
 docker compose run --rm identity-tests
@@ -406,7 +414,8 @@ layout, outbox y OpenAPI (dos specs).
 ## Calidad y CI
 
 El contrato común vive en `services/identity/pyproject.toml` y fija Python 3.14,
-Ruff, pytest y cobertura. Para reproducir el job rápido localmente:
+Ruff, pytest y cobertura. Reproducción local opcional del job `quality`
+(la vía oficial es CI/VPS):
 
 ```bash
 docker compose run --rm identity-tests ruff check app tests scripts
@@ -425,14 +434,14 @@ ejecuciones obsoletas de la misma rama y usa permisos de solo lectura:
   checkout de los repos públicos Bar y Commander, barrido de `app.js`, e
   informe en el summary del job con las rutas usadas por cada cliente y las
   públicas sin consumidor (aviso, no rojo). El job solo falla si un cliente
-  llama una ruta que el OpenAPI ya no tiene. Local:
+  llama una ruta que el OpenAPI ya no tiene. Reproducción local opcional:
 
   ```bash
   docker compose run --rm identity-tests python scripts/check_family_contracts.py --selftest
   ```
 - `migrations-check`: valida la reversibilidad de ambas cadenas Alembic con
   el ciclo `upgrade head → downgrade base → upgrade head` sobre Postgres
-  efímero. Local:
+  efímero. Reproducción local opcional:
 
   ```bash
   docker compose run --rm --entrypoint python identity-tests scripts/check_migrations.py
@@ -454,12 +463,11 @@ emails, cuenta datos por procedencia y detecta linaje inconsistente o referencia
 cross-DB huérfanas. Sale con `1` ante error y, con `--fail-on-detected`, con `2`
 si encuentra datos no reales o incoherencias. `--show-pii` queda reservado para
 revisión manual consciente y no se usa en CI. GitHub Actions valida el auditor
-sobre PostgreSQL efímero; no tiene acceso al volumen local ni al futuro VPS.
+sobre PostgreSQL efímero; no tiene acceso al volumen local ni al VPS.
 
-## Reset de datos de desarrollo
-
-```bash
-sh services/identity/scripts/reset-dev.sh
-```
-
-Trunca las dos BD de desarrollo y elimina la BD legacy `identity` (huérfana tras el split). No toca las BD de prueba.
+> Reproducción local opcional del job `integration` (vía oficial: CI/VPS):
+>
+> ```bash
+> docker compose exec identity-camareros python -m app.data_audit
+> docker compose exec identity-camareros python -m app.data_audit --format json --fail-on-detected
+> ```
