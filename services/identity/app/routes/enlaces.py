@@ -31,9 +31,9 @@ from app.errors import (
 from app.models import CuentaNegocio, EnlaceEstado, EnlacePublico, Establecimiento
 from app.schemas import (
     EnlacePublicoCreateRequest,
-    EnlacePublicoRotarRequest,
     EnlacePublicoResolucion,
     EnlacePublicoResponse,
+    EnlacePublicoRotarRequest,
     ErrorResponse,
 )
 

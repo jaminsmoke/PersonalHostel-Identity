@@ -192,7 +192,7 @@ class CuentaNegocioUpdateRequest(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def _exige_cambio(self) -> "CuentaNegocioUpdateRequest":
+    def _exige_cambio(self) -> CuentaNegocioUpdateRequest:
         if not self.model_fields_set:
             raise ValueError("Se requiere al menos un campo para actualizar")
         return self
@@ -251,7 +251,7 @@ class EstablecimientoUpdateRequest(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def _exige_cambio(self) -> "EstablecimientoUpdateRequest":
+    def _exige_cambio(self) -> EstablecimientoUpdateRequest:
         if not self.model_fields_set:
             raise ValueError("Se requiere al menos un campo para actualizar")
         return self
