@@ -132,6 +132,7 @@ services:
       FOTOS_DIR: /tmp/identity-test-fotos
       OPENAPI_DOCS_DIR: /docs
       RUFF_CACHE_DIR: /tmp/ruff-cache
+      PYTEST_ADDOPTS: -o cache_dir=/tmp/pytest-cache
       COVERAGE_FILE: /tmp/.coverage
       INTERNAL_TRANSPORT: direct
       ALLOW_NON_REAL_DATA: "true"
