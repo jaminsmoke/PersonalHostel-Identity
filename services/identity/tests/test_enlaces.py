@@ -216,9 +216,7 @@ def test_crear_enlace_es_idempotente_y_devuelve_url_publica(db_ready, negocio_cl
     assert first.status_code == 201
     assert second.status_code == 200
     assert second.json()["id"] == first.json()["id"]
-    assert first.json()["url_publica"] == (
-        f"http://web.test/negocio?slug={first.json()['slug']}"
-    )
+    assert first.json()["url_publica"] == (f"http://web.test/negocio?slug={first.json()['slug']}")
 
     conflict = negocio_client.post(
         f"/v1/establecimientos/{est_id}/enlaces",
@@ -251,7 +249,5 @@ def test_rotar_enlace_revoca_anterior_y_crea_sustituto(db_ready, negocio_client)
     assert negocio_client.get(f"/v1/enlaces/{original['slug']}").status_code == 410
     assert negocio_client.get(f"/v1/enlaces/{rotated.json()['slug']}").status_code == 200
 
-    enlaces = negocio_client.get(
-        f"/v1/establecimientos/{est_id}/enlaces", headers=headers
-    ).json()
+    enlaces = negocio_client.get(f"/v1/establecimientos/{est_id}/enlaces", headers=headers).json()
     assert sum(link["estado"] == "activo" for link in enlaces) == 1

@@ -49,9 +49,7 @@ def _establecimiento(negocio_client, token: str, nombre: str, tipo=None) -> dict
     payload = {"nombre": nombre}
     if tipo is not None:
         payload["tipo_establecimiento"] = tipo
-    response = negocio_client.post(
-        "/v1/establecimientos", headers=_headers(token), json=payload
-    )
+    response = negocio_client.post("/v1/establecimientos", headers=_headers(token), json=payload)
     assert response.status_code == 201
     return response.json()
 
@@ -82,9 +80,10 @@ def test_get_y_patch_cuenta_organizacion(db_ready, negocio_client):
         json={"email": email, "password": "negocio-12345678"},
     )
     assert login.json()["cuenta"]["nombre_mostrar"] == "Grupo Norte"
-    assert negocio_client.patch(
-        "/v1/auth/negocio/me", headers=_headers(token), json={}
-    ).status_code == 422
+    assert (
+        negocio_client.patch("/v1/auth/negocio/me", headers=_headers(token), json={}).status_code
+        == 422
+    )
 
 
 def test_establecimientos_tienen_perfiles_independientes(db_ready, negocio_client):

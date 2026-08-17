@@ -85,9 +85,7 @@ def test_ficha_publica_devuelve_campos_publicos(db_ready, negocio_client):
     assert resp.headers["cache-control"] == "public, max-age=300"
 
 
-def test_ficha_no_filtra_otros_establecimientos_de_la_organizacion(
-    db_ready, negocio_client
-):
+def test_ficha_no_filtra_otros_establecimientos_de_la_organizacion(db_ready, negocio_client):
     _, token = _crear_negocio(negocio_client)
     primero = _crear_establecimiento(negocio_client, token, "Local Público")
     _crear_establecimiento(negocio_client, token, "Local Privado")

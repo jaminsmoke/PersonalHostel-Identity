@@ -206,17 +206,17 @@ def main() -> int:
             run(f"cd {remote} && {compose} run --rm identity-tests")
             run(
                 f"cd {remote} && {compose} exec -T db sh -c "
-                "'dropdb -U \"$POSTGRES_USER\" --if-exists identity_camareros_test && "
-                "dropdb -U \"$POSTGRES_USER\" --if-exists identity_negocio_test && "
-                "createdb -U \"$POSTGRES_USER\" identity_camareros_test && "
-                "createdb -U \"$POSTGRES_USER\" identity_negocio_test'"
+                '\'dropdb -U "$POSTGRES_USER" --if-exists identity_camareros_test && '
+                'dropdb -U "$POSTGRES_USER" --if-exists identity_negocio_test && '
+                'createdb -U "$POSTGRES_USER" identity_camareros_test && '
+                'createdb -U "$POSTGRES_USER" identity_negocio_test\''
             )
             run(
                 f"cd {remote} && set -a && . ./.env && set +a && "
-                "export CAMAREROS_DATABASE_URL=\"postgresql+psycopg://${POSTGRES_USER}:"
-                "${POSTGRES_PASSWORD}@db:5432/identity_camareros_test\" && "
-                "export NEGOCIO_DATABASE_URL=\"postgresql+psycopg://${POSTGRES_USER}:"
-                "${POSTGRES_PASSWORD}@db:5432/identity_negocio_test\" && "
+                'export CAMAREROS_DATABASE_URL="postgresql+psycopg://${POSTGRES_USER}:'
+                '${POSTGRES_PASSWORD}@db:5432/identity_camareros_test" && '
+                'export NEGOCIO_DATABASE_URL="postgresql+psycopg://${POSTGRES_USER}:'
+                '${POSTGRES_PASSWORD}@db:5432/identity_negocio_test" && '
                 f"{compose} run --rm "
                 "-e CAMAREROS_DATABASE_URL -e NEGOCIO_DATABASE_URL "
                 "--entrypoint python identity-tests scripts/check_migrations.py"

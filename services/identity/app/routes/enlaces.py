@@ -92,9 +92,7 @@ def _slug_disponible(db: Session, base: str) -> str:
     )
 
 
-def _activo_del_tipo(
-    db: Session, establecimiento_id: uuid.UUID, tipo: str
-) -> EnlacePublico | None:
+def _activo_del_tipo(db: Session, establecimiento_id: uuid.UUID, tipo: str) -> EnlacePublico | None:
     enlace = (
         db.query(EnlacePublico)
         .filter_by(
@@ -104,7 +102,11 @@ def _activo_del_tipo(
         )
         .one_or_none()
     )
-    if enlace is not None and enlace.expira_en is not None and enlace.expira_en <= datetime.now(UTC):
+    if (
+        enlace is not None
+        and enlace.expira_en is not None
+        and enlace.expira_en <= datetime.now(UTC)
+    ):
         enlace.estado = EnlaceEstado.revocado.value
         enlace.revocada_en = datetime.now(UTC)
         db.flush()
