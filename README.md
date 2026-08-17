@@ -62,7 +62,8 @@ python services/identity/scripts/deploy_staging.py --ref feature/mi-rama --smoke
 
 Los agentes no usan Docker local para verificar ítems. `--validate-only` ejecuta
 Ruff, formato, contrato OpenAPI, los tests con cobertura y el ciclo reversible
-de ambas cadenas Alembic dentro del VPS. Las bases activas no se modifican en
+de ambas cadenas Alembic dentro del VPS. También ejecuta el self-test del
+detector de contratos de familia. Las bases activas no se modifican en
 esta fase. El despliegue normal fija las URLs públicas canónicas de ficha/carta
 en el `.env` remoto sin mostrar secretos, crea un backup de ambas BD antes de
 migrar y termina comprobando health/meta de los dos servicios.

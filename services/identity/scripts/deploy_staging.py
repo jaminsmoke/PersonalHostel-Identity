@@ -251,6 +251,10 @@ def main() -> int:
                 f"cd {remote} && {compose} run --rm identity-tests "
                 "python scripts/export_openapi.py --check"
             )
+            run(
+                f"cd {remote} && {compose} run --rm identity-tests "
+                "python scripts/check_family_contracts.py --selftest"
+            )
             run(f"cd {remote} && {compose} run --rm identity-tests")
             run(
                 f"cd {remote} && {compose} exec -T db sh -c "
