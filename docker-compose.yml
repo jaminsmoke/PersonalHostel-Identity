@@ -63,6 +63,8 @@ services:
       CAMAREROS_INTERNAL_URL: http://identity-camareros:8080
       IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:8081}
       INVITATION_URL_BASE: ${INVITATION_URL_BASE:-http://localhost:8081/invitaciones}
+      FICHA_NEGOCIO_URL_BASE: ${FICHA_NEGOCIO_URL_BASE:-http://localhost:8081/negocio}
+      CARTA_URL_BASE: ${CARTA_URL_BASE:-http://localhost:8081/carta}
       ALLOW_NON_REAL_DATA: ${ALLOW_NON_REAL_DATA:-true}
     volumes:
       - fotos:/app/data/fotos
@@ -106,6 +108,17 @@ services:
       - fotos:/app/data/fotos
     restart: "no"
 
+  reports-permissions:
+    profiles: ["test"]
+    build:
+      context: ./services/identity
+      target: runtime
+    user: "0:0"
+    command: ["sh", "-c", "chown -R 10001:10001 /reports"]
+    volumes:
+      - ./build/reports:/reports
+    restart: "no"
+
   identity-tests:
     profiles: ["test"]
     build:
@@ -119,9 +132,12 @@ services:
       FOTOS_DIR: /tmp/identity-test-fotos
       OPENAPI_DOCS_DIR: /docs
       RUFF_CACHE_DIR: /tmp/ruff-cache
+      PYTEST_ADDOPTS: -o cache_dir=/tmp/pytest-cache
       COVERAGE_FILE: /tmp/.coverage
       INTERNAL_TRANSPORT: direct
       ALLOW_NON_REAL_DATA: "true"
+      FICHA_NEGOCIO_URL_BASE: http://localhost:8081/negocio
+      CARTA_URL_BASE: http://localhost:8081/carta
     command:
       - python
       - -m
@@ -142,6 +158,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      reports-permissions:
+        condition: service_completed_successfully
 
   identity-web:
     build: ./services/identity-web

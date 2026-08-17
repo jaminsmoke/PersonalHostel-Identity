@@ -26,7 +26,7 @@ from app.storage import get_foto_storage
 router = APIRouter(prefix="/v1/negocio", tags=["negocio público"])
 
 
-def _cuenta_por_ficha_slug(db: Session, slug: str) -> CuentaNegocio:
+def _establecimiento_por_ficha_slug(db: Session, slug: str) -> Establecimiento:
     enlace = (
         db.query(EnlacePublico)
         .filter_by(slug=slug, tipo=EnlaceTipo.ficha_negocio.value)
@@ -54,18 +54,17 @@ def _cuenta_por_ficha_slug(db: Session, slug: str) -> CuentaNegocio:
             code=ENLACE_NOT_FOUND,
             detail="Establecimiento no encontrado",
         )
-    cuenta = db.get(CuentaNegocio, establecimiento.cuenta_negocio_id)
-    if cuenta is None:
+    if db.get(CuentaNegocio, establecimiento.cuenta_negocio_id) is None:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
             code=ENLACE_NOT_FOUND,
             detail="Negocio no encontrado",
         )
-    return cuenta
+    return establecimiento
 
 
-def _logo_url(slug: str, cuenta: CuentaNegocio) -> str | None:
-    if not cuenta.logo_clave:
+def _logo_url(slug: str, establecimiento: Establecimiento) -> str | None:
+    if not establecimiento.logo_efectivo_clave:
         return None
     return f"/v1/negocio/ficha/logo?slug={slug}"
 
@@ -83,19 +82,14 @@ def ficha_negocio(
     response: Response,
     db: Session = Depends(get_negocio_db),
 ) -> dict:
-    cuenta = _cuenta_por_ficha_slug(db, slug)
-    establecimientos = (
-        db.query(Establecimiento)
-        .filter_by(cuenta_negocio_id=cuenta.id)
-        .order_by(Establecimiento.created_at)
-        .all()
-    )
+    establecimiento = _establecimiento_por_ficha_slug(db, slug)
     response.headers["Cache-Control"] = "public, max-age=300"
     return {
-        "nombre": cuenta.nombre_mostrar,
-        "tipo_establecimiento": cuenta.tipo_establecimiento,
-        "logo_url": _logo_url(slug, cuenta),
-        "establecimientos": [{"id": e.id, "nombre": e.nombre} for e in establecimientos],
+        "establecimiento_id": establecimiento.id,
+        "nombre": establecimiento.nombre,
+        "tipo_establecimiento": establecimiento.tipo_efectivo,
+        "logo_url": _logo_url(slug, establecimiento),
+        "organizacion_nombre": establecimiento.cuenta_negocio.nombre_mostrar,
     }
 
 
@@ -111,14 +105,15 @@ def ficha_negocio_logo(
     slug: str,
     db: Session = Depends(get_negocio_db),
 ) -> Response:
-    cuenta = _cuenta_por_ficha_slug(db, slug)
-    if not cuenta.logo_clave:
+    establecimiento = _establecimiento_por_ficha_slug(db, slug)
+    clave = establecimiento.logo_efectivo_clave
+    if not clave:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
             code=FOTO_INEXISTENTE,
             detail="El negocio no tiene logo",
         )
-    data = get_foto_storage().leer(cuenta.logo_clave)
+    data = get_foto_storage().leer(clave)
     if data is None:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -127,9 +122,9 @@ def ficha_negocio_logo(
         )
     return Response(
         content=data,
-        media_type=cuenta.logo_mimetype or "image/webp",
+        media_type=establecimiento.logo_efectivo_mimetype or "image/webp",
         headers={
             "Cache-Control": "public, max-age=86400",
-            "ETag": f'"{cuenta.logo_clave}"',
+            "ETag": f'"{clave}"',
         },
     )

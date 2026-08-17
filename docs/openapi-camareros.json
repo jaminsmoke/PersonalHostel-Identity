@@ -237,6 +237,17 @@
             "title": "Id",
             "type": "string"
           },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
           "nombre": {
             "title": "Nombre",
             "type": "string"
@@ -244,6 +255,17 @@
           "rol": {
             "title": "Rol",
             "type": "string"
+          },
+          "tipo_establecimiento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo Establecimiento"
           }
         },
         "required": [

@@ -56,16 +56,16 @@
       ? '<p class="tipo">' + esc(ficha.tipo_establecimiento) + "</p>"
       : "";
 
-    const locales = (ficha.establecimientos || [])
-      .map(function (e) { return '<li>' + esc(e.nombre) + "</li>"; })
-      .join("");
+    const organizacion = ficha.organizacion_nombre && ficha.organizacion_nombre !== ficha.nombre
+      ? '<p class="organizacion">' + esc(ficha.organizacion_nombre) + "</p>"
+      : "";
 
     output.innerHTML =
       '<p class="brand">Personal Hostel — Ficha del negocio</p>' +
       logo +
       '<p class="status">' + esc(ficha.nombre) + "</p>" +
       tipo +
-      (locales ? '<ul class="locales">' + locales + "</ul>" : "");
+      organizacion;
   }
 
   function formatPrecio(centimos, moneda) {

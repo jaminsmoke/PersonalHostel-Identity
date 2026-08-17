@@ -22,12 +22,14 @@ CAMAREROS_RUTAS = [
 NEGOCIO_RUTAS = [
     "/v1/auth/negocio/registro",
     "/v1/auth/negocio/login",
+    "/v1/auth/negocio/me",
     "/v1/negocio/ficha",
     "/v1/negocio/ficha/logo",
     "/v1/negocio/carta",
     "/v1/establecimientos",
     "/v1/establecimientos/mios",
     "/v1/establecimientos/{establecimiento_id}",
+    "/v1/establecimientos/{establecimiento_id}/logo",
     "/v1/establecimientos/{establecimiento_id}/miembros",
     "/v1/establecimientos/{establecimiento_id}/miembros/qr",
     "/v1/establecimientos/{establecimiento_id}/camareros/buscar",
@@ -35,6 +37,7 @@ NEGOCIO_RUTAS = [
     "/v1/establecimientos/{establecimiento_id}/catalogo",
     "/v1/establecimientos/{establecimiento_id}/enlaces",
     "/v1/establecimientos/{establecimiento_id}/enlaces/{enlace_id}/revocar",
+    "/v1/establecimientos/{establecimiento_id}/enlaces/{enlace_id}/rotar",
     "/v1/enlaces/{slug}",
     "/v1/establecimientos/{establecimiento_id}/sync/cambios",
     "/v1/establecimientos/{establecimiento_id}/sync/operaciones",
@@ -65,6 +68,9 @@ def test_openapi_negocio_documenta_rutas_y_version(negocio_client):
     paths = spec["paths"]
     for ruta in NEGOCIO_RUTAS:
         assert ruta in paths, f"Falta {ruta} en el spec de negocio"
+    assert "get" in paths["/v1/auth/negocio/me"]
+    assert "patch" in paths["/v1/auth/negocio/me"]
+    assert "patch" in paths["/v1/establecimientos/{establecimiento_id}"]
     assert "ErrorResponse" in spec["components"]["schemas"]
 
 

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Despliega Identity en el VPS de staging (igual que dev: git pull + compose up).
+"""Valida o despliega una referencia de Identity en el VPS de staging.
 
 Uso:
     python services/identity/scripts/deploy_staging.py
+    python services/identity/scripts/deploy_staging.py --ref feature/x --validate-only
 
 Lee de `.env` (nunca en git):
   - VPS_HOST, VPS_USER, VPS_PASSWORD (password solo como fallback)
@@ -10,8 +11,9 @@ Lee de `.env` (nunca en git):
   - VPS_SSH_KEY_PATH (opcional; por defecto ~/.ssh/identity_vps)
 
 En el VPS (ruta por defecto /opt/identity):
-  1. `git clone` (solo la primera vez) y `git fetch + reset --hard origin/main`
-  2. `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build`
+  1. `git clone` (solo la primera vez) y `git fetch + reset --hard origin/<ref>`
+  2. valida con el runner aislado y bases `_test`, o despliega con Compose de
+     producción. La validación oficial no usa Docker local.
 
 El `.env` de producción vive en /opt/identity/.env (gitignored) y se crea la
 primera vez a mano (bootstrap). Este script aborta si falta.
@@ -19,7 +21,9 @@ primera vez a mano (bootstrap). Este script aborta si falta.
 Requiere: paramiko (pip install paramiko).
 """
 
+import argparse
 import os
+import re
 import shlex
 import sys
 
@@ -36,7 +40,13 @@ REMOTE_DIR = "/opt/identity"
 ENV_FILE = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".env")
 )
+LOCAL_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(ENV_FILE)))
 DEFAULT_SSH_KEY = "~/.ssh/identity_vps"
+SAFE_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+STAGING_PUBLIC_URLS = {
+    "FICHA_NEGOCIO_URL_BASE": "https://ficha.siberia.solutions/negocio",
+    "CARTA_URL_BASE": "https://carta.siberia.solutions/carta",
+}
 
 
 class PinnedHostKey(paramiko.MissingHostKeyPolicy):
@@ -72,7 +82,71 @@ def ssh_key_path() -> str:
     return os.path.expanduser(configured or DEFAULT_SSH_KEY)
 
 
+def ensure_staging_public_urls(client: paramiko.SSHClient) -> bool:
+    """Actualiza atómicamente las URLs públicas no secretas del `.env` remoto."""
+    path = f"{REMOTE_DIR}/.env"
+    temp_path = f"{path}.deploy-tmp"
+    sftp = client.open_sftp()
+    try:
+        stat = sftp.stat(path)
+        with sftp.open(path, "r") as source:
+            raw = source.read()
+        text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+        lines = text.splitlines()
+        found: set[str] = set()
+        changed = False
+        for index, line in enumerate(lines):
+            for key, value in STAGING_PUBLIC_URLS.items():
+                if line.startswith(f"{key}="):
+                    found.add(key)
+                    replacement = f"{key}={value}"
+                    if line != replacement:
+                        lines[index] = replacement
+                        changed = True
+                    break
+        for key, value in STAGING_PUBLIC_URLS.items():
+            if key not in found:
+                lines.append(f"{key}={value}")
+                changed = True
+        if not changed:
+            return False
+        payload = ("\n".join(lines).rstrip("\n") + "\n").encode()
+        with sftp.open(temp_path, "wb") as target:
+            target.write(payload)
+        sftp.chmod(temp_path, stat.st_mode & 0o777)
+        sftp.posix_rename(temp_path, path)
+        return True
+    finally:
+        sftp.close()
+
+
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--ref",
+        default="main",
+        help="Rama remota a validar/desplegar (default: main).",
+    )
+    parser.add_argument(
+        "--validate-only",
+        action="store_true",
+        help="Ejecuta calidad, tests y migraciones aisladas sin recrear las APIs activas.",
+    )
+    parser.add_argument(
+        "--sync-openapi",
+        action="store_true",
+        help="Genera OpenAPI dentro del Docker del VPS y descarga docs al checkout local.",
+    )
+    parser.add_argument(
+        "--smoke-profile",
+        action="store_true",
+        help="Ejecuta en Docker del VPS el E2E público autolimpiable del perfil de local.",
+    )
+    args = parser.parse_args()
+    if not SAFE_REF.fullmatch(args.ref) or ".." in args.ref or args.ref.endswith("/"):
+        print(f"Referencia no válida: {args.ref}")
+        return 2
+
     host = env_value("VPS_HOST")
     user = env_value("VPS_USER") or "root"
     password = env_value("VPS_PASSWORD")
@@ -144,16 +218,91 @@ def main() -> int:
             client.close()
             return 1
 
-        run(f"cd {remote} && git fetch origin && git reset --hard origin/main")
-        run(
-            f"cd {remote} && "
-            "docker compose -f docker-compose.yml -f docker-compose.prod.yml "
-            "up -d --build"
-        )
+        remote_ref = shlex.quote(f"origin/{args.ref}")
+        run(f"cd {remote} && git fetch origin && git reset --hard {remote_ref}")
+        compose = "docker compose -f docker-compose.yml -f docker-compose.prod.yml"
+        if args.sync_openapi:
+            run(f"cd {remote} && {compose} build identity-tests")
+            run(
+                f"cd {remote} && {compose} run --rm "
+                "--user 0:0 "
+                f"-v {remote}/docs:/generated-docs "
+                "-e OPENAPI_DOCS_DIR=/generated-docs identity-tests "
+                "python scripts/export_openapi.py"
+            )
+            sftp = client.open_sftp()
+            try:
+                for name in ("openapi-camareros.json", "openapi-negocio.json"):
+                    sftp.get(
+                        f"{REMOTE_DIR}/docs/{name}",
+                        os.path.join(LOCAL_REPO_ROOT, "docs", name),
+                    )
+            finally:
+                sftp.close()
+        elif args.validate_only:
+            run(f"cd {remote} && {compose} up -d db")
+            run(f"cd {remote} && {compose} build identity-tests")
+            run(f"cd {remote} && {compose} run --rm identity-tests ruff check app tests scripts")
+            run(
+                f"cd {remote} && {compose} run --rm identity-tests "
+                "ruff format --check app tests scripts"
+            )
+            run(
+                f"cd {remote} && {compose} run --rm identity-tests "
+                "python scripts/export_openapi.py --check"
+            )
+            run(
+                f"cd {remote} && {compose} run --rm identity-tests "
+                "python scripts/check_family_contracts.py --selftest"
+            )
+            run(f"cd {remote} && {compose} run --rm identity-tests")
+            run(
+                f"cd {remote} && {compose} exec -T db sh -c "
+                '\'dropdb -U "$POSTGRES_USER" --if-exists identity_camareros_test && '
+                'dropdb -U "$POSTGRES_USER" --if-exists identity_negocio_test && '
+                'createdb -U "$POSTGRES_USER" identity_camareros_test && '
+                'createdb -U "$POSTGRES_USER" identity_negocio_test\''
+            )
+            run(
+                f"cd {remote} && set -a && . ./.env && set +a && "
+                'export CAMAREROS_DATABASE_URL="postgresql+psycopg://${POSTGRES_USER}:'
+                '${POSTGRES_PASSWORD}@db:5432/identity_camareros_test" && '
+                'export NEGOCIO_DATABASE_URL="postgresql+psycopg://${POSTGRES_USER}:'
+                '${POSTGRES_PASSWORD}@db:5432/identity_negocio_test" && '
+                f"{compose} run --rm "
+                "-e CAMAREROS_DATABASE_URL -e NEGOCIO_DATABASE_URL "
+                "--entrypoint python identity-tests scripts/check_migrations.py"
+            )
+        elif args.smoke_profile:
+            run(f"cd {remote} && {compose} build identity-tests")
+            run(
+                f"cd {remote} && {compose} run --rm identity-tests "
+                "python scripts/smoke_staging_profile.py"
+            )
+        else:
+            changed = ensure_staging_public_urls(client)
+            print(
+                "URLs públicas de staging actualizadas en el .env remoto."
+                if changed
+                else "URLs públicas de staging ya estaban configuradas."
+            )
+            run(f"cd {remote} && bash services/identity/scripts/backup_staging.sh")
+            run(f"cd {remote} && {compose} up -d --build")
+            run(
+                "curl --fail --silent --show-error http://127.0.0.1:8080/health && "
+                "curl --fail --silent --show-error http://127.0.0.1:8080/v1/meta && "
+                "curl --fail --silent --show-error http://127.0.0.1:8082/health && "
+                "curl --fail --silent --show-error http://127.0.0.1:8082/v1/meta"
+            )
     finally:
         client.close()
 
-    print("Despliegue OK")
+    if args.sync_openapi:
+        print("OpenAPI generado en el VPS y sincronizado al checkout local")
+    elif args.smoke_profile:
+        print("Smoke público ejecutado dentro del Docker del VPS")
+    else:
+        print("Validación remota OK" if args.validate_only else "Despliegue OK")
     return 0
 
 
