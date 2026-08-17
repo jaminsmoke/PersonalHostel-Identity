@@ -33,6 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 RUTA_RE = re.compile(r'"((?:/v1/|/internal/|/health)[^"]*)"')
 
 PARAM_RE = re.compile(r"\{[^}]+\}|\$[A-Za-z_][A-Za-z0-9_]*")
+QUERY_SUFFIX_VAR_RE = re.compile(r"(?<!/)\$[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def openapi_paths(path: Path) -> set[str]:
@@ -69,6 +70,9 @@ def fusionar_concatenadas(src: str) -> str:
 def normalize(ruta: str) -> str:
     """Deja la ruta comparable: sin query, sin parámetros con nombre, sin slash final."""
     base = ruta.split("?", 1)[0].strip().rstrip("/")
+    # Kotlin puede anexar una variable que contiene el query opcional:
+    # ``/invitaciones$q``. No es otro segmento de ruta y no debe convertirse en ``*``.
+    base = QUERY_SUFFIX_VAR_RE.sub("", base)
     return PARAM_RE.sub("*", base)
 
 
@@ -220,6 +224,8 @@ def _fixtures_ok() -> tuple[dict, dict, str, str, str]:
         IdentityHttp.request(baseUrl, "POST", "/v1/establecimientos", ...)
         IdentityHttp.request(baseUrl, "POST", "/v1/establecimientos/$id/miembros/qr", ...)
         IdentityHttp.request(baseUrl, "GET", "/v1/establecimientos/$id/camareros/buscar?email=$q", ...)
+        val q = estado?.let { "?estado=$it" } ?: ""
+        IdentityHttp.request(baseUrl, "GET", "/v1/establecimientos/$id/invitaciones$q", ...)
         IdentityHttp.request(baseUrl, "POST", "/v1/establecimientos/$id/invitaciones", ...)
         IdentityHttp.request(baseUrl, "POST", "/v1/establecimientos/$id/invitaciones/$invitacionId/revocar", ...)
         IdentityHttp.request(baseUrl, "GET", "/v1/establecimientos/$id/miembros", ...)
