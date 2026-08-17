@@ -282,11 +282,23 @@ class CuentaNegocio(NegocioBase):
 
 class Establecimiento(NegocioBase):
     __tablename__ = "establecimientos"
+    __table_args__ = (
+        CheckConstraint(
+            "tipo_establecimiento IS NULL OR tipo_establecimiento IN "
+            "('bar', 'restaurante', 'cafeteria', 'pub', 'copas')",
+            name="ck_establecimientos_tipo_establecimiento",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
     nombre: Mapped[str] = mapped_column(String(200), nullable=False)
+    tipo_establecimiento: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    logo_clave: Mapped[str | None] = mapped_column(String(255))
+    logo_mimetype: Mapped[str | None] = mapped_column(String(64))
+    logo_size: Mapped[int | None] = mapped_column(Integer)
+    logo_actualizada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     data_origin: Mapped[DataOrigin] = mapped_column(
         Enum(DataOrigin, name="data_origin"),
         nullable=False,
@@ -324,6 +336,27 @@ class Establecimiento(NegocioBase):
     enlaces: Mapped[list[EnlacePublico]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
+
+    @property
+    def tipo_efectivo(self) -> str | None:
+        """Tipo propio o default legado de la organización."""
+        return self.tipo_establecimiento or self.cuenta_negocio.tipo_establecimiento
+
+    @property
+    def logo_efectivo_clave(self) -> str | None:
+        return self.logo_clave or self.cuenta_negocio.logo_clave
+
+    @property
+    def logo_efectivo_mimetype(self) -> str | None:
+        if self.logo_clave:
+            return self.logo_mimetype
+        return self.cuenta_negocio.logo_mimetype
+
+    @property
+    def logo_url(self) -> str | None:
+        if not self.logo_efectivo_clave:
+            return None
+        return f"/v1/establecimientos/{self.id}/logo"
 
 
 class ProductoCatalogo(NegocioBase):
@@ -386,6 +419,7 @@ class EnlacePublico(NegocioBase):
             "ix_enlaces_publicos_activos",
             "establecimiento_id",
             "tipo",
+            unique=True,
             postgresql_where=text("estado = 'activo'"),
         ),
     )

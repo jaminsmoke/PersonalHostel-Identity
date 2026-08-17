@@ -196,3 +196,62 @@ def test_crear_enlace_requiere_cuenta_titular(db_ready, negocio_client):
         json={"tipo": "carta"},
     )
     assert resp.status_code == 401
+
+
+def test_crear_enlace_es_idempotente_y_devuelve_url_publica(db_ready, negocio_client):
+    _, token = _crear_negocio(negocio_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    est_id = _crear_establecimiento(negocio_client, token, "Idempotente")
+
+    first = negocio_client.post(
+        f"/v1/establecimientos/{est_id}/enlaces",
+        headers=headers,
+        json={"tipo": "ficha_negocio"},
+    )
+    second = negocio_client.post(
+        f"/v1/establecimientos/{est_id}/enlaces",
+        headers=headers,
+        json={"tipo": "ficha_negocio"},
+    )
+    assert first.status_code == 201
+    assert second.status_code == 200
+    assert second.json()["id"] == first.json()["id"]
+    assert first.json()["url_publica"] == (
+        f"http://web.test/negocio?slug={first.json()['slug']}"
+    )
+
+    conflict = negocio_client.post(
+        f"/v1/establecimientos/{est_id}/enlaces",
+        headers=headers,
+        json={"tipo": "ficha_negocio", "slug": f"otro-{uuid.uuid4().hex[:8]}"},
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["code"] == "identity.enlace_activo_existente"
+
+
+def test_rotar_enlace_revoca_anterior_y_crea_sustituto(db_ready, negocio_client):
+    _, token = _crear_negocio(negocio_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    est_id = _crear_establecimiento(negocio_client, token, "Rotación")
+    original = negocio_client.post(
+        f"/v1/establecimientos/{est_id}/enlaces",
+        headers=headers,
+        json={"tipo": "carta"},
+    ).json()
+
+    rotated = negocio_client.post(
+        f"/v1/establecimientos/{est_id}/enlaces/{original['id']}/rotar",
+        headers=headers,
+        json={},
+    )
+    assert rotated.status_code == 201
+    assert rotated.json()["id"] != original["id"]
+    assert rotated.json()["slug"] != original["slug"]
+    assert rotated.json()["url_publica"].startswith("http://web.test/carta?slug=")
+    assert negocio_client.get(f"/v1/enlaces/{original['slug']}").status_code == 410
+    assert negocio_client.get(f"/v1/enlaces/{rotated.json()['slug']}").status_code == 200
+
+    enlaces = negocio_client.get(
+        f"/v1/establecimientos/{est_id}/enlaces", headers=headers
+    ).json()
+    assert sum(link["estado"] == "activo" for link in enlaces) == 1

@@ -4,7 +4,7 @@ import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from pydantic import EmailStr
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
@@ -21,6 +21,8 @@ from app.errors import (
     DATA_ORIGIN_MISMATCH,
     EMAIL_NOT_FOUND,
     ESTABLECIMIENTO_NOT_FOUND,
+    FOTO_INEXISTENTE,
+    FOTO_INVALIDA,
     INVITACION_DUPLICATE,
     INVITACION_NOT_FOUND,
     LAYOUT_NOT_FOUND,
@@ -30,6 +32,7 @@ from app.errors import (
     ApiError,
 )
 from app.internal import get_camareros_internal
+from app.images import MAX_INPUT_BYTES, FotoInvalida, normalizar_foto
 from app.membresias import _add_or_reactivate_membership, _finalizar_aceptacion
 from app.models import (
     CuentaNegocio,
@@ -50,11 +53,13 @@ from app.schemas import (
     ErrorResponse,
     EstablecimientoCreateRequest,
     EstablecimientoResponse,
+    EstablecimientoUpdateRequest,
     InvitacionAcceptResponse,
     InvitacionCreateRequest,
     InvitacionResponse,
     LayoutResponse,
     LayoutUpdateRequest,
+    LogoNegocioResponse,
     MembresiaCreateRequest,
     MembresiaResponse,
     QrMemberRequest,
@@ -63,6 +68,7 @@ from app.security import (
     get_session_secret_env,
     protect_invitation_token,
 )
+from app.storage import get_foto_storage
 
 router = APIRouter(prefix="/v1/establecimientos", tags=["establecimientos"])
 invitations_router = APIRouter(prefix="/v1/invitaciones", tags=["invitaciones"])
@@ -126,6 +132,7 @@ def crear_establecimiento(
 ) -> Establecimiento:
     establecimiento = Establecimiento(
         nombre=payload.nombre.strip(),
+        tipo_establecimiento=payload.tipo_establecimiento or cuenta.tipo_establecimiento,
         cuenta_negocio_id=cuenta.id,
         data_origin=cuenta.data_origin,
     )
@@ -143,6 +150,130 @@ def crear_establecimiento(
     db.commit()
     db.refresh(establecimiento)
     return establecimiento
+
+
+@router.patch(
+    "/{establecimiento_id}",
+    response_model=EstablecimientoResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def actualizar_establecimiento(
+    establecimiento_id: uuid.UUID,
+    payload: EstablecimientoUpdateRequest,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_negocio_db),
+) -> Establecimiento:
+    establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    if payload.nombre is not None:
+        establecimiento.nombre = payload.nombre.strip()
+    if "tipo_establecimiento" in payload.model_fields_set:
+        establecimiento.tipo_establecimiento = payload.tipo_establecimiento
+    db.commit()
+    db.refresh(establecimiento)
+    return establecimiento
+
+
+@router.post(
+    "/{establecimiento_id}/logo",
+    response_model=LogoNegocioResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse},
+    },
+)
+async def subir_logo_establecimiento(
+    establecimiento_id: uuid.UUID,
+    logo: UploadFile = File(...),
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_negocio_db),
+) -> LogoNegocioResponse:
+    establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    data = await logo.read(MAX_INPUT_BYTES + 1)
+    try:
+        processed, mimetype, size = normalizar_foto(data)
+    except FotoInvalida as exc:
+        raise ApiError(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            code=FOTO_INVALIDA,
+            detail=str(exc),
+        ) from exc
+    storage = get_foto_storage()
+    clave = storage.guardar(establecimiento.id, processed, "webp")
+    if establecimiento.logo_clave:
+        storage.borrar(establecimiento.logo_clave)
+    establecimiento.logo_clave = clave
+    establecimiento.logo_mimetype = mimetype
+    establecimiento.logo_size = size
+    establecimiento.logo_actualizada_en = datetime.now(UTC)
+    db.commit()
+    return LogoNegocioResponse(logo_url=establecimiento.logo_url)
+
+
+@router.get(
+    "/{establecimiento_id}/logo",
+    responses={
+        status.HTTP_200_OK: {"content": {"image/webp": {}}},
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def obtener_logo_establecimiento(
+    establecimiento_id: uuid.UUID,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_negocio_db),
+) -> Response:
+    establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    clave = establecimiento.logo_efectivo_clave
+    if not clave:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=FOTO_INEXISTENTE,
+            detail="El establecimiento no tiene logo",
+        )
+    data = get_foto_storage().leer(clave)
+    if data is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=FOTO_INEXISTENTE,
+            detail="El logo no está disponible",
+        )
+    return Response(
+        content=data,
+        media_type=establecimiento.logo_efectivo_mimetype or "image/webp",
+        headers={"ETag": f'"{clave}"'},
+    )
+
+
+@router.delete(
+    "/{establecimiento_id}/logo",
+    response_model=LogoNegocioResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def borrar_logo_establecimiento(
+    establecimiento_id: uuid.UUID,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_negocio_db),
+) -> LogoNegocioResponse:
+    establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    if establecimiento.logo_clave:
+        get_foto_storage().borrar(establecimiento.logo_clave)
+    establecimiento.logo_clave = None
+    establecimiento.logo_mimetype = None
+    establecimiento.logo_size = None
+    establecimiento.logo_actualizada_en = None
+    db.commit()
+    return LogoNegocioResponse(logo_url=establecimiento.logo_url)
 
 
 @router.get(

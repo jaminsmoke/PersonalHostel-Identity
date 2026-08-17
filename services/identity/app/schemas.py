@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.models import DataOrigin, VisibleOtrosEstablecimientos
 
@@ -179,6 +179,25 @@ class CuentaNegocioPerfil(BaseModel):
     data_origin: DataOrigin
 
 
+class CuentaNegocioUpdateRequest(BaseModel):
+    """Actualización parcial de la organización propietaria."""
+
+    nombre_mostrar: str | None = Field(default=None, min_length=1, max_length=200)
+
+    @field_validator("nombre_mostrar")
+    @classmethod
+    def _nombre_no_vacio(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("El nombre no puede estar vacío")
+        return value
+
+    @model_validator(mode="after")
+    def _exige_cambio(self) -> "CuentaNegocioUpdateRequest":
+        if not self.model_fields_set:
+            raise ValueError("Se requiere al menos un campo para actualizar")
+        return self
+
+
 class RegistroNegocioRequest(BaseModel):
     nombre_mostrar: str = Field(..., min_length=1, max_length=200)
     email: EmailStr
@@ -211,6 +230,31 @@ class LoginNegocioResponse(BaseModel):
 
 class EstablecimientoCreateRequest(BaseModel):
     nombre: str = Field(..., min_length=1, max_length=200)
+    tipo_establecimiento: str | None = Field(
+        default=None,
+        pattern="^(bar|restaurante|cafeteria|pub|copas)$",
+    )
+
+
+class EstablecimientoUpdateRequest(BaseModel):
+    nombre: str | None = Field(default=None, min_length=1, max_length=200)
+    tipo_establecimiento: str | None = Field(
+        default=None,
+        pattern="^(bar|restaurante|cafeteria|pub|copas)$",
+    )
+
+    @field_validator("nombre")
+    @classmethod
+    def _nombre_no_vacio(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("El nombre no puede estar vacío")
+        return value
+
+    @model_validator(mode="after")
+    def _exige_cambio(self) -> "EstablecimientoUpdateRequest":
+        if not self.model_fields_set:
+            raise ValueError("Se requiere al menos un campo para actualizar")
+        return self
 
 
 class EstablecimientoResponse(BaseModel):
@@ -218,6 +262,8 @@ class EstablecimientoResponse(BaseModel):
 
     id: uuid.UUID
     nombre: str
+    tipo_establecimiento: str | None = None
+    logo_url: str | None = None
     cuenta_negocio_id: uuid.UUID
     data_origin: DataOrigin
 
@@ -466,6 +512,12 @@ class EnlacePublicoCreateRequest(BaseModel):
     slug: str | None = Field(default=None, min_length=1, max_length=100, pattern="^[a-z0-9-]+$")
 
 
+class EnlacePublicoRotarRequest(BaseModel):
+    """Slug opcional para sustituir un enlace conservando su tipo."""
+
+    slug: str | None = Field(default=None, min_length=1, max_length=100, pattern="^[a-z0-9-]+$")
+
+
 class EnlacePublicoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -475,6 +527,7 @@ class EnlacePublicoResponse(BaseModel):
     slug: str
     estado: str
     expira_en: datetime | None = None
+    url_publica: str | None = None
 
 
 class EnlacePublicoResolucion(BaseModel):
@@ -484,20 +537,14 @@ class EnlacePublicoResolucion(BaseModel):
     establecimiento_id: uuid.UUID
 
 
-class EstablecimientoFichaPublica(BaseModel):
-    """Establecimiento en la ficha pública del negocio (id + nombre)."""
-
-    id: uuid.UUID
-    nombre: str
-
-
 class NegocioFichaPublica(BaseModel):
-    """Ficha pública del negocio por enlace: solo campos públicos."""
+    """Ficha pública del establecimiento identificado por el enlace."""
 
+    establecimiento_id: uuid.UUID
     nombre: str
     tipo_establecimiento: str | None = None
     logo_url: str | None = None
-    establecimientos: list[EstablecimientoFichaPublica]
+    organizacion_nombre: str
 
 
 class ProductoCartaPublica(BaseModel):

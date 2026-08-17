@@ -75,14 +75,29 @@ def test_ficha_publica_devuelve_campos_publicos(db_ready, negocio_client):
     resp = negocio_client.get("/v1/negocio/ficha", params={"slug": slug})
     assert resp.status_code == 200
     body = resp.json()
-    assert body["nombre"] == "Negocio Ficha"
+    assert body["establecimiento_id"] == est_id
+    assert body["nombre"] == "Local Ficha"
     assert body["tipo_establecimiento"] == "bar"
     assert body["logo_url"] is None  # sin logo aún
-    assert len(body["establecimientos"]) == 1
-    assert body["establecimientos"][0]["id"] == est_id
-    assert body["establecimientos"][0]["nombre"] == "Local Ficha"
+    assert body["organizacion_nombre"] == "Negocio Ficha"
+    assert "establecimientos" not in body
     assert "email" not in body
     assert resp.headers["cache-control"] == "public, max-age=300"
+
+
+def test_ficha_no_filtra_otros_establecimientos_de_la_organizacion(
+    db_ready, negocio_client
+):
+    _, token = _crear_negocio(negocio_client)
+    primero = _crear_establecimiento(negocio_client, token, "Local Público")
+    _crear_establecimiento(negocio_client, token, "Local Privado")
+    slug = f"ficha-{uuid.uuid4().hex[:8]}"
+    _crear_enlace(negocio_client, token, primero, "ficha_negocio", slug)
+
+    body = negocio_client.get("/v1/negocio/ficha", params={"slug": slug}).json()
+    assert body["establecimiento_id"] == primero
+    assert body["nombre"] == "Local Público"
+    assert "Local Privado" not in str(body)
 
 
 def test_ficha_incluye_logo_url_y_sirve_logo_publico(db_ready, negocio_client):

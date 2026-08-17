@@ -25,6 +25,8 @@ from app.images import MAX_INPUT_BYTES, FotoInvalida, normalizar_foto
 from app.internal import get_camareros_internal
 from app.models import CuentaNegocio
 from app.schemas import (
+    CuentaNegocioPerfil,
+    CuentaNegocioUpdateRequest,
     ErrorResponse,
     LoginNegocioResponse,
     LoginRequest,
@@ -102,6 +104,28 @@ def login_negocio(
     return LoginNegocioResponse(token=token, cuenta=cuenta)
 
 
+@router.get("/me", response_model=CuentaNegocioPerfil)
+def obtener_mi_cuenta(
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+) -> CuentaNegocio:
+    """Perfil canónico de la organización autenticada."""
+    return cuenta
+
+
+@router.patch("/me", response_model=CuentaNegocioPerfil)
+def actualizar_mi_cuenta(
+    payload: CuentaNegocioUpdateRequest,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_negocio_db),
+) -> CuentaNegocio:
+    """Actualiza los datos propios de la organización, no los del local."""
+    if payload.nombre_mostrar is not None:
+        cuenta.nombre_mostrar = payload.nombre_mostrar.strip()
+    db.commit()
+    db.refresh(cuenta)
+    return cuenta
+
+
 @router.delete("/me", response_model=SupresionResponse)
 def suprimir_negocio(
     payload: SupresionNegocioRequest,
@@ -114,9 +138,12 @@ def suprimir_negocio(
             code=NEGOCIO_INVALID_CREDENTIALS,
             detail="Contraseña de negocio incorrecta",
         )
-    logo_clave = cuenta.logo_clave
-    if logo_clave:
-        get_foto_storage().borrar(logo_clave)
+    storage = get_foto_storage()
+    if cuenta.logo_clave:
+        storage.borrar(cuenta.logo_clave)
+    for establecimiento in cuenta.establecimientos:
+        if establecimiento.logo_clave:
+            storage.borrar(establecimiento.logo_clave)
     db.delete(cuenta)
     db.commit()
     return SupresionResponse(status="borrada")
