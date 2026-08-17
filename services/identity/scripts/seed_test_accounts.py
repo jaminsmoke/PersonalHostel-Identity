@@ -4,6 +4,10 @@
 Uso:
     python services/identity/scripts/seed_test_accounts.py
 
+Vía recomendada: apuntar a staging (subdominios HTTPS del VPS). Los defaults
+localhost quedan como fallback para experimentación local aislada (flujo de
+desarrollo Docker local DEPRECADO; la verificación oficial es el VPS).
+
 Da de alta, con `data_origin=real` (obligatorio en staging), a:
   - Camarero:  `camarero.test@example.com`  (nick `camarero_test`)
   - Negocio:   `negocio.test@example.com`   (`Negocio Test`, tipo `bar`)

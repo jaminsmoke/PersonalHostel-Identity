@@ -79,7 +79,7 @@ PII: nombre, foto, identificador. GDPR, retención y borrado hay que pensarlo an
 ```
 PersonalHosteleriaServer/
 ├── AGENTS.md                 # este archivo (léelo primero)
-├── README.md                 # cómo levantar Docker y contrato /v1
+├── README.md                 # cómo verificar en el VPS y contrato /v1
 ├── docker-compose.yml
 ├── .env.example
 ├── .gitignore
@@ -111,8 +111,10 @@ PersonalHosteleriaServer/
     └── agent-skills/
 ```
 
-`docker compose up --build` levanta Postgres 16 + APIs en `:8080` y `:8082` +
-Identity Web (página de invitaciones) en `:8081` + worker de email.
+`docker compose` es la **orquestación** de CI (GitHub Actions) y del VPS de
+staging (`deploy_staging.py`): no es la vía de desarrollo. El flujo Docker local
+está **deprecado** (ver `README.md`); la verificación oficial es
+`deploy_staging.py --validate-only` en el Docker del VPS.
 
 CI fija acciones por SHA e imágenes base por digest. El job `security` aplica
 `pip-audit`, `actionlint`, `zizmor` y Trivy, y publica SARIF + SBOM SPDX durante
@@ -334,7 +336,7 @@ Con la decisión ya tomada y acordada en la fase anterior, detallar **mucho más
 
 #### 5. Verificando — Tests y comprobaciones exhaustivas
 
-**No es solo levantar Docker.** Es verificar que el cambio funciona, no rompe nada y cumple estándares de calidad.
+**No es solo ejecutar la validación remota.** Es verificar que el cambio funciona, no rompe nada y cumple estándares de calidad.
 
 **Checklist obligatorio** (siempre ejecutar TODO lo aplicable):
 
