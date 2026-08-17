@@ -55,6 +55,9 @@ python services/identity/scripts/deploy_staging.py --ref feature/mi-rama --valid
 
 # Deploy tras una validación verde
 python services/identity/scripts/deploy_staging.py --ref feature/mi-rama
+
+# E2E público desde Docker del VPS; crea y elimina su propia cuenta sintética
+python services/identity/scripts/deploy_staging.py --ref feature/mi-rama --smoke-profile
 ```
 
 Los agentes no usan Docker local para verificar ítems. `--validate-only` ejecuta

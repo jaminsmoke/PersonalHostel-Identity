@@ -137,6 +137,11 @@ def main() -> int:
         action="store_true",
         help="Genera OpenAPI dentro del Docker del VPS y descarga docs al checkout local.",
     )
+    parser.add_argument(
+        "--smoke-profile",
+        action="store_true",
+        help="Ejecuta en Docker del VPS el E2E público autolimpiable del perfil de local.",
+    )
     args = parser.parse_args()
     if not SAFE_REF.fullmatch(args.ref) or ".." in args.ref or args.ref.endswith("/"):
         print(f"Referencia no válida: {args.ref}")
@@ -264,6 +269,12 @@ def main() -> int:
                 "-e CAMAREROS_DATABASE_URL -e NEGOCIO_DATABASE_URL "
                 "--entrypoint python identity-tests scripts/check_migrations.py"
             )
+        elif args.smoke_profile:
+            run(f"cd {remote} && {compose} build identity-tests")
+            run(
+                f"cd {remote} && {compose} run --rm identity-tests "
+                "python scripts/smoke_staging_profile.py"
+            )
         else:
             changed = ensure_staging_public_urls(client)
             print(
@@ -284,6 +295,8 @@ def main() -> int:
 
     if args.sync_openapi:
         print("OpenAPI generado en el VPS y sincronizado al checkout local")
+    elif args.smoke_profile:
+        print("Smoke público ejecutado dentro del Docker del VPS")
     else:
         print("Validación remota OK" if args.validate_only else "Despliegue OK")
     return 0
