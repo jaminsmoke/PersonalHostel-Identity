@@ -129,6 +129,50 @@
         "title": "CamareroSearchResponse",
         "type": "object"
       },
+      "CambioPasswordRequest": {
+        "description": "Rotación de la contraseña de acceso (camarero o negocio).",
+        "properties": {
+          "password_actual": {
+            "examples": [
+              "contraseña-mín-8"
+            ],
+            "title": "Password Actual",
+            "type": "string"
+          },
+          "password_nueva": {
+            "examples": [
+              "nueva-contraseña-8"
+            ],
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password Nueva",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password_actual",
+          "password_nueva"
+        ],
+        "title": "CambioPasswordRequest",
+        "type": "object"
+      },
+      "CambioPasswordResponse": {
+        "description": "Resultado del cambio de contraseña.",
+        "properties": {
+          "status": {
+            "examples": [
+              "cambiada"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "CambioPasswordResponse",
+        "type": "object"
+      },
       "CambioSyncResponse": {
         "properties": {
           "action": {
@@ -2185,6 +2229,62 @@
           }
         ],
         "summary": "Subir Logo",
+        "tags": [
+          "negocio"
+        ]
+      }
+    },
+    "/v1/auth/negocio/me/password": {
+      "post": {
+        "operationId": "cambiar_password_negocio_v1_auth_negocio_me_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CambioPasswordResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cambiar Password Negocio",
         "tags": [
           "negocio"
         ]

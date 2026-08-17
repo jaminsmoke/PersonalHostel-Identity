@@ -37,6 +37,8 @@ from app.models import (
 from app.schemas import (
     CamareroFichaPublica,
     CamareroPerfil,
+    CambioPasswordRequest,
+    CambioPasswordResponse,
     ErrorResponse,
     EstablecimientoMembresiaResponse,
     FotoResponse,
@@ -601,3 +603,29 @@ def suprimir_cuenta(
     db.delete(camarero)
     db.commit()
     return SupresionResponse(status="borrada")
+
+
+@router.post(
+    "/me/password",
+    response_model=CambioPasswordResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
+    },
+)
+def cambiar_password(
+    payload: CambioPasswordRequest,
+    camarero: Camarero = Depends(get_current_camarero),
+    db: Session = Depends(get_camarero_db),
+) -> CambioPasswordResponse:
+    if camarero.password_hash is None or not verify_password(
+        payload.password_actual, camarero.password_hash
+    ):
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code=PASSWORD_INCORRECTA,
+            detail="Contraseña actual incorrecta",
+        )
+    camarero.password_hash = hash_password(payload.password_nueva)
+    db.commit()
+    return CambioPasswordResponse(status="cambiada")

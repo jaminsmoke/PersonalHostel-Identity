@@ -308,6 +308,12 @@ La foto se guarda normalizada a un único avatar **256×256 WebP** en un volumen
 - `POST /v1/camareros/me/renovar` → revoca las credenciales activas y crea una nueva. Respuesta `200`: `{ "qr": "phid1:..." }`.
 - `POST /v1/camareros/me/revocar` (body opcional `{ "motivo": "..." }`) → revoca la credencial activa **sin** crear otra. Respuesta `200`: `{ "status": "revocada" }`.
 
+### Cambiar la contraseña
+
+- `POST /v1/camareros/me/password` (body `{ "password_actual": "...", "password_nueva": "..." }`, mín. 8 máx. 128) → sustituye la contraseña de login. Respuesta `200`: `{ "status": "cambiada" }`. `401 identity.password_incorrecta` si la actual no cuadra.
+- `POST /v1/auth/negocio/me/password` (mismo body) → cambio de contraseña de la cuenta de negocio. `401 identity.negocio_credenciales_invalidas` si la actual no cuadra.
+- La credencial/QR **no** se ve afectada. Los JWT ya emitidos siguen siendo válidos hasta expirar (TTL 30 días); la sesión nueva se obtiene re-logando.
+
 ### Borrar cuenta (derecho de supresión)
 
 - `DELETE /v1/camareros/me` (body `{ "password": "..." }`) → borra la cuenta de forma **irreversible**: camarero + credenciales (cascada) + foto. Respuesta `200`: `{ "status": "borrada" }`.
