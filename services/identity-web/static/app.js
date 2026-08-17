@@ -27,6 +27,13 @@
       '<p class="detail">' + detail + "</p>";
   }
 
+  function fila(etiqueta, valor) {
+    return (
+      '<div class="field"><span class="field-label">' + etiqueta + "</span>" +
+      '<span class="field-value">' + esc(valor) + "</span></div>"
+    );
+  }
+
   function renderFicha(ficha) {
     document.title = (ficha.nombre || "Ficha") + " — Personal Hostel";
     output.className = "output ok";
@@ -37,11 +44,22 @@
 
     const nick = ficha.nick ? '<p class="nick">@' + esc(ficha.nick) + "</p>" : "";
 
+    const campos = [];
+    if (ficha.email) campos.push(fila("Email", ficha.email));
+    if (ficha.telefono) campos.push(fila("Teléfono", ficha.telefono));
+    if (ficha.direccion) campos.push(fila("Dirección", ficha.direccion));
+    if (ficha.ciudad) campos.push(fila("Ciudad", ficha.ciudad));
+    const contacto = campos.length
+      ? '<div class="contacto">' + campos.join("") + "</div>"
+      : "";
+
     output.innerHTML =
       '<p class="brand">Personal Hostel — Ficha profesional</p>' +
       foto +
       '<p class="status">' + esc(ficha.nombre) + " " + esc(ficha.apellidos || "") + "</p>" +
-      nick;
+      nick +
+      contacto +
+      '<p class="edit-hint">¿Es tu cuenta? Edítala en tu app (Personal Comander).</p>';
   }
 
   function renderFichaNegocio(ficha) {

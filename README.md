@@ -282,9 +282,11 @@ Cada camarero controla qué campos de su ficha son **públicos**. Por defecto so
 `identity-web` (SPA vanilla, nginx) sirve, además de `/invitaciones/<token>`,
 las páginas públicas:
 
-- `/ficha?qr=<phid1>` — ficha del camarero (nombre, nick y foto opt-in).
-  Staging: `https://ficha.siberia.solutions`. Origen autorizado por CORS en el
-  servicio de camareros (`IDENTITY_WEB_ORIGIN`); base configurada con `FICHA_URL_BASE`.
+- `/ficha?qr=<phid1>` — ficha pública del camarero: tarjeta completa según
+  visibilidad (nombre, apellidos, nick, email, teléfono, dirección, ciudad y
+  foto opt-in). Staging: `https://ficha.siberia.solutions`. Origen autorizado
+  por CORS en el servicio de camareros (`IDENTITY_WEB_ORIGIN`); base configurada
+  con `FICHA_URL_BASE`.
 - `/negocio?slug=<slug>` — ficha pública del establecimiento enlazado (logo,
   nombre, tipo y nombre de su organización; nunca otros locales). Staging:
   `https://ficha.siberia.solutions/negocio?slug=`.
