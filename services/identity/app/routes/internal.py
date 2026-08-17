@@ -33,6 +33,12 @@ def internal_buscar(email: str) -> dict:
     return perfil
 
 
+@camareros_internal_router.get("/directorio")
+def internal_directorio() -> list[dict]:
+    """Camareros que han optado por ser visibles en el directorio (≠ nunca)."""
+    return DirectCamarerosInternal().directorio()
+
+
 @camareros_internal_router.get("/{camarero_id}")
 def internal_perfil(camarero_id: uuid.UUID) -> dict:
     perfil = DirectCamarerosInternal().perfil(camarero_id)

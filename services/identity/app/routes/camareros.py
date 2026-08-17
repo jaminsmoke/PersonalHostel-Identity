@@ -51,6 +51,7 @@ from app.schemas import (
     SupresionRequest,
     SupresionResponse,
     VisibilidadCamarero,
+    VisibilidadEstablecimientosUpdateRequest,
     VisibilidadUpdateRequest,
 )
 from app.security import (
@@ -195,6 +196,25 @@ def actualizar_visibilidad(
     db.commit()
     db.refresh(camarero)
     return _visibilidad_actual(camarero)
+
+
+@router.put(
+    "/me/visibilidad-establecimientos",
+    response_model=CamareroPerfil,
+    responses={status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED},
+)
+def actualizar_visibilidad_establecimientos(
+    payload: VisibilidadEstablecimientosUpdateRequest,
+    camarero: Camarero = Depends(get_current_camarero),
+    db: Session = Depends(get_camarero_db),
+) -> Camarero:
+    """Preferencia del camarero sobre aparecer en el directorio de otros
+    establecimientos (siempre / solo cuando está libre / nunca).
+    """
+    camarero.visible_otros_establecimientos = payload.visible.value
+    db.commit()
+    db.refresh(camarero)
+    return camarero
 
 
 def _camarero_por_qr(qr: str, db: Session) -> Camarero:
@@ -497,6 +517,39 @@ def ficha_foto(qr: str, db: Session = Depends(get_camarero_db)) -> Response:
     """Foto pública por QR (sin token): solo si `foto=true` y existe."""
     camarero = _camarero_por_qr(qr, db)
     if not camarero.campo_visible("foto") or not camarero.foto_clave:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=FOTO_INEXISTENTE,
+            detail="La foto no está disponible",
+        )
+    data = get_foto_storage().leer(camarero.foto_clave)
+    if data is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=FOTO_INEXISTENTE,
+            detail="La foto no está disponible",
+        )
+    return Response(
+        content=data,
+        media_type=camarero.foto_mimetype or "image/webp",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "ETag": f'"{camarero.foto_clave}"',
+        },
+    )
+
+
+@router.get(
+    "/ficha/foto/{camarero_id}",
+    responses={
+        status.HTTP_200_OK: _FOTO_200,
+        status.HTTP_404_NOT_FOUND: _NOT_FOUND,
+    },
+)
+def ficha_foto_por_id(camarero_id: uuid.UUID, db: Session = Depends(get_camarero_db)) -> Response:
+    """Foto pública por id (para el directorio): solo si `foto=true` y existe."""
+    camarero = db.get(Camarero, camarero_id)
+    if camarero is None or not camarero.campo_visible("foto") or not camarero.foto_clave:
         raise ApiError(
             status_code=status.HTTP_404_NOT_FOUND,
             code=FOTO_INEXISTENTE,
