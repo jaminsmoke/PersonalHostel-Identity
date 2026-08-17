@@ -245,8 +245,8 @@ Respuesta `200`:
 
 ### Perfil y QR de la sesión
 
-- `GET /v1/camareros/me` → perfil del camarero (`Authorization: Bearer <token>`). Incluye `nick` o `null`.
-- `PATCH /v1/camareros/me` (`{ "nick": "Anita" }`) → actualiza el nick. Solo la sesión del profesional.
+- `GET /v1/camareros/me` → perfil del camarero (`Authorization: Bearer <token>`). Incluye `nick`, `direccion` y `ciudad` (`null` si no informados).
+- `PATCH /v1/camareros/me` (body parcial, p. ej. `{ "nick": "Anita", "direccion": "Calle Mayor 1", "ciudad": "Madrid" }`) → actualiza los campos enviados (al menos uno). Solo la sesión del profesional.
 - `GET /v1/camareros/me/qr` → `{ "qr": "phid1:..." }` (QR de la credencial activa).
 - `GET /v1/camareros/me/establecimientos` → establecimientos activos del profesional (el servicio de camareros consulta al de negocio internamente).
 - `/me/qr` devuelve `409` si no hay credencial activa.
@@ -254,11 +254,11 @@ Respuesta `200`:
 ### Visibilidad y ficha pública por QR
 
 Cada camarero controla qué campos de su ficha son **públicos**. Por defecto solo
-`nombre`, `apellidos` y `nick` son visibles; `email`, `telefono` y `foto` son
-privados (opt-in).
+`nombre`, `apellidos` y `nick` son visibles; `email`, `telefono`, `direccion`,
+`ciudad` y `foto` son privados (opt-in).
 
 - `GET /v1/camareros/me/visibilidad` (`Authorization: Bearer <token>`) →
-  `{ "nombre": true, "apellidos": true, "nick": true, "email": false, "telefono": false, "foto": false }`.
+  `{ "nombre": true, "apellidos": true, "nick": true, "email": false, "telefono": false, "direccion": false, "ciudad": false, "foto": false }`.
 - `PUT /v1/camareros/me/visibilidad` (body parcial, p. ej. `{ "email": true }`) →
   actualiza solo los campos enviados; el resto queda igual.
 - `PUT /v1/camareros/me/visibilidad-establecimientos` (body `{ "visible": "..." }`)
