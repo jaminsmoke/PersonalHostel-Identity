@@ -177,6 +177,7 @@ def main() -> int:
             run(f"cd {remote} && {compose} build identity-tests")
             run(
                 f"cd {remote} && {compose} run --rm "
+                "--user 0:0 "
                 f"-v {remote}/docs:/generated-docs "
                 "-e OPENAPI_DOCS_DIR=/generated-docs identity-tests "
                 "python scripts/export_openapi.py"
