@@ -187,7 +187,9 @@ def run(base_url: str) -> None:
                     json={"password": password},
                 )
                 if cleanup.status_code != 200:
-                    raise RuntimeError(f"limpieza: HTTP {cleanup.status_code}: {cleanup.text[:500]}")
+                    raise RuntimeError(
+                        f"limpieza: HTTP {cleanup.status_code}: {cleanup.text[:500]}"
+                    )
 
         denied = client.post(
             f"{base_url}/v1/auth/negocio/login",
