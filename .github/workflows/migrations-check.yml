@@ -1,0 +1,41 @@
+name: Migrations check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrations:
+    name: migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Start PostgreSQL 16
+        run: docker compose up -d db
+
+      - name: Build isolated runner
+        run: docker compose build identity-tests
+
+      - name: Check reversibility of both Alembic chains
+        run: >
+          docker compose run --rm
+          --entrypoint python
+          identity-tests
+          scripts/check_migrations.py
+
+      - name: Stop ephemeral services
+        if: always()
+        run: docker compose down -v

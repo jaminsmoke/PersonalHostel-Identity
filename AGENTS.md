@@ -124,6 +124,13 @@ sin consumidor (aviso, no rojo). Falla solo si un cliente llama una ruta que el
 OpenAPI ya no tiene. Es el espejo del check de familia de Commander: cada
 miembro cuida sus propias integraciones.
 
+El job `migrations-check` valida la reversibilidad de ambas cadenas Alembic
+(`alembic/` y `alembic_negocio/`) con el ciclo `upgrade head → downgrade base
+→ upgrade head` sobre Postgres efímero; una migración no reversible hace fallar
+el job. La suite de sync offline (`tests/test_catalog_sync.py`) cubre la matriz
+de conflictos: orden invertido, duplicados con reloj atrasado, modificación vs
+borrado y decisiones repetidas.
+
 Los servicios de API usan UID/GID 10001 y Identity Web usa `nginx` (101). La
 tarea Compose `fotos-permissions` es la única excepción root: es efímera,
 idempotente, solo hace `chown` del volumen heredado y debe completar antes de

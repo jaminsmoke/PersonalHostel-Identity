@@ -396,6 +396,13 @@ ejecuciones obsoletas de la misma rama y usa permisos de solo lectura:
   ```bash
   docker compose run --rm identity-tests python scripts/check_family_contracts.py --selftest
   ```
+- `migrations-check`: valida la reversibilidad de ambas cadenas Alembic con
+  el ciclo `upgrade head → downgrade base → upgrade head` sobre Postgres
+  efímero. Local:
+
+  ```bash
+  docker compose run --rm --entrypoint python identity-tests scripts/check_migrations.py
+  ```
 
 ## Auditoría de procedencia (solo lectura)
 
