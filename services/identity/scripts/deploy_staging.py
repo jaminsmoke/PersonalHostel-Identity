@@ -12,7 +12,8 @@ Lee de `.env` (nunca en git):
 
 En el VPS (ruta por defecto /opt/identity):
   1. `git clone` (solo la primera vez) y `git fetch + reset --hard origin/<ref>`
-  2. valida con el runner aislado o despliega con Compose de producción
+  2. valida con el runner aislado y bases `_test`, o despliega con Compose de
+     producción. La validación oficial no usa Docker local.
 
 El `.env` de producción vive en /opt/identity/.env (gitignored) y se crea la
 primera vez a mano (bootstrap). Este script aborta si falta.

@@ -7,7 +7,10 @@
 - GitHub repo: `jaminsmoke/PersonalHostel-Identity`
 - Local folder: `AndroidStudioProjects/PersonalHosteleriaServer` (sibling of `PersonalComander` and `PersonalBar`)
 - Version target: **v0.1** (no releases yet — `gh release list`; next version must be > latest)
-- Local tests: **Docker Compose on this machine**. Staging/producción: VPS de Hostinger (Caddy + subdominios `siberia.solutions`).
+- Verificación oficial: **Docker Compose en el VPS de staging**, con bases
+  `identity_camareros_test` e `identity_negocio_test` aisladas. No levantar
+  Docker local para validar ítems. Staging/producción: VPS de Hostinger (Caddy +
+  subdominios `siberia.solutions`).
 
 If you are the agent continuing here: read this **entire** file before writing code. Do not implement rankings, marketplace, or table/round sync.
 
@@ -35,7 +38,8 @@ Kanban: cada app tiene el suyo. Cambio que necesite al otro lado → Detectado e
 | API ports | **8080** (camareros) · **8082** (negocio) — dos servicios, dos BD |
 | Postgres port | **5432** (dev machine only) |
 
-`docker compose up --build` is the only supported local path.
+El Compose local sigue siendo reproducible para desarrollo manual, pero los
+agentes validan mediante `deploy_staging.py --validate-only` en el VPS.
 
 ## Relación con el resto
 
@@ -131,10 +135,12 @@ el job. La suite de sync offline (`tests/test_catalog_sync.py`) cubre la matriz
 de conflictos: orden invertido, duplicados con reloj atrasado, modificación vs
 borrado y decisiones repetidas.
 
-Los servicios de API usan UID/GID 10001 y Identity Web usa `nginx` (101). La
-tarea Compose `fotos-permissions` es la única excepción root: es efímera,
-idempotente, solo hace `chown` del volumen heredado y debe completar antes de
-arrancar las APIs.
+Los servicios de API y tests usan UID/GID 10001 e Identity Web usa `nginx`
+(101). Las tareas Compose `fotos-permissions` y `reports-permissions` son las
+únicas excepciones root: son efímeras e idempotentes, solo hacen `chown` de su
+volumen o bind mount heredado y deben completar antes del consumidor. La segunda
+permite que la validación Docker del VPS escriba JUnit y cobertura sin ejecutar
+la suite como root.
 
 - `GET /health` → `{ "ok": true }`
 - `GET /v1/meta` → servicio, rol `identity`, `status: schema`
@@ -332,9 +338,9 @@ Con la decisión ya tomada y acordada en la fase anterior, detallar **mucho más
 
 **Checklist obligatorio** (siempre ejecutar TODO lo aplicable):
 
-1. **Compose**: `docker compose up --build` — API en `:8080`, Postgres healthy
-2. **Health**: `GET /health` → `{"ok": true}`; `GET /v1/meta` → `status: schema` coherente
-3. **Tests**: `docker compose run --rm identity-tests` — todos deben pasar y la cobertura de ramas no puede bajar del 82%. Crear tests para rutas nuevas (registro, login, QR, revocar)
+1. **Validación aislada en VPS**: `python services/identity/scripts/deploy_staging.py --ref <rama> --validate-only`; usa Docker y solo las BD `_test`, sin recrear las APIs activas
+2. **Health en staging desplegado**: `GET /health` → `{"ok": true}`; `GET /v1/meta` → `status: schema` coherente
+3. **Tests en VPS**: el runner remoto debe pasar completo y la cobertura de ramas no puede bajar del 82%. Crear tests para rutas nuevas (registro, login, QR, revocar)
 4. **Contrato**: las rutas nuevas responden JSON documentado; errores de cara a apps en español
 5. **Secretos**: `.env` no está en git; no hay fotos reales ni dumps con PII
 
@@ -398,10 +404,9 @@ $KANBAN convert-draft <itemId>
 gh issue edit <N> --repo jaminsmoke/PersonalHostel-Identity --add-label "tipo:feature,area:api"
 
 # Verificando
-docker compose up --build
-# curl http://localhost:8080/health
-# curl http://localhost:8080/v1/meta
-docker compose run --rm identity-tests
+python services/identity/scripts/deploy_staging.py --ref <rama> --validate-only
+# Tras validar, desplegar la referencia y comprobar los dominios HTTPS de staging.
+python services/identity/scripts/deploy_staging.py --ref <rama>
 
 # Changelog: commit con SHA referenciable, cerrar, push
 git add <files> && git commit -m "..."
@@ -518,7 +523,7 @@ Detalle en [`docs/changelog.md`](docs/changelog.md). Los ítems nuevos entran po
 ## Keys & security
 
 - `.env` gitignored; start from `.env.example`
-- Docker local: HTTP. Production: HTTPS on VPS (Infra item, not the first Detectado)
+- La verificación automatizada se ejecuta en el Docker del VPS; staging usa HTTPS.
 - GraphQL token for kanban CLI: `GH_TOKEN` / `GITHUB_TOKEN` from `gh auth`
 
 ## License & business model
@@ -527,8 +532,10 @@ Same family as Commander: public MIT. Do not put paid premium code in this publi
 
 ## Cómo probar
 
-Ver `README.md`. Desde esta carpeta: `docker compose up --build` para el stack y
-`docker compose run --rm identity-tests` para la suite aislada.
+Ver `README.md`. Desde esta carpeta, la verificación oficial es
+`python services/identity/scripts/deploy_staging.py --ref <rama> --validate-only`;
+ejecuta calidad, contrato, suite y migraciones reversibles en Docker sobre las
+BD `_test` del VPS, sin usar Docker local ni las BD activas.
 
 ## Observabilidad (solo staging/producción)
 

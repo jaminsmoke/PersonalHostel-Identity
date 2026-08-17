@@ -108,6 +108,17 @@ services:
       - fotos:/app/data/fotos
     restart: "no"
 
+  reports-permissions:
+    profiles: ["test"]
+    build:
+      context: ./services/identity
+      target: runtime
+    user: "0:0"
+    command: ["sh", "-c", "chown -R 10001:10001 /reports"]
+    volumes:
+      - ./build/reports:/reports
+    restart: "no"
+
   identity-tests:
     profiles: ["test"]
     build:
@@ -146,6 +157,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      reports-permissions:
+        condition: service_completed_successfully
 
   identity-web:
     build: ./services/identity-web

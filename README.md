@@ -50,9 +50,17 @@ El staging es producción en configuración (HTTPS, secretos reales, datos borra
 - El `.env` de producción vive en `/opt/identity/.env` (gitignored): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
 
 ```bash
-# Deploy (igual que dev, pero en el VPS): pull + up --build
-python services/identity/scripts/deploy_staging.py
+# Validación oficial: Docker del VPS + BD `_test`, sin recrear el stack activo
+python services/identity/scripts/deploy_staging.py --ref feature/mi-rama --validate-only
+
+# Deploy tras una validación verde
+python services/identity/scripts/deploy_staging.py --ref feature/mi-rama
 ```
+
+Los agentes no usan Docker local para verificar ítems. `--validate-only` ejecuta
+Ruff, formato, contrato OpenAPI, los tests con cobertura y el ciclo reversible
+de ambas cadenas Alembic dentro del VPS. Las bases activas no se modifican en
+esta fase.
 
 - Backup diario: `services/identity/scripts/backup_staging.sh` (cron en el VPS; dumps de ambas BD a `/opt/identity/backups`, retención 7 días).
 - Caddyfile: bloques `reverse_proxy 127.0.0.1:8080` (camareros), `:8082` (negocio) y `:8081` (web — invitaciones, ficha y carta) añadidos a `/etc/caddy/Caddyfile` (la landing queda intacta).
