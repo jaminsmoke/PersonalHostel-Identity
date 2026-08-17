@@ -360,6 +360,10 @@
               }
             ],
             "title": "Tipo Establecimiento"
+          },
+          "visible_directorio": {
+            "title": "Visible Directorio",
+            "type": "boolean"
           }
         },
         "required": [
@@ -367,6 +371,7 @@
           "nombre",
           "cuenta_negocio_id",
           "data_origin",
+          "visible_directorio",
           "rol"
         ],
         "title": "EstablecimientoMembresiaResponse",

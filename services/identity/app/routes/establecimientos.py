@@ -172,6 +172,8 @@ def actualizar_establecimiento(
         establecimiento.nombre = payload.nombre.strip()
     if "tipo_establecimiento" in payload.model_fields_set:
         establecimiento.tipo_establecimiento = payload.tipo_establecimiento
+    if "visible_directorio" in payload.model_fields_set:
+        establecimiento.visible_directorio = payload.visible_directorio
     db.commit()
     db.refresh(establecimiento)
     return establecimiento

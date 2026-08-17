@@ -273,6 +273,10 @@ class EstablecimientoUpdateRequest(BaseModel):
         default=None,
         pattern="^(bar|restaurante|cafeteria|pub|copas)$",
     )
+    visible_directorio: bool | None = Field(
+        default=None,
+        description="Opt-in para aparecer en el directorio de establecimientos.",
+    )
 
     @field_validator("nombre")
     @classmethod
@@ -297,6 +301,7 @@ class EstablecimientoResponse(BaseModel):
     logo_url: str | None = None
     cuenta_negocio_id: uuid.UUID
     data_origin: DataOrigin
+    visible_directorio: bool
 
 
 class EstablecimientoMembresiaResponse(EstablecimientoResponse):

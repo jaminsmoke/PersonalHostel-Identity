@@ -169,6 +169,7 @@ class DirectNegocioInternal:
                 "nombre": e.nombre,
                 "cuenta_negocio_id": str(e.cuenta_negocio_id),
                 "data_origin": e.data_origin.value,
+                "visible_directorio": e.visible_directorio,
                 "rol": rol.value,
             }
             for e, rol in rows
