@@ -113,6 +113,8 @@ def registrar_camarero(
         nick=payload.nick.strip() if payload.nick else None,
         email=payload.email.lower(),
         telefono=payload.telefono.strip() if payload.telefono else None,
+        direccion=payload.direccion.strip() if payload.direccion else None,
+        ciudad=payload.ciudad.strip() if payload.ciudad else None,
         password_hash=hash_password(payload.password),
         data_origin=payload.data_origin,
     )
@@ -165,7 +167,12 @@ def actualizar_me(
     camarero: Camarero = Depends(get_current_camarero),
     db: Session = Depends(get_camarero_db),
 ) -> Camarero:
-    camarero.nick = payload.nick.strip()
+    if "nick" in payload.model_fields_set:
+        camarero.nick = payload.nick.strip() if payload.nick else None
+    if "direccion" in payload.model_fields_set:
+        camarero.direccion = payload.direccion.strip() if payload.direccion else None
+    if "ciudad" in payload.model_fields_set:
+        camarero.ciudad = payload.ciudad.strip() if payload.ciudad else None
     db.commit()
     db.refresh(camarero)
     return camarero
@@ -275,6 +282,10 @@ def ficha_publica(qr: str, db: Session = Depends(get_camarero_db)) -> dict:
         ficha["email"] = camarero.email
     if camarero.campo_visible("telefono"):
         ficha["telefono"] = camarero.telefono
+    if camarero.campo_visible("direccion"):
+        ficha["direccion"] = camarero.direccion
+    if camarero.campo_visible("ciudad"):
+        ficha["ciudad"] = camarero.ciudad
     if camarero.campo_visible("foto") and camarero.foto_clave:
         ficha["foto_url"] = f"/v1/camareros/ficha/foto?qr={quote(qr)}"
     return ficha

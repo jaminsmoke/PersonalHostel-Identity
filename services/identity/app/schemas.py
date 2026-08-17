@@ -14,6 +14,8 @@ class RegistroRequest(BaseModel):
     apellidos: str = Field(..., min_length=1, max_length=200, examples=["García"])
     email: EmailStr = Field(..., examples=["ana@example.com"])
     telefono: str | None = Field(default=None, max_length=32, examples=["+34600000000"])
+    direccion: str | None = Field(default=None, max_length=255, examples=["Calle Mayor 1"])
+    ciudad: str | None = Field(default=None, max_length=100, examples=["Madrid"])
     password: str = Field(..., min_length=8, max_length=128, examples=["contraseña-mín-8"])
     nick: str | None = Field(default=None, min_length=1, max_length=40, examples=["Anita"])
     data_origin: DataOrigin = Field(
@@ -45,6 +47,8 @@ class CamareroPerfil(BaseModel):
     apellidos: str = Field(..., examples=["García"])
     email: str = Field(..., examples=["ana@example.com"])
     telefono: str | None = Field(default=None, examples=["+34600000000"])
+    direccion: str | None = Field(default=None, examples=["Calle Mayor 1"])
+    ciudad: str | None = Field(default=None, examples=["Madrid"])
     foto_url: str | None = Field(default=None, examples=["/v1/camareros/me/foto"])
     nick: str | None = Field(default=None, examples=["Anita"])
     data_origin: DataOrigin
@@ -71,6 +75,8 @@ class VisibilidadCamarero(BaseModel):
     nick: bool = True
     email: bool = False
     telefono: bool = False
+    direccion: bool = False
+    ciudad: bool = False
     foto: bool = False
 
 
@@ -82,6 +88,8 @@ class VisibilidadUpdateRequest(BaseModel):
     nick: bool | None = None
     email: bool | None = None
     telefono: bool | None = None
+    direccion: bool | None = None
+    ciudad: bool | None = None
     foto: bool | None = None
 
 
@@ -94,13 +102,23 @@ class CamareroFichaPublica(BaseModel):
     nick: str | None = None
     email: str | None = None
     telefono: str | None = None
+    direccion: str | None = None
+    ciudad: str | None = None
     foto_url: str | None = None
 
 
 class PerfilUpdateRequest(BaseModel):
     """Campos editables de la cuenta desde Commander (no desde Bar)."""
 
-    nick: str = Field(..., min_length=1, max_length=40, examples=["Anita"])
+    nick: str | None = Field(default=None, min_length=1, max_length=40, examples=["Anita"])
+    direccion: str | None = Field(default=None, max_length=255, examples=["Calle Mayor 1"])
+    ciudad: str | None = Field(default=None, max_length=100, examples=["Madrid"])
+
+    @model_validator(mode="after")
+    def _exige_cambio(self) -> PerfilUpdateRequest:
+        if not self.model_fields_set:
+            raise ValueError("Se requiere al menos un campo para actualizar")
+        return self
 
 
 class LoginRequest(BaseModel):

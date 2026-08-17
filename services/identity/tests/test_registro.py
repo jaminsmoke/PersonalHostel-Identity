@@ -116,3 +116,30 @@ def test_qr_rechaza_firma_manipulada(db_ready):
     primer_char = "A" if sig[0] != "A" else "B"
     manipulada = f"{partes[0]}:{partes[1]}:{partes[2]}:{primer_char}{sig[1:]}"
     assert not verify_qr_payload(manipulada, vk)
+
+
+def test_registro_con_direccion_ciudad_opcionales(db_ready):
+    email = _email()
+    data = _payload(email)
+    data["direccion"] = "Calle Mayor 1"
+    data["ciudad"] = "Madrid"
+    resp = client.post("/v1/camareros/registro", json=data)
+    assert resp.status_code == 201
+    with SessionLocal() as session:
+        from app.models import Camarero
+
+        cam = session.get(Camarero, uuid.UUID(resp.json()["id"]))
+        assert cam.direccion == "Calle Mayor 1"
+        assert cam.ciudad == "Madrid"
+
+
+def test_registro_sin_direccion_ciudad_null(db_ready):
+    email = _email()
+    resp = client.post("/v1/camareros/registro", json=_payload(email))
+    assert resp.status_code == 201
+    with SessionLocal() as session:
+        from app.models import Camarero
+
+        cam = session.get(Camarero, uuid.UUID(resp.json()["id"]))
+        assert cam.direccion is None
+        assert cam.ciudad is None

@@ -98,6 +98,41 @@ def test_patch_me_actualiza_nick(db_ready):
     assert me.json()["nick"] == "Pepi"
 
 
+def test_patch_me_actualiza_direccion_ciudad(db_ready):
+    email = _email()
+    _crear(email)
+    token = client.post(
+        "/v1/auth/login",
+        json={"email": email, "password": "pass-12345678"},
+    ).json()["token"]
+    resp = client.patch(
+        "/v1/camareros/me",
+        json={"direccion": "Calle Mayor 1", "ciudad": "Madrid"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["direccion"] == "Calle Mayor 1"
+    assert resp.json()["ciudad"] == "Madrid"
+    me = client.get("/v1/camareros/me", headers={"Authorization": f"Bearer {token}"})
+    assert me.json()["direccion"] == "Calle Mayor 1"
+    assert me.json()["ciudad"] == "Madrid"
+
+
+def test_patch_me_vacio_422(db_ready):
+    email = _email()
+    _crear(email)
+    token = client.post(
+        "/v1/auth/login",
+        json={"email": email, "password": "pass-12345678"},
+    ).json()["token"]
+    resp = client.patch(
+        "/v1/camareros/me",
+        json={},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 422
+
+
 def test_login_password_incorrecta_401(db_ready):
     email = _email()
     _crear(email)

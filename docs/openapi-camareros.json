@@ -27,6 +27,28 @@
             "title": "Camarero Id",
             "type": "string"
           },
+          "ciudad": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciudad"
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direccion"
+          },
           "email": {
             "anyOf": [
               {
@@ -94,8 +116,36 @@
             "title": "Apellidos",
             "type": "string"
           },
+          "ciudad": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Madrid"
+            ],
+            "title": "Ciudad"
+          },
           "data_origin": {
             "$ref": "#/components/schemas/DataOrigin"
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Calle Mayor 1"
+            ],
+            "title": "Direccion"
           },
           "email": {
             "examples": [
@@ -530,19 +580,53 @@
       "PerfilUpdateRequest": {
         "description": "Campos editables de la cuenta desde Commander (no desde Bar).",
         "properties": {
+          "ciudad": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Madrid"
+            ],
+            "title": "Ciudad"
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Calle Mayor 1"
+            ],
+            "title": "Direccion"
+          },
           "nick": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "examples": [
               "Anita"
             ],
-            "maxLength": 40,
-            "minLength": 1,
-            "title": "Nick",
-            "type": "string"
+            "title": "Nick"
           }
         },
-        "required": [
-          "nick"
-        ],
         "title": "PerfilUpdateRequest",
         "type": "object"
       },
@@ -637,10 +721,40 @@
             "title": "Apellidos",
             "type": "string"
           },
+          "ciudad": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Madrid"
+            ],
+            "title": "Ciudad"
+          },
           "data_origin": {
             "$ref": "#/components/schemas/DataOrigin",
             "default": "real",
             "description": "Procedencia inmutable; test/demo requieren habilitación del entorno."
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Calle Mayor 1"
+            ],
+            "title": "Direccion"
           },
           "email": {
             "examples": [
@@ -874,6 +988,16 @@
             "title": "Apellidos",
             "type": "boolean"
           },
+          "ciudad": {
+            "default": false,
+            "title": "Ciudad",
+            "type": "boolean"
+          },
+          "direccion": {
+            "default": false,
+            "title": "Direccion",
+            "type": "boolean"
+          },
           "email": {
             "default": false,
             "title": "Email",
@@ -930,6 +1054,28 @@
               }
             ],
             "title": "Apellidos"
+          },
+          "ciudad": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciudad"
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direccion"
           },
           "email": {
             "anyOf": [

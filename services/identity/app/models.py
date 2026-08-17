@@ -100,7 +100,16 @@ class DataOrigin(str, enum.Enum):
 
 # ── Visibilidad pública del perfil ────────────────────────────────────────
 
-VISIBILITY_FIELDS = ("nombre", "apellidos", "nick", "email", "telefono", "foto")
+VISIBILITY_FIELDS = (
+    "nombre",
+    "apellidos",
+    "nick",
+    "email",
+    "telefono",
+    "direccion",
+    "ciudad",
+    "foto",
+)
 
 DEFAULT_VISIBILIDAD = {
     "nombre": True,
@@ -108,6 +117,8 @@ DEFAULT_VISIBILIDAD = {
     "nick": True,
     "email": False,
     "telefono": False,
+    "direccion": False,
+    "ciudad": False,
     "foto": False,
 }
 
@@ -127,7 +138,8 @@ class VisibleOtrosEstablecimientos(str, enum.Enum):
 
 _VISIBILIDAD_SQL_DEFAULT = (
     '\'{"nombre": true, "apellidos": true, "nick": true, '
-    '"email": false, "telefono": false, "foto": false}\'::jsonb'
+    '"email": false, "telefono": false, "direccion": false, '
+    '"ciudad": false, "foto": false}\'::jsonb'
 )
 
 
@@ -156,6 +168,8 @@ class Camarero(CamareroBase):
     nick: Mapped[str | None] = mapped_column(String(40))
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True)
     telefono: Mapped[str | None] = mapped_column(String(32), unique=True)
+    direccion: Mapped[str | None] = mapped_column(String(255))
+    ciudad: Mapped[str | None] = mapped_column(String(100))
     data_origin: Mapped[DataOrigin] = mapped_column(
         Enum(DataOrigin, name="data_origin"),
         nullable=False,

@@ -28,21 +28,28 @@ def _email() -> str:
     return f"visibilidad-{uuid.uuid4()}@example.com"
 
 
-def _crear(email: str, telefono: str | None = None) -> dict:
+def _crear(
+    email: str,
+    telefono: str | None = None,
+    direccion: str | None = None,
+    ciudad: str | None = None,
+) -> dict:
     if telefono is None:
         # el teléfono es único en BD; genera uno distinto por cuenta de test
         telefono = f"+34{uuid.uuid4().hex[:9]}"
-    resp = client.post(
-        "/v1/camareros/registro",
-        json={
-            "nombre": "Marta",
-            "apellidos": "Sánchez",
-            "email": email,
-            "password": "pass-12345678",
-            "nick": "Marti",
-            "telefono": telefono,
-        },
-    )
+    payload = {
+        "nombre": "Marta",
+        "apellidos": "Sánchez",
+        "email": email,
+        "password": "pass-12345678",
+        "nick": "Marti",
+        "telefono": telefono,
+    }
+    if direccion is not None:
+        payload["direccion"] = direccion
+    if ciudad is not None:
+        payload["ciudad"] = ciudad
+    resp = client.post("/v1/camareros/registro", json=payload)
     assert resp.status_code == 201
     return resp.json()
 
@@ -73,6 +80,8 @@ def test_visibilidad_default(db_ready):
         "nick": True,
         "email": False,
         "telefono": False,
+        "direccion": False,
+        "ciudad": False,
         "foto": False,
     }
 
@@ -169,3 +178,29 @@ def test_ficha_sin_nick_omite_campo(db_ready):
     ficha = client.get("/v1/camareros/ficha", params={"qr": resp.json()["qr"]})
     assert ficha.status_code == 200
     assert "nick" not in ficha.json()
+
+
+def test_ficha_publica_no_expone_direccion_ciudad_por_defecto(db_ready):
+    email = _email()
+    reg = _crear(email, direccion="Calle Mayor 1", ciudad="Madrid")
+    resp = client.get("/v1/camareros/ficha", params={"qr": reg["qr"]})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "direccion" not in body
+    assert "ciudad" not in body
+
+
+def test_ficha_publica_muestra_direccion_ciudad_si_visible(db_ready):
+    email = _email()
+    reg = _crear(email, direccion="Calle Mayor 1", ciudad="Madrid")
+    token = _login(email)["token"]
+    client.put(
+        "/v1/camareros/me/visibilidad",
+        headers=_auth(token),
+        json={"direccion": True, "ciudad": True},
+    )
+    resp = client.get("/v1/camareros/ficha", params={"qr": reg["qr"]})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["direccion"] == "Calle Mayor 1"
+    assert body["ciudad"] == "Madrid"
