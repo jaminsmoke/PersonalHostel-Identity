@@ -167,6 +167,19 @@ class SupresionResponse(BaseModel):
     status: str = Field(..., examples=["borrada"])
 
 
+class CambioPasswordRequest(BaseModel):
+    """Rotación de la contraseña de acceso (camarero o negocio)."""
+
+    password_actual: str = Field(..., examples=["contraseña-mín-8"])
+    password_nueva: str = Field(..., min_length=8, max_length=128, examples=["nueva-contraseña-8"])
+
+
+class CambioPasswordResponse(BaseModel):
+    """Resultado del cambio de contraseña."""
+
+    status: str = Field(..., examples=["cambiada"])
+
+
 class CuentaNegocioPerfil(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

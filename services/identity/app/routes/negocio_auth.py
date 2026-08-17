@@ -25,6 +25,8 @@ from app.images import MAX_INPUT_BYTES, FotoInvalida, normalizar_foto
 from app.internal import get_camareros_internal
 from app.models import CuentaNegocio
 from app.schemas import (
+    CambioPasswordRequest,
+    CambioPasswordResponse,
     CuentaNegocioPerfil,
     CuentaNegocioUpdateRequest,
     ErrorResponse,
@@ -147,6 +149,30 @@ def suprimir_negocio(
     db.delete(cuenta)
     db.commit()
     return SupresionResponse(status="borrada")
+
+
+@router.post(
+    "/me/password",
+    response_model=CambioPasswordResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse},
+    },
+)
+def cambiar_password_negocio(
+    payload: CambioPasswordRequest,
+    cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
+    db: Session = Depends(get_negocio_db),
+) -> CambioPasswordResponse:
+    if not verify_password(payload.password_actual, cuenta.password_hash):
+        raise ApiError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code=NEGOCIO_INVALID_CREDENTIALS,
+            detail="Contraseña actual de negocio incorrecta",
+        )
+    cuenta.password_hash = hash_password(payload.password_nueva)
+    db.commit()
+    return CambioPasswordResponse(status="cambiada")
 
 
 @router.post(
