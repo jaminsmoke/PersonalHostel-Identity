@@ -309,6 +309,9 @@ class Establecimiento(NegocioBase):
     )
     nombre: Mapped[str] = mapped_column(String(200), nullable=False)
     tipo_establecimiento: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    visible_directorio: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     logo_clave: Mapped[str | None] = mapped_column(String(255))
     logo_mimetype: Mapped[str | None] = mapped_column(String(64))
     logo_size: Mapped[int | None] = mapped_column(Integer)

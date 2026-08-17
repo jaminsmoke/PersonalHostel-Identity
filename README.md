@@ -338,7 +338,7 @@ Rutas principales:
 - `POST /v1/auth/negocio/me/logo` (multipart, campo `logo`) → sube/reemplaza el logo (256×256 WebP, máx. 2 MB). `GET`/`DELETE` lo sirven/borran.
 - `DELETE /v1/auth/negocio/me` → supresión de cuenta y establecimientos, sin borrar camareros.
 - `POST /v1/establecimientos` y `GET /v1/establecimientos/mios` → crear y listar establecimientos propios; el alta acepta `tipo_establecimiento` y usa el default legado de la cuenta si se omite.
-- `GET /v1/establecimientos/{id}` → consulta para la cuenta titular o un miembro activo. `PATCH` (solo titular) edita nombre/tipo.
+- `GET /v1/establecimientos/{id}` → consulta para la cuenta titular o un miembro activo. `PATCH` (solo titular) edita nombre/tipo/`visible_directorio` (opt-in del directorio de establecimientos, default `false`).
 - `POST/GET/DELETE /v1/establecimientos/{id}/logo` → sobrescritura de logo por local. Al borrarla vuelve a heredarse el logo corporativo.
 - `POST/GET/DELETE /v1/establecimientos/{id}/miembros...` → gestionar membresías.
 - `GET /v1/keys/qr` → clave pública Ed25519 (en el servicio de camareros, `:8080`).

@@ -114,6 +114,36 @@ def test_establecimientos_tienen_perfiles_independientes(db_ready, negocio_clien
     assert forbidden.status_code == 403
 
 
+def test_visible_directorio_default_false_y_patch(db_ready, negocio_client):
+    _, token = _cuenta(negocio_client)
+    establecimiento = _establecimiento(negocio_client, token, "Local Visibilidad", "bar")
+    assert establecimiento["visible_directorio"] is False
+
+    updated = negocio_client.patch(
+        f"/v1/establecimientos/{establecimiento['id']}",
+        headers=_headers(token),
+        json={"visible_directorio": True},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["visible_directorio"] is True
+
+    get = negocio_client.get(
+        f"/v1/establecimientos/{establecimiento['id']}", headers=_headers(token)
+    )
+    assert get.status_code == 200
+    assert get.json()["visible_directorio"] is True
+
+    # PATCH vacío sigue 422
+    assert (
+        negocio_client.patch(
+            f"/v1/establecimientos/{establecimiento['id']}",
+            headers=_headers(token),
+            json={},
+        ).status_code
+        == 422
+    )
+
+
 def test_logo_local_sobrescribe_y_al_borrar_hereda(db_ready, negocio_client):
     _, token = _cuenta(negocio_client)
     headers = _headers(token)
