@@ -1,6 +1,20 @@
 {
   "components": {
     "schemas": {
+      "Body_subir_logo_establecimiento_v1_establecimientos__establecimiento_id__logo_post": {
+        "properties": {
+          "logo": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Logo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "logo"
+        ],
+        "title": "Body_subir_logo_establecimiento_v1_establecimientos__establecimiento_id__logo_post",
+        "type": "object"
+      },
       "Body_subir_logo_v1_auth_negocio_me_logo_post": {
         "properties": {
           "logo": {
@@ -453,6 +467,26 @@
         "title": "CuentaNegocioPerfil",
         "type": "object"
       },
+      "CuentaNegocioUpdateRequest": {
+        "description": "Actualización parcial de la organización propietaria.",
+        "properties": {
+          "nombre_mostrar": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre Mostrar"
+          }
+        },
+        "title": "CuentaNegocioUpdateRequest",
+        "type": "object"
+      },
       "DataOrigin": {
         "description": "Procedencia inmutable de una entidad canónica.",
         "enum": [
@@ -547,6 +581,17 @@
           "tipo": {
             "title": "Tipo",
             "type": "string"
+          },
+          "url_publica": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url Publica"
           }
         },
         "required": [
@@ -557,6 +602,27 @@
           "estado"
         ],
         "title": "EnlacePublicoResponse",
+        "type": "object"
+      },
+      "EnlacePublicoRotarRequest": {
+        "description": "Slug opcional para sustituir un enlace conservando su tipo.",
+        "properties": {
+          "slug": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "pattern": "^[a-z0-9-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "title": "EnlacePublicoRotarRequest",
         "type": "object"
       },
       "ErrorResponse": {
@@ -601,32 +667,24 @@
             "minLength": 1,
             "title": "Nombre",
             "type": "string"
+          },
+          "tipo_establecimiento": {
+            "anyOf": [
+              {
+                "pattern": "^(bar|restaurante|cafeteria|pub|copas)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo Establecimiento"
           }
         },
         "required": [
           "nombre"
         ],
         "title": "EstablecimientoCreateRequest",
-        "type": "object"
-      },
-      "EstablecimientoFichaPublica": {
-        "description": "Establecimiento en la ficha pública del negocio (id + nombre).",
-        "properties": {
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "nombre": {
-            "title": "Nombre",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "nombre"
-        ],
-        "title": "EstablecimientoFichaPublica",
         "type": "object"
       },
       "EstablecimientoResponse": {
@@ -644,9 +702,31 @@
             "title": "Id",
             "type": "string"
           },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
           "nombre": {
             "title": "Nombre",
             "type": "string"
+          },
+          "tipo_establecimiento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo Establecimiento"
           }
         },
         "required": [
@@ -656,6 +736,37 @@
           "data_origin"
         ],
         "title": "EstablecimientoResponse",
+        "type": "object"
+      },
+      "EstablecimientoUpdateRequest": {
+        "properties": {
+          "nombre": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre"
+          },
+          "tipo_establecimiento": {
+            "anyOf": [
+              {
+                "pattern": "^(bar|restaurante|cafeteria|pub|copas)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo Establecimiento"
+          }
+        },
+        "title": "EstablecimientoUpdateRequest",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -965,14 +1076,12 @@
         "type": "object"
       },
       "NegocioFichaPublica": {
-        "description": "Ficha pública del negocio por enlace: solo campos públicos.",
+        "description": "Ficha pública del establecimiento identificado por el enlace.",
         "properties": {
-          "establecimientos": {
-            "items": {
-              "$ref": "#/components/schemas/EstablecimientoFichaPublica"
-            },
-            "title": "Establecimientos",
-            "type": "array"
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
           },
           "logo_url": {
             "anyOf": [
@@ -989,6 +1098,10 @@
             "title": "Nombre",
             "type": "string"
           },
+          "organizacion_nombre": {
+            "title": "Organizacion Nombre",
+            "type": "string"
+          },
           "tipo_establecimiento": {
             "anyOf": [
               {
@@ -1002,8 +1115,9 @@
           }
         },
         "required": [
+          "establecimiento_id",
           "nombre",
-          "establecimientos"
+          "organizacion_nombre"
         ],
         "title": "NegocioFichaPublica",
         "type": "object"
@@ -1871,6 +1985,76 @@
         "tags": [
           "negocio"
         ]
+      },
+      "get": {
+        "description": "Perfil canónico de la organización autenticada.",
+        "operationId": "obtener_mi_cuenta_v1_auth_negocio_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaNegocioPerfil"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Mi Cuenta",
+        "tags": [
+          "negocio"
+        ]
+      },
+      "patch": {
+        "description": "Actualiza los datos propios de la organización, no los del local.",
+        "operationId": "actualizar_mi_cuenta_v1_auth_negocio_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaNegocioUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaNegocioPerfil"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Actualizar Mi Cuenta",
+        "tags": [
+          "negocio"
+        ]
       }
     },
     "/v1/auth/negocio/me/logo": {
@@ -2278,6 +2462,92 @@
           }
         ],
         "summary": "Obtener Establecimiento",
+        "tags": [
+          "establecimientos"
+        ]
+      },
+      "patch": {
+        "operationId": "actualizar_establecimiento_v1_establecimientos__establecimiento_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstablecimientoUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstablecimientoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Actualizar Establecimiento",
         "tags": [
           "establecimientos"
         ]
@@ -2827,6 +3097,114 @@
         ]
       }
     },
+    "/v1/establecimientos/{establecimiento_id}/enlaces/{enlace_id}/rotar": {
+      "post": {
+        "operationId": "rotar_enlace_v1_establecimientos__establecimiento_id__enlaces__enlace_id__rotar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "enlace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Enlace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnlacePublicoRotarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnlacePublicoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rotar Enlace",
+        "tags": [
+          "enlaces públicos"
+        ]
+      }
+    },
     "/v1/establecimientos/{establecimiento_id}/invitaciones": {
       "get": {
         "operationId": "listar_invitaciones_v1_establecimientos__establecimiento_id__invitaciones_get",
@@ -3270,6 +3648,245 @@
           }
         ],
         "summary": "Guardar Layout",
+        "tags": [
+          "establecimientos"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/logo": {
+      "delete": {
+        "operationId": "borrar_logo_establecimiento_v1_establecimientos__establecimiento_id__logo_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoNegocioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Borrar Logo Establecimiento",
+        "tags": [
+          "establecimientos"
+        ]
+      },
+      "get": {
+        "operationId": "obtener_logo_establecimiento_v1_establecimientos__establecimiento_id__logo_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Logo Establecimiento",
+        "tags": [
+          "establecimientos"
+        ]
+      },
+      "post": {
+        "operationId": "subir_logo_establecimiento_v1_establecimientos__establecimiento_id__logo_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_subir_logo_establecimiento_v1_establecimientos__establecimiento_id__logo_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoNegocioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Subir Logo Establecimiento",
         "tags": [
           "establecimientos"
         ]
