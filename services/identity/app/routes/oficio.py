@@ -179,9 +179,7 @@ def _resumen(
         .group_by(Servicio.establecimiento_id)
         .all()
     )
-    mesas_por_est: dict[uuid.UUID, int] = {
-        est_id: int(total or 0) for est_id, total in filas_mesas
-    }
+    mesas_por_est: dict[uuid.UUID, int] = {est_id: int(total or 0) for est_id, total in filas_mesas}
 
     establecimiento_ids = set(horas_por_est) | set(mesas_por_est)
     por_establecimiento = [

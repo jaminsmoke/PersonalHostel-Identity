@@ -283,9 +283,7 @@ class Jornada(CamareroBase):
         server_default=DataOrigin.real.value,
         index=True,
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
@@ -330,9 +328,7 @@ class Servicio(CamareroBase):
         server_default=DataOrigin.real.value,
         index=True,
     )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     camarero: Mapped[Camarero] = relationship(back_populates="servicios")
 

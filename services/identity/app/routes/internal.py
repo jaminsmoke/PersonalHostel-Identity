@@ -86,9 +86,7 @@ def internal_rechazar_invitacion(camarero_id: uuid.UUID, invitacion_id: uuid.UUI
 
 
 @camareros_internal_router.post("/{camarero_id}/servicios")
-def internal_registrar_servicio(
-    camarero_id: uuid.UUID, payload: ServicioInternalRequest
-) -> dict:
+def internal_registrar_servicio(camarero_id: uuid.UUID, payload: ServicioInternalRequest) -> dict:
     return DirectCamarerosInternal().registrar_servicio(
         camarero_id=camarero_id,
         establecimiento_id=payload.establecimiento_id,
