@@ -80,8 +80,12 @@ python services/identity/scripts/deploy_staging.py --ref feature/mi-rama --smoke
 Los agentes no usan Docker local para verificar ítems. `--validate-only` ejecuta
 Ruff, formato, contrato OpenAPI, los tests con cobertura y el ciclo reversible
 de ambas cadenas Alembic dentro del VPS. También ejecuta el self-test del
-detector de contratos de familia. Las bases activas no se modifican en
-esta fase. El despliegue normal fija las URLs públicas canónicas de ficha/carta
+detector de contratos de familia. El runner no se rompe por `__pycache__` root
+en el checkout: Python no escribe bytecode (guarda `PYTHONDONTWRITEBYTECODE=1`
+en el Dockerfile, `backup_staging.sh` y los comandos host-side de
+`deploy_staging.py` — ítem #112, cerrado), porque un `__pycache__` con permisos
+de root rompía `ruff format --check` del runner aislado. Las bases activas no se
+modifican en esta fase. El despliegue normal fija las URLs públicas canónicas de ficha/carta
 en el `.env` remoto sin mostrar secretos, crea un backup de ambas BD antes de
 migrar y termina comprobando health/meta de los dos servicios.
 
