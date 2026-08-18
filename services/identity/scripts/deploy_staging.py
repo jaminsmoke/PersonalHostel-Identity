@@ -18,7 +18,7 @@ En el VPS (ruta por defecto /opt/identity):
 El `.env` de producción vive en /opt/identity/.env (gitignored) y se crea la
 primera vez a mano (bootstrap). Este script aborta si falta.
 
-Requiere: paramiko (pip install paramiko).
+Requiere: ``pip install -r services/identity/requirements-deploy.txt``.
 """
 
 import argparse

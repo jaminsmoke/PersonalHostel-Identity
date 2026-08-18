@@ -52,6 +52,9 @@ docker compose up --build
 
 El staging es producción en configuración (HTTPS, secretos reales, datos borrables). Corre en el VPS de Hostinger (la IP vive en `.env`, no en este README), detrás del **Caddy** ya instalado (que también sirve la landing `siberia.solutions`).
 
+El cliente de despliegue usa una dependencia fijada: `pip install -r
+services/identity/requirements-deploy.txt`.
+
 - Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `ficha.siberia.solutions` (histórico con 301), `web.negocio.siberia.solutions` (:8083, web pública de negocios: ficha + carta del establecimiento) y `web.camareros.siberia.solutions` (:8084, web del profesional: credencial, login e invitaciones).
 - `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
 - El `.env` de producción vive en `/opt/identity/.env` (gitignored, `root:root`
