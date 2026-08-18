@@ -105,6 +105,11 @@ PersonalHosteleriaServer/
 │   ├── nginx.conf
 │   ├── 20-identity-web.sh    # genera config.js en runtime (IDENTITY/CAMAREROS/NEGOCIO_API_URL)
 │   └── static/               # index.html, style.css, app.js
+├── services/web-negocio/     # web pública de negocios (nginx + SPA vanilla, :8083)
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   ├── 20-web-negocio.sh     # genera config.js en runtime (NEGOCIO_API_URL)
+│   └── static/               # index.html, style.css, app.js
 └── tools/
     ├── README.md
     ├── kanban-cli/
@@ -175,7 +180,7 @@ Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores l
 
 El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>`, **estable** entre reinstalaciones. La foto no viaja en el QR. Las respuestas que devuelven `qr` incluyen también `ficha_url` (`FICHA_URL_BASE` + `/ficha?qr=`), y la verificación acepta tanto `phid1:...` como la URL `https://...?qr=phid1:...`. La web pública de la ficha (`identity-web`, ruta `/ficha?qr=`) vive en `ficha.siberia.solutions`; el servicio de camareros autoriza su origen por CORS (`IDENTITY_WEB_ORIGIN`).
 
-`identity-web` también sirve la **ficha pública del establecimiento** (`/negocio?slug=`, en `ficha.siberia.solutions/negocio`) y la **carta pública del establecimiento** (`/carta?slug=`, en `carta.siberia.solutions/carta`). Ambas llaman al servicio de negocio (`NEGOCIO_API_URL`) sin token, usando el enlace público revocable por `slug`; el logo efectivo del local es público por diseño y el precio de la carta siempre visible.
+`identity-web` también sirve las **páginas legadas** de la ficha (`/negocio?slug=`) y la carta (`/carta?slug=`) del establecimiento. La superficie canónica de ambas es la **web pública de negocios** `web-negocio` (`web.negocio.siberia.solutions/negocios/<slug>`, SPA vanilla en `services/web-negocio`, puerto dev `:8083`): renderiza la ficha como credencial y la carta como sección con una plantilla por `tipo_efectivo` y el rebranding del logo/colores del local, con una sola llamada `GET /v1/negocio/web?slug=` (ficha + carta) al servicio de negocio (`NEGOCIO_API_URL`) sin token. El logo efectivo del local es público por diseño y el precio de la carta siempre visible.
 
 La cuenta de negocio representa a la **organización propietaria**; cada entidad
 `Establecimiento` representa un local y posee nombre, tipo y logo opcional. Si
@@ -226,14 +231,18 @@ vive en la BD de negocio. `POST/GET /v1/establecimientos/{id}/enlaces` (cuenta
 titular) crean/listan; `POST .../enlaces/{enlace_id}/revocar` revoca;
 `POST .../enlaces/{enlace_id}/rotar` lo sustituye; hay como máximo uno activo
 por establecimiento/tipo. Las respuestas incluyen `url_publica` a partir de
-`FICHA_NEGOCIO_URL_BASE`/`CARTA_URL_BASE`, nunca dominios hardcodeados en Bar.
+`WEB_NEGOCIO_URL_BASE` (`…/negocios/<slug>`, carta con `?seccion=carta`), nunca
+dominios hardcodeados en Bar.
 `GET /v1/enlaces/{slug}` (sin token) resuelve a `{ tipo, establecimiento_id }`
-con cache pública de TTL corto. La web que renderiza ficha/carta queda en los
-ítems siguientes (ficha pública del negocio y carta pública).
+con cache pública de TTL corto. La web que renderiza ficha/carta vive en
+`services/web-negocio` (`web.negocio.siberia.solutions`).
 La ficha pública del establecimiento ya está disponible: `GET /v1/negocio/ficha?slug=` y
 `GET /v1/negocio/ficha/logo?slug=` (sin token; solo el local enlazado, logo efectivo público).
 La carta pública también está disponible: `GET /v1/negocio/carta?slug=` (sin token,
 solo lectura, agrupada por categoría con precio).
+La web pública agrega ambas en una llamada: `GET /v1/negocio/web?slug=` y
+`GET /v1/negocio/web/logo?slug=` (sin token; el slug resuelve enlaces `ficha_negocio`
+**o** `carta`).
 
 ## Qué no hacer
 

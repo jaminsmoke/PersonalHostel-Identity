@@ -600,3 +600,14 @@ class CartaPublicaResponse(BaseModel):
     establecimiento_id: uuid.UUID
     nombre: str
     categorias: list[CategoriaCartaPublica]
+
+
+class WebNegocioPublica(BaseModel):
+    """Datos de la web pública del establecimiento (ficha + carta)."""
+
+    establecimiento_id: uuid.UUID
+    nombre: str
+    tipo_establecimiento: str | None = None
+    logo_url: str | None = None
+    organizacion_nombre: str
+    categorias: list[CategoriaCartaPublica] = Field(default_factory=list)

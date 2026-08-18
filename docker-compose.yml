@@ -61,10 +61,9 @@ services:
       FOTOS_DIR: /app/data/fotos
       INTERNAL_TRANSPORT: http
       CAMAREROS_INTERNAL_URL: http://identity-camareros:8080
-      IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:8081}
+      IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:8081,http://localhost:8083}
       INVITATION_URL_BASE: ${INVITATION_URL_BASE:-http://localhost:8081/invitaciones}
-      FICHA_NEGOCIO_URL_BASE: ${FICHA_NEGOCIO_URL_BASE:-http://localhost:8081/negocio}
-      CARTA_URL_BASE: ${CARTA_URL_BASE:-http://localhost:8081/carta}
+      WEB_NEGOCIO_URL_BASE: ${WEB_NEGOCIO_URL_BASE:-http://localhost:8083}
       ALLOW_NON_REAL_DATA: ${ALLOW_NON_REAL_DATA:-true}
     volumes:
       - fotos:/app/data/fotos
@@ -136,8 +135,7 @@ services:
       COVERAGE_FILE: /tmp/.coverage
       INTERNAL_TRANSPORT: direct
       ALLOW_NON_REAL_DATA: "true"
-      FICHA_NEGOCIO_URL_BASE: http://localhost:8081/negocio
-      CARTA_URL_BASE: http://localhost:8081/carta
+      WEB_NEGOCIO_URL_BASE: http://localhost:8083
     command:
       - python
       - -m
@@ -168,6 +166,16 @@ services:
     environment:
       IDENTITY_API_URL: ${IDENTITY_API_URL:-http://localhost:8082}
       CAMAREROS_API_URL: ${CAMAREROS_API_URL:-http://localhost:8080}
+      NEGOCIO_API_URL: ${NEGOCIO_API_URL:-http://localhost:8082}
+    depends_on:
+      identity-negocio:
+        condition: service_healthy
+
+  web-negocio:
+    build: ./services/web-negocio
+    ports:
+      - "${WEB_NEGOCIO_PORT:-8083}:8080"
+    environment:
       NEGOCIO_API_URL: ${NEGOCIO_API_URL:-http://localhost:8082}
     depends_on:
       identity-negocio:

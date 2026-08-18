@@ -24,8 +24,7 @@ os.environ.setdefault(
     "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity_negocio",
 )
 os.environ.setdefault("ALLOW_NON_REAL_DATA", "true")
-os.environ.setdefault("FICHA_NEGOCIO_URL_BASE", "http://web.test/negocio")
-os.environ.setdefault("CARTA_URL_BASE", "http://web.test/carta")
+os.environ.setdefault("WEB_NEGOCIO_URL_BASE", "http://web.test")
 
 
 # Los tests NO tocan las BD de desarrollo: usan BD de prueba separadas.

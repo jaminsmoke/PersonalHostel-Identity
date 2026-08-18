@@ -1772,6 +1772,60 @@
         ],
         "title": "VisibleOtrosEstablecimientos",
         "type": "string"
+      },
+      "WebNegocioPublica": {
+        "description": "Datos de la web pública del establecimiento (ficha + carta).",
+        "properties": {
+          "categorias": {
+            "items": {
+              "$ref": "#/components/schemas/CategoriaCartaPublica"
+            },
+            "title": "Categorias",
+            "type": "array"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "organizacion_nombre": {
+            "title": "Organizacion Nombre",
+            "type": "string"
+          },
+          "tipo_establecimiento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo Establecimiento"
+          }
+        },
+        "required": [
+          "establecimiento_id",
+          "nombre",
+          "organizacion_nombre"
+        ],
+        "title": "WebNegocioPublica",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -5230,6 +5284,129 @@
           }
         },
         "summary": "Ficha Negocio Logo",
+        "tags": [
+          "negocio público"
+        ]
+      }
+    },
+    "/v1/negocio/web": {
+      "get": {
+        "operationId": "web_negocio_v1_negocio_web_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebNegocioPublica"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Web Negocio",
+        "tags": [
+          "negocio público"
+        ]
+      }
+    },
+    "/v1/negocio/web/logo": {
+      "get": {
+        "operationId": "web_negocio_logo_v1_negocio_web_logo_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Web Negocio Logo",
         "tags": [
           "negocio público"
         ]

@@ -1,0 +1,197 @@
+/* Temas por tipo de establecimiento (rebranding por plantilla). */
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --line: #334155;
+  --err: #f87171;
+  --warn: #fbbf24;
+}
+
+body.theme-default {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --ink: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --line: #334155;
+}
+
+/* Barra: oscuro premium con acento dorado. */
+body.theme-bar {
+  --bg: #14100c;
+  --surface: #221a12;
+  --ink: #f5ead6;
+  --muted: #b8a88c;
+  --accent: #d4af37;
+  --line: #4a3b28;
+}
+
+/* Restaurante / cafetería: cálido y claro. */
+body.theme-hosteleria {
+  --bg: #f7f1e6;
+  --surface: #fffdf7;
+  --ink: #2b2013;
+  --muted: #6f5f48;
+  --accent: #b5532a;
+  --line: #e2d5bf;
+}
+
+/* Pub / copas: noche con neón. */
+body.theme-noche {
+  --bg: #0b0714;
+  --surface: #1b1230;
+  --ink: #ece7ff;
+  --muted: #9b8ec4;
+  --accent: #c084fc;
+  --line: #3a2c5c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.page {
+  width: min(94vw, 760px);
+  margin: 0 auto;
+  padding: 40px 0 64px;
+}
+
+.output {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 40px 32px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25);
+}
+
+.hint {
+  color: var(--muted);
+  margin: 0;
+  text-align: center;
+}
+
+.icon {
+  font-size: 34px;
+  margin-bottom: 10px;
+}
+
+.status {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.detail {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 15px;
+}
+
+/* Hero de la ficha (credencial del negocio). */
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  object-fit: cover;
+  flex: 0 0 auto;
+  border: 2px solid var(--accent);
+  background: var(--bg);
+}
+
+.logo-empty {
+  display: grid;
+  place-items: center;
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.hero-text {
+  min-width: 0;
+}
+
+.nombre {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+}
+
+.tipo {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.organizacion {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* Carta como sección de la web. */
+.carta {
+  margin-top: 28px;
+}
+
+.carta-title {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 6px;
+}
+
+.categoria {
+  margin-top: 18px;
+}
+
+.categoria h2 {
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 8px;
+}
+
+.productos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.producto {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.producto .precio {
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

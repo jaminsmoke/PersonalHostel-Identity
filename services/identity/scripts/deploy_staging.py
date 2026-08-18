@@ -44,8 +44,7 @@ LOCAL_REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(ENV_FILE)))
 DEFAULT_SSH_KEY = "~/.ssh/identity_vps"
 SAFE_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 STAGING_PUBLIC_URLS = {
-    "FICHA_NEGOCIO_URL_BASE": "https://ficha.siberia.solutions/negocio",
-    "CARTA_URL_BASE": "https://carta.siberia.solutions/carta",
+    "WEB_NEGOCIO_URL_BASE": "https://web.negocio.siberia.solutions",
 }
 
 

@@ -52,7 +52,7 @@ docker compose up --build
 
 El staging es producción en configuración (HTTPS, secretos reales, datos borrables). Corre en el VPS de Hostinger (la IP vive en `.env`, no en este README), detrás del **Caddy** ya instalado (que también sirve la landing `siberia.solutions`).
 
-- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `invitaciones.siberia.solutions` (:8081), `ficha.siberia.solutions` (:8081, ficha del camarero) y `carta.siberia.solutions` (:8081, carta pública del negocio).
+- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `invitaciones.siberia.solutions` (:8081), `ficha.siberia.solutions` (:8081, ficha del camarero) y `web.negocio.siberia.solutions` (:8083, web pública de negocios: ficha + carta del establecimiento).
 - `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
 - El `.env` de producción vive en `/opt/identity/.env` (gitignored): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
 
@@ -287,14 +287,30 @@ las páginas públicas:
   foto opt-in). Staging: `https://ficha.siberia.solutions`. Origen autorizado
   por CORS en el servicio de camareros (`IDENTITY_WEB_ORIGIN`); base configurada
   con `FICHA_URL_BASE`.
-- `/negocio?slug=<slug>` — ficha pública del establecimiento enlazado (logo,
-  nombre, tipo y nombre de su organización; nunca otros locales). Staging:
-  `https://ficha.siberia.solutions/negocio?slug=`.
-- `/carta?slug=<slug>` — carta pública del establecimiento (categorías y
-  productos con precio). Staging: `https://carta.siberia.solutions/carta?slug=`.
+- `/negocio?slug=<slug>` y `/carta?slug=<slug>` — páginas legadas de ficha y
+  carta públicas que esta web sigue sirviendo; la superficie canónica vive en
+  `web.negocio.siberia.solutions` (ver abajo).
 
-Ficha de negocio y carta llaman al servicio de negocio (`NEGOCIO_API_URL`);
-el origen web se autoriza por CORS (`IDENTITY_WEB_ORIGIN`).
+### Web pública de negocios (`web-negocio`)
+
+`web-negocio` (SPA vanilla, nginx, puerto dev `:8083`) es la web pública del
+establecimiento en `web.negocio.siberia.solutions/negocios/<slug>`. Renderiza la
+ficha como credencial (logo, nombre, tipo y organización) y la carta como
+sección (`?seccion=carta` para saltar a ella), con una **plantilla por tipo**
+(`bar`, `restaurante`/`cafeteria`, `pub`/`copas`) y el rebranding del logo y
+colores del local. Todo se sirve con una sola llamada al servicio de negocio
+(`NEGOCIO_API_URL`):
+
+- `GET /v1/negocio/web?slug=<enlace>` → datos públicos agregados **sin token**:
+  `establecimiento_id`, `nombre`, `tipo_establecimiento`, `logo_url`,
+  `organizacion_nombre` y `categorias` (carta con `precio_centimos` + `moneda`).
+  El slug resuelve tanto un enlace `ficha_negocio` como uno `carta`; inexistente
+  → `404`, revocado → `410`. Cache pública `max-age=300`.
+- `GET /v1/negocio/web/logo?slug=<enlace>` → logo efectivo (WebP) público con
+  cache `max-age=86400` + `ETag`, resoluble por cualquier slug del local.
+
+Ficha y carta llaman al servicio de negocio (`NEGOCIO_API_URL`); el origen web se
+autoriza por CORS (`IDENTITY_WEB_ORIGIN`).
 
 ### Foto de perfil
 
@@ -356,11 +372,13 @@ Rutas principales:
   resuelve en servidor y nunca se expone).
 - `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT (magic-link desde el email): token one-time + TTL 72h.
 - `PUT/GET /v1/establecimientos/{id}/layout` → **copia de respaldo del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la cuenta de negocio dueña.
-- `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar|rotar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`ficha_negocio | carta`) y `slug` opcional. Solo puede existir uno activo por tipo; crear es idempotente y rotar revoca el anterior. La respuesta incluye `url_publica`, construida con `FICHA_NEGOCIO_URL_BASE`/`CARTA_URL_BASE` para que Bar no hardcodee dominios.
+- `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar|rotar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`ficha_negocio | carta`) y `slug` opcional. Solo puede existir uno activo por tipo; crear es idempotente y rotar revoca el anterior. La respuesta incluye `url_publica`, construida con `WEB_NEGOCIO_URL_BASE` (`…/negocios/<slug>`, carta con `?seccion=carta`) para que Bar no hardcodee dominios.
 - `GET /v1/enlaces/{slug}` → resolución pública **sin token**: devuelve `{ tipo, establecimiento_id }` con cache pública (`max-age=300`). Slug inexistente → `404`, revocado → `410`.
 - `GET /v1/negocio/ficha?slug=<enlace>` → ficha pública **sin token** del único establecimiento enlazado: `establecimiento_id`, `nombre`, `tipo_establecimiento`, `logo_url` y `organizacion_nombre`. No filtra otros locales. Enlace `carta` o inexistente → `404`, revocado → `410`.
 - `GET /v1/negocio/ficha/logo?slug=<enlace>` → logo público (WebP) con cache pública (`max-age=86400` + `ETag`).
 - `GET /v1/negocio/carta?slug=<enlace>` → carta pública **sin token**: productos disponibles agrupados por categoría, con `precio_centimos` + `moneda`. Solo lectura; no expone `destino`/`revision`. Enlace `ficha_negocio` o inexistente → `404`, revocado → `410`.
+- `GET /v1/negocio/web?slug=<enlace>` → datos agregados de la web pública **sin token** (ficha + carta en una llamada): `establecimiento_id`, `nombre`, `tipo_establecimiento`, `logo_url`, `organizacion_nombre` y `categorias`. El slug resuelve enlaces `ficha_negocio` **o** `carta`. Inexistente → `404`, revocado → `410`; cache `max-age=300`.
+- `GET /v1/negocio/web/logo?slug=<enlace>` → logo efectivo público (WebP) por cualquier slug del local, cache `max-age=86400` + `ETag`.
 
 El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar.
 
