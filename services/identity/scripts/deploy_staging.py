@@ -272,10 +272,7 @@ def main() -> int:
         run(f"cd {remote} && git fetch origin && git reset --hard {remote_ref}")
         compose = "docker compose -f docker-compose.yml -f docker-compose.prod.yml"
         if args.backup_restore_drill:
-            run(
-                f"cd {remote} && python3 services/identity/scripts/backup_restore.py "
-                "restore-drill"
-            )
+            run(f"cd {remote} && python3 services/identity/scripts/backup_restore.py restore-drill")
         elif args.sync_openapi:
             run(f"cd {remote} && {compose} build identity-tests")
             run(
