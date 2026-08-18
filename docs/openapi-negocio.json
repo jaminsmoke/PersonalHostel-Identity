@@ -910,6 +910,26 @@
         "title": "InvitacionEstado",
         "type": "string"
       },
+      "InvitacionRechazarResponse": {
+        "description": "Resultado del rechazo de una invitación por el camarero.",
+        "properties": {
+          "estado": {
+            "title": "Estado",
+            "type": "string"
+          },
+          "invitacion_id": {
+            "format": "uuid",
+            "title": "Invitacion Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invitacion_id",
+          "estado"
+        ],
+        "title": "InvitacionRechazarResponse",
+        "type": "object"
+      },
       "InvitacionResponse": {
         "properties": {
           "creada_en": {
@@ -5133,6 +5153,78 @@
           }
         ],
         "summary": "Aceptar Invitacion",
+        "tags": [
+          "invitaciones"
+        ]
+      }
+    },
+    "/v1/invitaciones/{token}/rechazar": {
+      "post": {
+        "operationId": "rechazar_invitacion_v1_invitaciones__token__rechazar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitacionRechazarResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rechazar Invitacion",
         "tags": [
           "invitaciones"
         ]
