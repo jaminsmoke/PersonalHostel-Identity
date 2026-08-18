@@ -44,6 +44,7 @@ from app.schemas import (
     FotoResponse,
     InvitacionAcceptResponse,
     InvitacionCamareroResponse,
+    InvitacionRechazarResponse,
     PerfilUpdateRequest,
     QrResponse,
     RegistroRequest,
@@ -329,6 +330,24 @@ def aceptar_invitacion_me(
     camarero: Camarero = Depends(get_current_camarero),
 ) -> dict:
     return get_negocio_internal().aceptar_invitacion(invitacion_id, camarero.id)
+
+
+@router.post(
+    "/me/invitaciones/{invitacion_id}/rechazar",
+    response_model=InvitacionRechazarResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+        status.HTTP_410_GONE: {"model": ErrorResponse},
+    },
+)
+def rechazar_invitacion_me(
+    invitacion_id: uuid.UUID,
+    camarero: Camarero = Depends(get_current_camarero),
+) -> dict:
+    return get_negocio_internal().rechazar_invitacion(invitacion_id, camarero.id)
 
 
 @router.get(

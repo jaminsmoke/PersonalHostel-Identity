@@ -904,6 +904,7 @@
           "pendiente",
           "aceptada",
           "revocada",
+          "rechazada",
           "expirada"
         ],
         "title": "InvitacionEstado",
@@ -2010,6 +2011,61 @@
           }
         },
         "summary": "Internal Aceptar Invitacion",
+        "tags": [
+          "internal"
+        ]
+      }
+    },
+    "/internal/camareros/{camarero_id}/invitaciones/{invitacion_id}/rechazar": {
+      "post": {
+        "operationId": "internal_rechazar_invitacion_internal_camareros__camarero_id__invitaciones__invitacion_id__rechazar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "camarero_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Camarero Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "invitacion_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invitacion Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Internal Rechazar Invitacion Internal Camareros  Camarero Id  Invitaciones  Invitacion Id  Rechazar Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Internal Rechazar Invitacion",
         "tags": [
           "internal"
         ]

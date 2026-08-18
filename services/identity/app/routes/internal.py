@@ -70,3 +70,8 @@ def internal_invitaciones(camarero_id: uuid.UUID) -> list[dict]:
 @negocio_internal_router.post("/{camarero_id}/invitaciones/{invitacion_id}/aceptar")
 def internal_aceptar_invitacion(camarero_id: uuid.UUID, invitacion_id: uuid.UUID) -> dict:
     return DirectNegocioInternal().aceptar_invitacion(invitacion_id, camarero_id)
+
+
+@negocio_internal_router.post("/{camarero_id}/invitaciones/{invitacion_id}/rechazar")
+def internal_rechazar_invitacion(camarero_id: uuid.UUID, invitacion_id: uuid.UUID) -> dict:
+    return DirectNegocioInternal().rechazar_invitacion(invitacion_id, camarero_id)

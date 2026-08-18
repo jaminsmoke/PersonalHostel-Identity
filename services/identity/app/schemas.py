@@ -401,6 +401,13 @@ class InvitacionAcceptResponse(BaseModel):
     membresia: MembresiaResponse
 
 
+class InvitacionRechazarResponse(BaseModel):
+    """Resultado del rechazo de una invitación por el camarero."""
+
+    invitacion_id: uuid.UUID
+    estado: str
+
+
 class InvitacionCamareroResponse(BaseModel):
     """Invitación dirigida al camarero, con nombre del establecimiento."""
 

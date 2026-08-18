@@ -248,6 +248,9 @@ Respuesta `200`:
 - `PATCH /v1/camareros/me` (body parcial, p. ej. `{ "nick": "Anita", "direccion": "Calle Mayor 1", "ciudad": "Madrid" }`) → actualiza los campos enviados (al menos uno). Solo la sesión del profesional.
 - `GET /v1/camareros/me/qr` → `{ "qr": "phid1:..." }` (QR de la credencial activa).
 - `GET /v1/camareros/me/establecimientos` → establecimientos activos del profesional (el servicio de camareros consulta al de negocio internamente).
+- `GET /v1/camareros/me/invitaciones` → bandeja de invitaciones dirigidas al email del profesional (estado derivado `expirada` para pendientes vencidas).
+- `POST /v1/camareros/me/invitaciones/{id}/aceptar` → acepta una invitación por id (verifica titularidad).
+- `POST /v1/camareros/me/invitaciones/{id}/rechazar` → rechaza una invitación pendiente propia; el negocio la ve como `rechazada` al instante.
 - `/me/qr` devuelve `409` si no hay credencial activa.
 
 ### Visibilidad y ficha pública por QR

@@ -134,6 +134,13 @@ def _membresia_dict(membership: Membresia) -> dict:
     }
 
 
+def _estado_efectivo(invitation: Invitacion, now: datetime) -> str:
+    """Estado a presentar: deriva `expirada` para pendientes ya vencidas."""
+    if invitation.estado == InvitacionEstado.pendiente and invitation.expira_en <= now:
+        return InvitacionEstado.expirada.value
+    return invitation.estado.value
+
+
 def listar_invitaciones(camarero_id: uuid.UUID) -> list[dict]:
     """Invitaciones dirigidas al email del camarero, con nombre del establecimiento."""
     perfil = get_camareros_internal().perfil(camarero_id)
@@ -148,13 +155,14 @@ def listar_invitaciones(camarero_id: uuid.UUID) -> list[dict]:
             .order_by(Invitacion.creada_en.desc())
             .all()
         )
+    now = datetime.now(UTC)
     return [
         {
             "id": str(inv.id),
             "establecimiento_id": str(inv.establecimiento_id),
             "establecimiento_nombre": nombre,
             "rol": inv.rol.value,
-            "estado": inv.estado.value,
+            "estado": _estado_efectivo(inv, now),
             "expira_en": inv.expira_en.isoformat(),
             "creada_en": inv.creada_en.isoformat(),
         }
@@ -176,4 +184,45 @@ def aceptar_invitacion_por_id(camarero_id: uuid.UUID, invitacion_id: uuid.UUID) 
         return {
             "invitacion_id": str(invitation.id),
             "membresia": _membresia_dict(membership),
+        }
+
+
+def rechazar_invitacion_por_id(camarero_id: uuid.UUID, invitacion_id: uuid.UUID) -> dict:
+    """Rechaza una invitación por id (sin token) verificando que sea del camarero."""
+    with NegocioSessionLocal() as db:
+        invitation = db.get(Invitacion, invitacion_id)
+        if invitation is None:
+            raise ApiError(
+                status_code=status.HTTP_404_NOT_FOUND,
+                code=INVITACION_NOT_FOUND,
+                detail="Invitación no encontrada",
+            )
+        perfil = get_camareros_internal().perfil(camarero_id)
+        if perfil is None or perfil["email"].lower() != invitation.email_objetivo:
+            raise ApiError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                code=INVITACION_UNAUTHORIZED,
+                detail="La invitación no corresponde a este camarero",
+            )
+        now = datetime.now(UTC)
+        if invitation.estado != InvitacionEstado.pendiente:
+            raise ApiError(
+                status_code=status.HTTP_409_CONFLICT,
+                code=INVITACION_USED,
+                detail="La invitación ya no está disponible",
+            )
+        if invitation.expira_en <= now:
+            invitation.estado = InvitacionEstado.expirada
+            db.commit()
+            raise ApiError(
+                status_code=status.HTTP_410_GONE,
+                code=INVITACION_EXPIRED,
+                detail="La invitación ha expirado",
+            )
+        invitation.estado = InvitacionEstado.rechazada
+        invitation.revocada_en = now
+        db.commit()
+        return {
+            "invitacion_id": str(invitation.id),
+            "estado": invitation.estado.value,
         }
