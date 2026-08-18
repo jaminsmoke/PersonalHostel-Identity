@@ -24,7 +24,9 @@ from app.errors import (
     FOTO_INEXISTENTE,
     FOTO_INVALIDA,
     INVITACION_DUPLICATE,
+    INVITACION_EXPIRED,
     INVITACION_NOT_FOUND,
+    INVITACION_USED,
     LAYOUT_NOT_FOUND,
     MEMBERSHIP_DUPLICATE,
     MEMBERSHIP_FORBIDDEN,
@@ -60,6 +62,7 @@ from app.schemas import (
     EstablecimientoUpdateRequest,
     InvitacionAcceptResponse,
     InvitacionCreateRequest,
+    InvitacionRechazarResponse,
     InvitacionResponse,
     LayoutResponse,
     LayoutUpdateRequest,
@@ -687,7 +690,7 @@ def crear_invitacion(
         payload={
             "token_encrypted": protect_invitation_token(token, get_session_secret_env()),
             "invitation_url_base": os.environ.get(
-                "INVITATION_URL_BASE", "http://localhost:8081/invitaciones"
+                "INVITATION_URL_BASE", "http://localhost:8084/invitaciones"
             ),
             "establishment_name": establecimiento.nombre,
         },
@@ -807,6 +810,51 @@ def aceptar_invitacion(
         camarero_id = uuid.UUID(perfil["id"])
     membership = _finalizar_aceptacion(db, invitation, camarero_id)
     return InvitacionAcceptResponse(invitacion_id=invitation.id, membresia=membership)
+
+
+@invitations_router.post(
+    "/{token}/rechazar",
+    response_model=InvitacionRechazarResponse,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+        status.HTTP_410_GONE: {"model": ErrorResponse},
+    },
+)
+def rechazar_invitacion(
+    token: str,
+    db: Session = Depends(get_negocio_db),
+) -> InvitacionRechazarResponse:
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    invitation = db.query(Invitacion).filter_by(token_hash=token_hash).one_or_none()
+    if invitation is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=INVITACION_NOT_FOUND,
+            detail="Invitación no encontrada",
+        )
+    now = datetime.now(UTC)
+    if invitation.estado != InvitacionEstado.pendiente:
+        raise ApiError(
+            status_code=status.HTTP_409_CONFLICT,
+            code=INVITACION_USED,
+            detail="La invitación ya no está disponible",
+        )
+    if invitation.expira_en <= now:
+        invitation.estado = InvitacionEstado.expirada
+        db.commit()
+        raise ApiError(
+            status_code=status.HTTP_410_GONE,
+            code=INVITACION_EXPIRED,
+            detail="La invitación ha expirado",
+        )
+    invitation.estado = InvitacionEstado.rechazada
+    invitation.revocada_en = now
+    db.commit()
+    return InvitacionRechazarResponse(
+        invitacion_id=invitation.id,
+        estado=invitation.estado.value,
+    )
 
 
 @router.get(

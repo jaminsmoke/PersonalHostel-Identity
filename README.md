@@ -44,7 +44,7 @@ docker compose up --build
 
 - Camareros (API profesionales): http://localhost:8080/health
 - Negocio (cuentas y establecimientos): http://localhost:8082/health
-- Web de invitaciones: http://localhost:8081/invitaciones/<token> (llama al servicio de negocio)
+- Web del profesional: http://localhost:8084 (ficha pública por QR, login y bandeja de invitaciones; el magic-link vive en /invitaciones/<token>)
 - Postgres: `localhost:5432` (usuario `hosteleria`; bases `identity_camareros` y `identity_negocio`)
 - Esquema: aplicado por Alembic al arrancar; una cadena por BD (`alembic` para camareros, `alembic_negocio` para negocio)
 
@@ -52,7 +52,7 @@ docker compose up --build
 
 El staging es producción en configuración (HTTPS, secretos reales, datos borrables). Corre en el VPS de Hostinger (la IP vive en `.env`, no en este README), detrás del **Caddy** ya instalado (que también sirve la landing `siberia.solutions`).
 
-- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `invitaciones.siberia.solutions` (:8081, invitaciones), `ficha.siberia.solutions` (:8081, histórico con 301), `web.negocio.siberia.solutions` (:8083, web pública de negocios: ficha + carta del establecimiento) y `web.camareros.siberia.solutions` (:8084, web pública del profesional: credencial del camarero).
+- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `ficha.siberia.solutions` (histórico con 301), `web.negocio.siberia.solutions` (:8083, web pública de negocios: ficha + carta del establecimiento) y `web.camareros.siberia.solutions` (:8084, web del profesional: credencial, login e invitaciones).
 - `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
 - El `.env` de producción vive en `/opt/identity/.env` (gitignored): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
 
@@ -76,7 +76,7 @@ en el `.env` remoto sin mostrar secretos, crea un backup de ambas BD antes de
 migrar y termina comprobando health/meta de los dos servicios.
 
 - Backup diario: `services/identity/scripts/backup_staging.sh` (cron en el VPS; dumps de ambas BD a `/opt/identity/backups`, retención 7 días).
-- Caddyfile: bloques `reverse_proxy` en `/etc/caddy/Caddyfile` (la landing queda intacta): `:8080` camareros, `:8082` negocio, `:8081` invitaciones (`invitaciones.siberia.solutions`), `:8083` `web.negocio`, `:8084` `web.camareros`. Los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 (`/ficha?qr=` → `web.camareros…/camareros?qr=`; `/negocio` y `/carta` → `web.negocio`).
+- Caddyfile: bloques `reverse_proxy` en `/etc/caddy/Caddyfile` (la landing queda intacta): `:8080` camareros, `:8082` negocio, `:8083` `web.negocio`, `:8084` `web.camareros`. Los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 (`/ficha?qr=` → `web.camareros…/camareros?qr=`; `/negocio` y `/carta` → `web.negocio`).
 
 ### Observabilidad en el VPS (staging/producción)
 
@@ -122,8 +122,8 @@ Las contraseñas viven en `.env` (gitignored); re-ejecutar el seed es seguro (40
 
 Los PR y `main` ejecutan tres checks requeridos: `quality`, `integration` y
 `security`. El tercero audita dependencias Python, workflows, Dockerfiles,
-configuración e imágenes; genera SARIF y un SBOM SPDX por runtime Identity,
-Identity Web y PostgreSQL. Las acciones se fijan por SHA, las bases Docker por
+configuración e imágenes; genera SARIF y un SBOM SPDX por runtime Identity y
+PostgreSQL. Las acciones se fijan por SHA, las bases Docker por
 digest y los servicios de aplicación se ejecutan sin root.
 
 La política, los umbrales y el formato de excepciones con caducidad están en
@@ -294,9 +294,11 @@ contacto visibles) con una sola llamada al servicio de camareros
   servicio de camareros (`IDENTITY_WEB_ORIGIN`); la URL canónica la fija
   `FICHA_URL_BASE` en `.env` (respuestas de registro/login/me/qr).
 
-`identity-web` (SPA vanilla, nginx) sirve **solo** `/invitaciones/<token>`:
-aceptación de invitaciones por magic-link sin JWT (base configurada con
-`IDENTITY_API_URL`; staging: `https://invitaciones.siberia.solutions`).
+`web-camareros` (SPA vanilla, nginx, puerto dev `:8084`) sirve la web personal
+del profesional: ficha pública por QR, login (JWT) y bandeja de invitaciones.
+El magic-link `/invitaciones/<token>` (aceptar/rechazar sin JWT) llama al
+servicio de negocio (`NEGOCIO_API_URL`; staging:
+`https://web.camareros.siberia.solutions/invitaciones`).
 
 Compatibilidad con los dominios históricos: `ficha.siberia.solutions` responde
 **301** a la superficie canónica (`/ficha?qr=` → `web.camareros.siberia.solutions/camareros?qr=`; `/negocio` → `web.negocio.siberia.solutions`) y `carta.siberia.solutions` → `web.negocio` para que los QR emitidos antes de la migración sigan funcionando; el plazo de convivencia es de 6 meses desde el despliegue o hasta confirmar que no quedan QR impresos en uso.
@@ -424,9 +426,9 @@ La procedencia del establecimiento se hereda de su cuenta y la del producto se
 hereda del establecimiento. Los clientes no pueden contradecirla ni cambiarla:
 Bar/Commander solo declaran procedencia al crear la entidad raíz correspondiente.
 
-### Identity Web (invitaciones por navegador)
+### Invitaciones por navegador (magic-link)
 
-`identity-web` sirve la página de aceptación en `:8081` y llama al **servicio de negocio** (`IDENTITY_API_URL`, default `http://localhost:8082`) para `POST /v1/invitaciones/{token}/aceptar` (magic-link, sin JWT).
+El magic-link de invitación vive en `web-camareros` (`/invitaciones/<token>`): acepta o rechaza la invitación llamando al **servicio de negocio** (`NEGOCIO_API_URL`, default `http://localhost:8082`) con `POST /v1/invitaciones/{token}/aceptar` o `POST /v1/invitaciones/{token}/rechazar` (sin JWT). La bandeja autenticada (`GET /v1/camareros/me/invitaciones` + aceptar/rechazar por id) está en la misma web tras iniciar sesión.
 
 ## Tests
 
@@ -466,7 +468,7 @@ ejecuciones obsoletas de la misma rama y usa permisos de solo lectura:
 - `integration`: Compose con PostgreSQL 16 + tests + cobertura de ramas +
   auditoría de procedencia. Conserva los informes 14 días.
 - `family-contracts`: comprueba que los clientes de la familia (Bar,
-  Commander e identity-web) no piden rutas que Identity ya no expone. Sparse-
+  Commander y web-camareros) no piden rutas que Identity ya no expone. Sparse-
   checkout de los repos públicos Bar y Commander, barrido de `app.js`, e
   informe en el summary del job con las rutas usadas por cada cliente y las
   públicas sin consumidor (aviso, no rojo). El job solo falla si un cliente

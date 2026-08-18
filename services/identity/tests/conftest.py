@@ -27,7 +27,7 @@ os.environ.setdefault("ALLOW_NON_REAL_DATA", "true")
 os.environ.setdefault("WEB_NEGOCIO_URL_BASE", "http://web.test")
 os.environ.setdefault(
     "IDENTITY_WEB_ORIGIN",
-    "http://localhost:8081,https://web.camareros.siberia.solutions",
+    "http://localhost:8083,http://localhost:8084,https://web.camareros.siberia.solutions,https://web.negocio.siberia.solutions",
 )
 
 

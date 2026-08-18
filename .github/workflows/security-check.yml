@@ -66,16 +66,14 @@ jobs:
       - name: Build deployable images once
         run: |
           docker build --target runtime --tag personalhostel/identity-runtime:ci services/identity
-          docker build --tag personalhostel/identity-web:ci services/identity-web
           docker pull "$POSTGRES_IMAGE"
           docker tag "$POSTGRES_IMAGE" personalhostel/postgres:ci
           docker save --output build/security/identity-runtime.tar personalhostel/identity-runtime:ci
-          docker save --output build/security/identity-web.tar personalhostel/identity-web:ci
           docker save --output build/security/postgres.tar personalhostel/postgres:ci
 
       - name: Scan images and generate SPDX SBOMs
         run: |
-          for image in identity-runtime identity-web postgres; do
+          for image in identity-runtime postgres; do
             docker run --rm \
               --volume "$PWD/build/security:/security" \
               "$TRIVY_IMAGE" image --cache-dir /security/trivy-cache \
@@ -114,7 +112,6 @@ jobs:
             --pip-audit-report build/security/pip-audit-runtime.json \
             --pip-audit-report build/security/pip-audit-development.json \
             --trivy-report build/security/identity-runtime.trivy.json \
-            --trivy-report build/security/identity-web.trivy.json \
             --trivy-report build/security/postgres.trivy.json \
             --trivy-report build/security/config.trivy.json \
             | tee build/security/policy-summary.txt

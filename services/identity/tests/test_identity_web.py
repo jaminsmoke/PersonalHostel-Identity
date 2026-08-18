@@ -146,12 +146,12 @@ def test_cors_origen_permitido(db_ready, negocio_client):
     response = negocio_client.options(
         "/v1/invitaciones/dummy/aceptar",
         headers={
-            "Origin": "http://localhost:8081",
+            "Origin": "http://localhost:8083",
             "Access-Control-Request-Method": "POST",
         },
     )
     assert response.status_code == 200
-    assert response.headers.get("access-control-allow-origin") == "http://localhost:8081"
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:8083"
 
 
 def test_cors_origen_no_permitido(db_ready, negocio_client):
@@ -170,12 +170,12 @@ def test_cors_camareros_origen_permitido(db_ready, camarero_client):
     response = camarero_client.options(
         "/v1/camareros/ficha",
         headers={
-            "Origin": "http://localhost:8081",
+            "Origin": "http://localhost:8084",
             "Access-Control-Request-Method": "GET",
         },
     )
     assert response.status_code == 200
-    assert response.headers.get("access-control-allow-origin") == "http://localhost:8081"
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:8084"
 
 
 def test_cors_web_camareros_origen_permitido(db_ready, camarero_client):
@@ -203,3 +203,57 @@ def test_cors_camareros_origen_no_permitido(db_ready, camarero_client):
     )
     assert response.status_code == 400
     assert "access-control-allow-origin" not in response.headers
+
+
+def test_rechazar_por_magic_link_sin_jwt(db_ready, camarero_client, negocio_client):
+    _, email = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    token = _crear_invitacion(negocio_client, negocio_token, establecimiento_id, email)
+
+    rejected = negocio_client.post(f"/v1/invitaciones/{token}/rechazar")
+    assert rejected.status_code == 200
+    assert rejected.json()["estado"] == "rechazada"
+
+    again = negocio_client.post(f"/v1/invitaciones/{token}/rechazar")
+    assert again.status_code == 409
+    assert again.json()["code"] == "identity.invitacion_ya_usada"
+
+
+def test_rechazar_magic_link_expirada(db_ready, camarero_client, negocio_client):
+    _, email = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    token = _crear_invitacion(negocio_client, negocio_token, establecimiento_id, email)
+    with NegocioSessionLocal() as session:
+        invitation = (
+            session.query(Invitacion)
+            .filter_by(token_hash=hashlib.sha256(token.encode()).hexdigest())
+            .one()
+        )
+        invitation.expira_en = datetime.now(UTC) - timedelta(minutes=1)
+        session.commit()
+    expired = negocio_client.post(f"/v1/invitaciones/{token}/rechazar")
+    assert expired.status_code == 410
+    assert expired.json()["code"] == "identity.invitacion_expirada"
+
+
+def test_rechazar_magic_link_no_encontrada(db_ready, negocio_client):
+    response = negocio_client.post("/v1/invitaciones/token-inexistente/rechazar")
+    assert response.status_code == 404
+    assert response.json()["code"] == "identity.invitacion_no_encontrada"
+
+
+def test_cors_negocio_web_camareros_origen_permitido(db_ready, negocio_client):
+    response = negocio_client.options(
+        "/v1/invitaciones/dummy/aceptar",
+        headers={
+            "Origin": "https://web.camareros.siberia.solutions",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert response.status_code == 200
+    assert (
+        response.headers.get("access-control-allow-origin")
+        == "https://web.camareros.siberia.solutions"
+    )
