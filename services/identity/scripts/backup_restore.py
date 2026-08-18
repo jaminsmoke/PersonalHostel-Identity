@@ -270,9 +270,14 @@ def restore_drill(set_dir: Path, camareros_db: str, negocio_db: str) -> dict[str
             user, camareros_db, "SELECT foto_clave FROM camareros WHERE foto_clave IS NOT NULL"
         )
         photos = photo_members(set_dir / "fotos.tar.gz")
-        if referenced - camareros or foto_keys - photos or photos - foto_keys:
+        missing_refs = referenced - camareros
+        missing_photos = foto_keys - photos
+        orphan_photos = photos - foto_keys
+        if missing_refs or missing_photos or orphan_photos:
             raise BackupError(
-                "Invariantes fallidas: referencias o fotos no corresponden con sus metadatos"
+                "Invariantes fallidas (solo conteos): "
+                f"referencias_sin_camarero={len(missing_refs)}, "
+                f"fotos_faltantes={len(missing_photos)}, fotos_huerfanas={len(orphan_photos)}"
             )
         for database in (camareros_db, negocio_db):
             if not database_scalar(user, database, "SELECT version_num FROM alembic_version"):
