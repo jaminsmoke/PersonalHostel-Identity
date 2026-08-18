@@ -42,6 +42,7 @@ class InvitacionEstado(str, enum.Enum):
     pendiente = "pendiente"
     aceptada = "aceptada"
     revocada = "revocada"
+    rechazada = "rechazada"
     expirada = "expirada"
 
 

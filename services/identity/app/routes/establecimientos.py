@@ -33,7 +33,11 @@ from app.errors import (
 )
 from app.images import MAX_INPUT_BYTES, FotoInvalida, normalizar_foto
 from app.internal import get_camareros_internal
-from app.membresias import _add_or_reactivate_membership, _finalizar_aceptacion
+from app.membresias import (
+    _add_or_reactivate_membership,
+    _estado_efectivo,
+    _finalizar_aceptacion,
+)
 from app.models import (
     CuentaNegocio,
     EmailOutbox,
@@ -96,13 +100,6 @@ def _establecimiento_de_cuenta(
             detail="La cuenta no tiene acceso a este establecimiento",
         )
     return establecimiento
-
-
-def _estado_efectivo(invitation: Invitacion, now: datetime) -> str:
-    """Estado a presentar: deriva `expirada` para pendientes ya vencidas."""
-    if invitation.estado == InvitacionEstado.pendiente and invitation.expira_en <= now:
-        return InvitacionEstado.expirada.value
-    return invitation.estado.value
 
 
 def _invitation_response(

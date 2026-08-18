@@ -205,3 +205,94 @@ def test_aceptar_invitacion_por_id_no_encontrada_404(db_ready, camarero_client):
     )
     assert response.status_code == 404
     assert response.json()["code"] == "identity.invitacion_no_encontrada"
+
+
+def test_rechazar_invitacion_por_id(db_ready, camarero_client, negocio_client):
+    _, email, token = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    invitation_id = _crear_invitacion(negocio_client, negocio_token, establecimiento_id, email)
+
+    rejected = camarero_client.post(
+        f"/v1/camareros/me/invitaciones/{invitation_id}/rechazar",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert rejected.status_code == 200
+    body = rejected.json()
+    assert body["invitacion_id"] == invitation_id
+    assert body["estado"] == "rechazada"
+
+    listed = camarero_client.get(
+        "/v1/camareros/me/invitaciones",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert listed.status_code == 200
+    assert listed.json()[0]["estado"] == "rechazada"
+
+    again = camarero_client.post(
+        f"/v1/camareros/me/invitaciones/{invitation_id}/rechazar",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert again.status_code == 409
+    assert again.json()["code"] == "identity.invitacion_ya_usada"
+
+
+def test_rechazar_invitacion_ajena_403(db_ready, camarero_client, negocio_client):
+    _, email, _ = _camarero(camarero_client, prefix="inv-cam-a")
+    _, _, token_b = _camarero(camarero_client, prefix="inv-cam-b")
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    invitation_id = _crear_invitacion(negocio_client, negocio_token, establecimiento_id, email)
+
+    response = camarero_client.post(
+        f"/v1/camareros/me/invitaciones/{invitation_id}/rechazar",
+        headers={"Authorization": f"Bearer {token_b}"},
+    )
+    assert response.status_code == 403
+    assert response.json()["code"] == "identity.invitacion_no_autorizada"
+
+
+def test_rechazar_invitacion_expirada_410(db_ready, camarero_client, negocio_client):
+    _, email, token = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    invitation_id = _crear_invitacion(negocio_client, negocio_token, establecimiento_id, email)
+    with NegocioSessionLocal() as session:
+        invitation = session.get(Invitacion, uuid.UUID(invitation_id))
+        invitation.expira_en = datetime.now(UTC) - timedelta(minutes=1)
+        session.commit()
+
+    response = camarero_client.post(
+        f"/v1/camareros/me/invitaciones/{invitation_id}/rechazar",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 410
+    assert response.json()["code"] == "identity.invitacion_expirada"
+
+
+def test_rechazar_invitacion_no_encontrada_404(db_ready, camarero_client):
+    _, _, token = _camarero(camarero_client)
+    response = camarero_client.post(
+        f"/v1/camareros/me/invitaciones/{uuid.uuid4()}/rechazar",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 404
+    assert response.json()["code"] == "identity.invitacion_no_encontrada"
+
+
+def test_listar_invitaciones_expirada_derivada(db_ready, camarero_client, negocio_client):
+    _, email, token = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    invitation_id = _crear_invitacion(negocio_client, negocio_token, establecimiento_id, email)
+    with NegocioSessionLocal() as session:
+        invitation = session.get(Invitacion, uuid.UUID(invitation_id))
+        invitation.expira_en = datetime.now(UTC) - timedelta(minutes=1)
+        session.commit()
+
+    response = camarero_client.get(
+        "/v1/camareros/me/invitaciones",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()[0]["estado"] == "expirada"

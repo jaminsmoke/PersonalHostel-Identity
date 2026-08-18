@@ -105,6 +105,9 @@ class NegocioInternal(Protocol):
     def aceptar_invitacion(self, invitacion_id: uuid.UUID, camarero_id: uuid.UUID) -> dict:
         """Acepta una invitación por id; devuelve la membresía resultante."""
 
+    def rechazar_invitacion(self, invitacion_id: uuid.UUID, camarero_id: uuid.UUID) -> dict:
+        """Rechaza una invitación por id; devuelve el estado resultante."""
+
 
 class DirectCamarerosInternal:
     def buscar_por_email(self, email: str) -> dict | None:
@@ -184,6 +187,11 @@ class DirectNegocioInternal:
         from app.membresias import aceptar_invitacion_por_id
 
         return aceptar_invitacion_por_id(camarero_id, invitacion_id)
+
+    def rechazar_invitacion(self, invitacion_id: uuid.UUID, camarero_id: uuid.UUID) -> dict:
+        from app.membresias import rechazar_invitacion_por_id
+
+        return rechazar_invitacion_por_id(camarero_id, invitacion_id)
 
 
 def _raise_from_response(response: httpx.Response, fallback_code: str) -> None:
@@ -271,6 +279,15 @@ class HttpNegocioInternal:
         response = self._request(
             "POST",
             f"/internal/camareros/{camarero_id}/invitaciones/{invitacion_id}/aceptar",
+        )
+        if response.status_code != 200:
+            _raise_from_response(response, "identity.internal_error")
+        return response.json()
+
+    def rechazar_invitacion(self, invitacion_id: uuid.UUID, camarero_id: uuid.UUID) -> dict:
+        response = self._request(
+            "POST",
+            f"/internal/camareros/{camarero_id}/invitaciones/{invitacion_id}/rechazar",
         )
         if response.status_code != 200:
             _raise_from_response(response, "identity.internal_error")

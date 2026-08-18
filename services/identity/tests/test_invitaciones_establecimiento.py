@@ -205,3 +205,25 @@ def test_listar_establecimiento_inexistente_404(db_ready, negocio_client):
     )
     assert response.status_code == 404
     assert response.json()["code"] == "identity.establecimiento_no_encontrado"
+
+
+def test_listar_rechazada_visible(db_ready, camarero_client, negocio_client):
+    email = _camarero(camarero_client)
+    negocio_token = _negocio(negocio_client)
+    establecimiento_id = _establecimiento(negocio_client, negocio_token)
+    inv_id = _crear_invitacion(negocio_client, negocio_token, establecimiento_id, email)
+    _set_estado(inv_id, InvitacionEstado.rechazada)
+
+    headers = {"Authorization": f"Bearer {negocio_token}"}
+    todo = negocio_client.get(
+        f"/v1/establecimientos/{establecimiento_id}/invitaciones", headers=headers
+    )
+    assert todo.status_code == 200
+    assert todo.json()[0]["estado"] == "rechazada"
+
+    rechazadas = negocio_client.get(
+        f"/v1/establecimientos/{establecimiento_id}/invitaciones",
+        headers=headers,
+        params={"estado": "rechazada"},
+    )
+    assert [i["id"] for i in rechazadas.json()] == [inv_id]
