@@ -80,3 +80,14 @@ def test_latest_set_rejects_path_traversal(tmp_path):
 
     with pytest.raises(backup_restore.BackupError, match="Puntero"):
         backup_restore.latest_set(tmp_path)
+
+
+def test_photo_keys_reject_traversal_and_unexpected_files():
+    with pytest.raises(backup_restore.BackupError, match="ruta de foto"):
+        backup_restore.validate_photo_keys({"../secret", "notes.txt"})
+
+
+def test_photo_keys_accept_storage_layout():
+    key = "123e4567-e89b-12d3-a456-426614174000/123e4567-e89b-12d3-a456-426614174001.webp"
+
+    assert backup_restore.validate_photo_keys({key}) == {key}

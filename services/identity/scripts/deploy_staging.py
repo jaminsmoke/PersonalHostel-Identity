@@ -187,6 +187,11 @@ def main() -> int:
         action="store_true",
         help="Verifica y restaura el último backup solo en bases *_restore_test.",
     )
+    parser.add_argument(
+        "--quarantine-orphan-photos",
+        action="store_true",
+        help="Archiva fotos huérfanas verificadas antes de retirarlas del volumen activo.",
+    )
     args = parser.parse_args()
     if not SAFE_REF.fullmatch(args.ref) or ".." in args.ref or args.ref.endswith("/"):
         print(f"Referencia no válida: {args.ref}")
@@ -271,7 +276,12 @@ def main() -> int:
         remote_ref = shlex.quote(f"origin/{args.ref}")
         run(f"cd {remote} && git fetch origin && git reset --hard {remote_ref}")
         compose = "docker compose -f docker-compose.yml -f docker-compose.prod.yml"
-        if args.backup_restore_drill:
+        if args.quarantine_orphan_photos:
+            run(
+                f"cd {remote} && python3 services/identity/scripts/backup_restore.py "
+                "quarantine-orphan-photos"
+            )
+        elif args.backup_restore_drill:
             run(f"cd {remote} && python3 services/identity/scripts/backup_restore.py restore-drill")
         elif args.sync_openapi:
             run(f"cd {remote} && {compose} build identity-tests")
@@ -350,7 +360,9 @@ def main() -> int:
     finally:
         client.close()
 
-    if args.backup_restore_drill:
+    if args.quarantine_orphan_photos:
+        print("Cuarentena reversible de fotos completada")
+    elif args.backup_restore_drill:
         print("Restore drill aislado OK")
     elif args.sync_openapi:
         print("OpenAPI generado en el VPS y sincronizado al checkout local")

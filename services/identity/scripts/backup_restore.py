@@ -27,6 +27,7 @@ ACTIVE_DATABASES = frozenset({"identity_camareros", "identity_negocio", "postgre
 RESTORE_SUFFIX = "_restore_test"
 SET_PATTERN = re.compile(r"^set-(\d{8}T\d{6}Z)-([0-9a-f]{7,40})$")
 COMPONENTS = ("camareros.dump", "negocio.dump", "fotos.tar.gz")
+SAFE_PHOTO_KEY = re.compile(r"^[0-9a-f-]{36}/[0-9a-f-]{36}\.[a-z0-9]{2,8}$")
 
 
 class BackupError(RuntimeError):
@@ -249,6 +250,94 @@ def photo_members(archive: Path) -> set[str]:
         return names
 
 
+def validate_photo_keys(keys: set[str]) -> set[str]:
+    if any(not SAFE_PHOTO_KEY.fullmatch(key) for key in keys):
+        raise BackupError("El volumen contiene una ruta de foto no permitida")
+    return keys
+
+
+def active_photo_members() -> set[str]:
+    output = run(
+        compose(
+            "exec",
+            "-T",
+            "identity-camareros",
+            "find",
+            "/app/data/fotos",
+            "-type",
+            "f",
+            "-printf",
+            "%P\\n",
+        )
+    )
+    return validate_photo_keys({line for line in output.splitlines() if line})
+
+
+def archive_selected_photos(keys: set[str], target: Path) -> None:
+    payload = b"\0".join(key.encode() for key in sorted(validate_photo_keys(keys))) + b"\0"
+    command = compose(
+        "exec",
+        "-T",
+        "identity-camareros",
+        "tar",
+        "-C",
+        "/app/data/fotos",
+        "-czf",
+        "-",
+        "--null",
+        "-T",
+        "-",
+    )
+    with target.open("wb") as output:
+        subprocess.run(command, check=True, input=payload, stdout=output)
+
+
+def quarantine_orphan_photos(root: Path = BACKUP_ROOT) -> Path | None:
+    """Conserva huérfanos verificados y solo entonces los retira del volumen activo."""
+    os.umask(0o077)
+    user = pg_user()
+    referenced = query_lines(
+        user, "identity_camareros", "SELECT foto_clave FROM camareros WHERE foto_clave IS NOT NULL"
+    )
+    active = active_photo_members()
+    orphans = active - referenced
+    if not orphans:
+        print("Cuarentena no necesaria: 0 fotos huérfanas")
+        return None
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    quarantine_root = root / "quarantine" / "photos"
+    quarantine_root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    quarantine_root.chmod(0o700)
+    final_dir = quarantine_root / timestamp
+    partial_dir = quarantine_root / f".{timestamp}.partial"
+    partial_dir.mkdir(mode=0o700)
+    archive = partial_dir / "orphan-photos.tar.gz"
+    try:
+        archive_selected_photos(orphans, archive)
+        if photo_members(archive) != orphans:
+            raise BackupError("La cuarentena no reproduce exactamente los huérfanos")
+        manifest = {
+            "schema_version": 1,
+            "created_at": datetime.now(UTC).isoformat(),
+            "reason": "unreferenced_photo_files",
+            "count": len(orphans),
+            "archive": component_metadata(archive),
+        }
+        (partial_dir / "manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        partial_dir.rename(final_dir)
+        for key in sorted(orphans):
+            run(compose("exec", "-T", "identity-camareros", "rm", "--", f"/app/data/fotos/{key}"))
+        if active_photo_members() - referenced:
+            raise BackupError("Persisten fotos huérfanas tras la cuarentena")
+    except Exception:
+        shutil.rmtree(partial_dir, ignore_errors=True)
+        raise
+    print(f"Cuarentena reversible OK: {len(orphans)} fotos")
+    return final_dir
+
+
 def restore_drill(set_dir: Path, camareros_db: str, negocio_db: str) -> dict[str, int | float]:
     started = time.monotonic()
     validate_restore_database(camareros_db)
@@ -321,6 +410,9 @@ def main() -> int:
     restore_parser.add_argument("set_dir", nargs="?", type=Path)
     restore_parser.add_argument("--camareros-db", default="identity_camareros_restore_test")
     restore_parser.add_argument("--negocio-db", default="identity_negocio_restore_test")
+    subparsers.add_parser(
+        "quarantine-orphan-photos", help="Archiva huérfanos y después los retira del volumen"
+    )
     args = parser.parse_args()
     try:
         if args.command == "backup":
@@ -328,10 +420,12 @@ def main() -> int:
         elif args.command == "verify":
             verify_manifest(args.set_dir or latest_set(BACKUP_ROOT))
             print("Conjunto válido")
-        else:
+        elif args.command == "restore-drill":
             restore_drill(
                 args.set_dir or latest_set(BACKUP_ROOT), args.camareros_db, args.negocio_db
             )
+        else:
+            quarantine_orphan_photos()
     except (BackupError, OSError, subprocess.CalledProcessError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1

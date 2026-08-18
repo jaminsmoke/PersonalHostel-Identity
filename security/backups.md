@@ -36,6 +36,12 @@ El restaurador rechaza las bases activas y cualquier nombre que no termine en
 incluye conteos y duración: no muestra PII, hashes de contraseña, tokens, QR ni
 rutas de fotos.
 
+Los archivos huérfanos detectados no se borran directamente. Tras aprobación
+explícita se usa `deploy_staging.py --ref <rama> --quarantine-orphan-photos`:
+crea primero un archivo verificado y manifiesto dentro de
+`backups/quarantine/photos`, lo publica atómicamente y solo entonces retira los
+archivos exactos del volumen. La cuarentena permite recuperación manual.
+
 ## Fallos y recuperación
 
 1. Si `backup` falla, conservar el último conjunto señalado por `latest` y
