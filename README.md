@@ -1,7 +1,7 @@
-# PersonalHostel Identity
+# PersonalHostel Server
 
 Servidor de **identidad** de la familia **PersonalHostel**.  
-Repo: https://github.com/jaminsmoke/PersonalHostel-Identity  
+Repo: https://github.com/jaminsmoke/PersonalHostel-Server  
 Carpeta local: `PersonalHosteleriaServer`
 
 No es el nodo de sala: eso es [Personal Bar](https://github.com/jaminsmoke/PersonalBar).
