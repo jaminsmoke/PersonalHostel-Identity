@@ -256,9 +256,7 @@ class Jornada(CamareroBase):
 
     __tablename__ = "jornadas"
     __table_args__ = (
-        CheckConstraint(
-            "fin IS NULL OR fin >= inicio", name="ck_jornadas_intervalo"
-        ),
+        CheckConstraint("fin IS NULL OR fin >= inicio", name="ck_jornadas_intervalo"),
         Index("ix_jornadas_camarero_ventana", "camarero_id", "inicio"),
     )
 
