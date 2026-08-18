@@ -10,6 +10,7 @@ chmod 700 backups
 if [[ -f backups/backup.log ]]; then
     chmod 600 backups/backup.log
 fi
+find backups -maxdepth 1 -type f -name '*.sql.gz' -exec chmod 600 {} +
 
 PGUSER=$(grep -E '^POSTGRES_USER=' .env | cut -d= -f2- | tr -d '\r')
 PGUSER=${PGUSER:-hosteleria}

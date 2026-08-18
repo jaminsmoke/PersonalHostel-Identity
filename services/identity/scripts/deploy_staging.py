@@ -144,10 +144,13 @@ def validate_remote_env(client: paramiko.SSHClient) -> None:
 
 
 def harden_remote_env_permissions(client: paramiko.SSHClient) -> None:
-    """Impone mínimo privilegio aunque el fichero previo heredase modo 0644."""
+    """Impone mínimo privilegio al `.env` activo y sus copias históricas."""
     sftp = client.open_sftp()
     try:
         sftp.chmod(f"{REMOTE_DIR}/.env", 0o600)
+        for entry in sftp.listdir_attr(REMOTE_DIR):
+            if entry.filename.startswith(".env.") and entry.filename != ".env.example":
+                sftp.chmod(f"{REMOTE_DIR}/{entry.filename}", 0o600)
     finally:
         sftp.close()
 
