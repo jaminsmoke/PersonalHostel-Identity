@@ -1,16 +1,10 @@
-import os
 import uuid
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
-
-from app.db import SessionLocal  # noqa: E402
+from app.db import CamareroSessionLocal  # noqa: E402
 from app.main import app  # noqa: E402
 from app.security import get_verify_key, verify_qr_payload  # noqa: E402
 
@@ -19,7 +13,7 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def db_ready():
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
@@ -50,7 +44,7 @@ def test_registro_ok(db_ready):
     uuid.UUID(body["id"])
     assert body["qr"].startswith("phid1:")
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         from app.models import Camarero, Credencial
 
         cam = session.get(Camarero, uuid.UUID(body["id"]))
@@ -70,7 +64,7 @@ def test_registro_qr_verifica(db_ready):
     )
     assert resp.status_code == 201
     qr = resp.json()["qr"]
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         vk = get_verify_key(session)
     assert verify_qr_payload(qr, vk)
 
@@ -107,7 +101,7 @@ def test_qr_rechaza_firma_manipulada(db_ready):
         json=_payload(email),
     )
     qr = resp.json()["qr"]
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         vk = get_verify_key(session)
 
     partes = qr.split(":")
@@ -125,7 +119,7 @@ def test_registro_con_direccion_ciudad_opcionales(db_ready):
     data["ciudad"] = "Madrid"
     resp = client.post("/v1/camareros/registro", json=data)
     assert resp.status_code == 201
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         from app.models import Camarero
 
         cam = session.get(Camarero, uuid.UUID(resp.json()["id"]))
@@ -137,7 +131,7 @@ def test_registro_sin_direccion_ciudad_null(db_ready):
     email = _email()
     resp = client.post("/v1/camareros/registro", json=_payload(email))
     assert resp.status_code == 201
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         from app.models import Camarero
 
         cam = session.get(Camarero, uuid.UUID(resp.json()["id"]))

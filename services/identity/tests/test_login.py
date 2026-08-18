@@ -1,14 +1,8 @@
-import os
 import uuid
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
-
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
 
 from app.main import app  # noqa: E402
 
@@ -17,9 +11,9 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def db_ready():
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
@@ -156,10 +150,10 @@ def test_login_email_inexistente_401(db_ready):
 def test_login_camarero_sin_password_401(db_ready):
     email = _email()
     reg = _crear(email)
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
     from app.models import Camarero
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         cam = session.get(Camarero, uuid.UUID(reg["id"]))
         cam.password_hash = None
         session.commit()

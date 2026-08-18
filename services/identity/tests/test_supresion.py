@@ -1,4 +1,3 @@
-import os
 import uuid
 from io import BytesIO
 
@@ -6,11 +5,6 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy import text
-
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
 
 from app.main import app  # noqa: E402
 from app.storage import get_foto_storage  # noqa: E402
@@ -20,9 +14,9 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def db_ready():
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
@@ -94,10 +88,10 @@ def test_suprimir_borra_foto_y_credenciales(db_ready):
         files={"foto": ("foto.png", _png_bytes(), "image/png")},
     )
 
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
     from app.models import Camarero, Credencial
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         cam = session.query(Camarero).filter_by(email=email).one()
         foto_clave = cam.foto_clave
         assert foto_clave is not None
@@ -112,7 +106,7 @@ def test_suprimir_borra_foto_y_credenciales(db_ready):
     assert get_foto_storage().leer(foto_clave) is None
 
     # La cuenta y sus credenciales desaparecen de la DB
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         assert session.query(Camarero).filter_by(email=email).one_or_none() is None
 
 

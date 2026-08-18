@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-hosteleria}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devlocal}
-      POSTGRES_DB: ${POSTGRES_DB:-identity}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     ports:
       - "5432:5432"
     volumes:

@@ -1,4 +1,3 @@
-import os
 import uuid
 from io import BytesIO
 
@@ -6,11 +5,6 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy import text
-
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
 
 from app.main import app  # noqa: E402
 from app.storage import get_foto_storage  # noqa: E402
@@ -20,9 +14,9 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def db_ready():
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
@@ -106,10 +100,10 @@ def test_reemplazo_borra_anterior(db_ready):
         files={"foto": ("a.png", _png_bytes((255, 0, 0)), "image/png")},
     )
 
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
     from app.models import Camarero
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         cam = session.query(Camarero).filter_by(email=email).one()
         old_clave = cam.foto_clave
     assert old_clave is not None
@@ -120,7 +114,7 @@ def test_reemplazo_borra_anterior(db_ready):
         files={"foto": ("b.png", _png_bytes((0, 0, 255)), "image/png")},
     )
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         cam = session.query(Camarero).filter_by(email=email).one()
         assert cam.foto_clave != old_clave
 

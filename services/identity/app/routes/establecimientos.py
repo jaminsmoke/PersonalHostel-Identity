@@ -136,13 +136,11 @@ def crear_establecimiento(
     db.add(establecimiento)
     db.flush()
     if cuenta.camarero_vinculado_id is not None:
-        db.add(
-            Membresia(
-                establecimiento_id=establecimiento.id,
-                camarero_id=cuenta.camarero_vinculado_id,
-                rol=MembresiaRol.dueno,
-                estado=MembresiaEstado.activa,
-            )
+        _add_or_reactivate_membership(
+            db,
+            establecimiento,
+            cuenta.camarero_vinculado_id,
+            MembresiaRol.dueno.value,
         )
     db.commit()
     db.refresh(establecimiento)
