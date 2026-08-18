@@ -122,7 +122,9 @@ def run(base_url: str) -> None:
                 "repetir enlace ficha",
             )
             assert repetido["id"] == enlace["id"]
-            assert enlace["url_publica"].startswith("https://ficha.siberia.solutions/negocio?slug=")
+            assert enlace["url_publica"].startswith(
+                "https://web.negocio.siberia.solutions/negocios/"
+            )
 
             ficha = _expect(
                 client.get(f"{base_url}/v1/negocio/ficha", params={"slug": enlace["slug"]}),
@@ -168,7 +170,10 @@ def run(base_url: str) -> None:
                 201,
                 "crear enlace carta",
             )
-            assert carta["url_publica"].startswith("https://carta.siberia.solutions/carta?slug=")
+            assert carta["url_publica"].startswith(
+                "https://web.negocio.siberia.solutions/negocios/"
+            )
+            assert "seccion=carta" in carta["url_publica"]
             _expect(
                 client.get(f"{base_url}/v1/negocio/carta", params={"slug": carta["slug"]}),
                 200,

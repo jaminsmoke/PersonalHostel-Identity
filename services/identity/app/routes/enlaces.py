@@ -28,7 +28,13 @@ from app.errors import (
     MEMBERSHIP_FORBIDDEN,
     ApiError,
 )
-from app.models import CuentaNegocio, EnlaceEstado, EnlacePublico, Establecimiento
+from app.models import (
+    CuentaNegocio,
+    EnlaceEstado,
+    EnlacePublico,
+    EnlaceTipo,
+    Establecimiento,
+)
 from app.schemas import (
     EnlacePublicoCreateRequest,
     EnlacePublicoResolucion,
@@ -42,8 +48,8 @@ public_router = APIRouter(prefix="/v1/enlaces", tags=["enlaces públicos"])
 
 _TIPO_SLUG_SUFIJO = {"ficha_negocio": "ficha", "carta": "carta"}
 _TIPO_URL_ENV = {
-    "ficha_negocio": "FICHA_NEGOCIO_URL_BASE",
-    "carta": "CARTA_URL_BASE",
+    "ficha_negocio": "WEB_NEGOCIO_URL_BASE",
+    "carta": "WEB_NEGOCIO_URL_BASE",
 }
 
 _UNAUTHORIZED = {
@@ -63,7 +69,8 @@ def _url_publica(tipo: str, slug: str) -> str | None:
     base = os.environ.get(_TIPO_URL_ENV[tipo])
     if not base:
         return None
-    return f"{base.rstrip('/')}?slug={quote(slug)}"
+    seccion = "?seccion=carta" if tipo == EnlaceTipo.carta.value else ""
+    return f"{base.rstrip('/')}/negocios/{quote(slug)}{seccion}"
 
 
 def _respuesta(enlace: EnlacePublico) -> EnlacePublicoResponse:

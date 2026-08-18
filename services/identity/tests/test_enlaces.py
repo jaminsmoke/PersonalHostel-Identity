@@ -218,7 +218,7 @@ def test_crear_enlace_es_idempotente_y_devuelve_url_publica(db_ready, negocio_cl
     assert second.status_code == 200
     assert second.json()["id"] == first.json()["id"]
     assert first.json()["url_publica"] == (
-        f"{os.environ['FICHA_NEGOCIO_URL_BASE']}?slug={first.json()['slug']}"
+        f"{os.environ['WEB_NEGOCIO_URL_BASE']}/negocios/{first.json()['slug']}"
     )
 
     conflict = negocio_client.post(
@@ -248,7 +248,10 @@ def test_rotar_enlace_revoca_anterior_y_crea_sustituto(db_ready, negocio_client)
     assert rotated.status_code == 201
     assert rotated.json()["id"] != original["id"]
     assert rotated.json()["slug"] != original["slug"]
-    assert rotated.json()["url_publica"].startswith(f"{os.environ['CARTA_URL_BASE']}?slug=")
+    assert rotated.json()["url_publica"].startswith(
+        f"{os.environ['WEB_NEGOCIO_URL_BASE']}/negocios/"
+    )
+    assert "seccion=carta" in rotated.json()["url_publica"]
     assert negocio_client.get(f"/v1/enlaces/{original['slug']}").status_code == 410
     assert negocio_client.get(f"/v1/enlaces/{rotated.json()['slug']}").status_code == 200
 
