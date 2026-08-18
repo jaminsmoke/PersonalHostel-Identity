@@ -12,6 +12,7 @@ from app.routes.auth import router as auth_router
 from app.routes.camareros import router as camareros_router
 from app.routes.internal import camareros_internal_router
 from app.routes.keys import router as keys_router
+from app.routes.oficio import router as oficio_router
 
 
 @asynccontextmanager
@@ -49,6 +50,7 @@ if _web_origins:
     )
 
 app.include_router(camareros_router)
+app.include_router(oficio_router)
 app.include_router(auth_router)
 app.include_router(keys_router)
 app.include_router(camareros_internal_router)
