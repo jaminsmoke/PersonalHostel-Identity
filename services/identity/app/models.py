@@ -445,6 +445,9 @@ class Establecimiento(NegocioBase):
     enlaces: Mapped[list[EnlacePublico]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
+    horarios: Mapped[list[HorarioEstablecimiento]] = relationship(
+        back_populates="establecimiento", cascade="all, delete-orphan"
+    )
 
     @property
     def tipo_efectivo(self) -> str | None:
@@ -511,6 +514,49 @@ class ProductoCatalogo(NegocioBase):
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     establecimiento: Mapped[Establecimiento] = relationship(back_populates="productos")
+
+
+class HorarioEstablecimiento(NegocioBase):
+    """Horario semanal de un establecimiento (fuente canónica para la web).
+
+    Un día por fila (lunes=0 … domingo=6). ``cerrado`` marca días sin servicio;
+    ``turnos`` guarda los intervalos ``{abre, cierra}`` en HH:MM como JSON.
+    La validación de forma e invariantes (orden, solapamientos) vive en la capa
+    API (Pydantic), no en la BD.
+    """
+
+    __tablename__ = "horarios_establecimiento"
+    __table_args__ = (
+        CheckConstraint("dia_semana BETWEEN 0 AND 6", name="ck_horarios_dia_semana"),
+        UniqueConstraint(
+            "establecimiento_id",
+            "dia_semana",
+            name="uq_horarios_establecimiento_dia",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    dia_semana: Mapped[int] = mapped_column(Integer, nullable=False)
+    cerrado: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    turnos: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    establecimiento: Mapped[Establecimiento] = relationship(back_populates="horarios")
 
 
 class EnlacePublico(NegocioBase):

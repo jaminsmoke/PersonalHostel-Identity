@@ -35,6 +35,7 @@ NEGOCIO_RUTAS = [
     "/v1/establecimientos/{establecimiento_id}/camareros/buscar",
     "/v1/establecimientos/{establecimiento_id}/invitaciones",
     "/v1/establecimientos/{establecimiento_id}/catalogo",
+    "/v1/establecimientos/{establecimiento_id}/horario",
     "/v1/establecimientos/{establecimiento_id}/enlaces",
     "/v1/establecimientos/{establecimiento_id}/enlaces/{enlace_id}/revocar",
     "/v1/establecimientos/{establecimiento_id}/enlaces/{enlace_id}/rotar",

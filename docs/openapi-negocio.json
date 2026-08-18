@@ -843,6 +843,90 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "HorarioDia": {
+        "description": "Un día de la semana (0=lunes … 6=domingo). ``cerrado`` sin turnos.",
+        "properties": {
+          "cerrado": {
+            "default": false,
+            "title": "Cerrado",
+            "type": "boolean"
+          },
+          "dia_semana": {
+            "examples": [
+              0
+            ],
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Dia Semana",
+            "type": "integer"
+          },
+          "turnos": {
+            "items": {
+              "$ref": "#/components/schemas/TurnoHorario"
+            },
+            "maxItems": 10,
+            "title": "Turnos",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dia_semana"
+        ],
+        "title": "HorarioDia",
+        "type": "object"
+      },
+      "HorarioResponse": {
+        "description": "Horario completo de un establecimiento (ordenado lunes→domingo).",
+        "properties": {
+          "dias": {
+            "items": {
+              "$ref": "#/components/schemas/HorarioDia"
+            },
+            "title": "Dias",
+            "type": "array"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "required": [
+          "establecimiento_id"
+        ],
+        "title": "HorarioResponse",
+        "type": "object"
+      },
+      "HorarioUpdateRequest": {
+        "description": "Reemplazo completo del horario semanal de un establecimiento.",
+        "properties": {
+          "dias": {
+            "items": {
+              "$ref": "#/components/schemas/HorarioDia"
+            },
+            "maxItems": 7,
+            "title": "Dias",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dias"
+        ],
+        "title": "HorarioUpdateRequest",
+        "type": "object"
+      },
       "InvitacionAcceptResponse": {
         "properties": {
           "invitacion_id": {
@@ -1831,6 +1915,33 @@
         "title": "SupresionResponse",
         "type": "object"
       },
+      "TurnoHorario": {
+        "description": "Intervalo de apertura/cierre en HH:MM (mismo día, sin cruce de medianoche).",
+        "properties": {
+          "abre": {
+            "examples": [
+              "10:00"
+            ],
+            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+            "title": "Abre",
+            "type": "string"
+          },
+          "cierra": {
+            "examples": [
+              "16:00"
+            ],
+            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+            "title": "Cierra",
+            "type": "string"
+          }
+        },
+        "required": [
+          "abre",
+          "cierra"
+        ],
+        "title": "TurnoHorario",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -1895,6 +2006,20 @@
             "format": "uuid",
             "title": "Establecimiento Id",
             "type": "string"
+          },
+          "horario": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/HorarioDia"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Horario"
           },
           "logo_url": {
             "anyOf": [
@@ -3536,6 +3661,170 @@
         "summary": "Rotar Enlace",
         "tags": [
           "enlaces públicos"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/horario": {
+      "get": {
+        "operationId": "obtener_horario_v1_establecimientos__establecimiento_id__horario_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HorarioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Horario",
+        "tags": [
+          "horario"
+        ]
+      },
+      "patch": {
+        "operationId": "actualizar_horario_v1_establecimientos__establecimiento_id__horario_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HorarioUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HorarioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Actualizar Horario",
+        "tags": [
+          "horario"
         ]
       }
     },

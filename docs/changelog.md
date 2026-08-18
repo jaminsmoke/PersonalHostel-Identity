@@ -31,6 +31,29 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
   Commander lo exige en el alta. `PATCH /v1/camareros/me` lo actualiza. Login, `/me`
   y búsqueda por email lo exponen.
 
+- **Horario semanal del establecimiento** (fuente canónica para la web): tabla
+  `horarios_establecimiento` (un día por fila, `cerrado` y turnos `{abre, cierra}`),
+  `GET/PATCH /v1/establecimientos/{id}/horario` con JWT de negocio y validación
+  estricta (HH:MM, `abre < cierra`, sin solapamientos, días no repetidos), y
+  exposición en `GET /v1/negocio/web`. La sincronización con Bar queda diferida
+  a su ítem (protocolo `OperacionSync` existente).
+  ([#109](https://github.com/jaminsmoke/PersonalHostel-Server/issues/109), API)
+
+- **Horario en la web pública de cada negocio**: la plantilla de `web-negocio`
+  muestra la sección "Horario" con agrupación de días contiguos ("Lunes a Viernes
+  10:00–16:00"), turnos múltiples separados con "y", "Cerrado" en días cerrados y
+  sin sección cuando el negocio no tiene horario. Accesible (`time` + `aria-label`)
+  y con ancla `?seccion=horario`.
+  ([#110](https://github.com/jaminsmoke/PersonalHostel-Server/issues/110), API)
+
+### Corregido
+
+- **Validación aislada en VPS** desbloqueada: `ruff format --check` fallaba por
+  `__pycache__` con permisos de root en el checkout del VPS (bind mount de
+  `identity-tests`). Se añade `PYTHONDONTWRITEBYTECODE=1` al Dockerfile para
+  impedir la generación de `__pycache__` en runtime.
+  (ítem Detectado `PVTI_lAHOBM87Yc4BgQqZzg3DUyQ`, Build/CI)
+
 ### Cambiado
 
 - **Base de calidad CI** con contrato único en `pyproject.toml`, Ruff, cobertura

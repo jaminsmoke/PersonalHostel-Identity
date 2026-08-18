@@ -609,6 +609,68 @@ class CartaPublicaResponse(BaseModel):
     categorias: list[CategoriaCartaPublica]
 
 
+def _minutos(hhmm: str) -> int:
+    """HH:MM → minutos desde medianoche (validación de orden y solapamientos)."""
+
+    horas, minutos = hhmm.split(":")
+    return int(horas) * 60 + int(minutos)
+
+
+class TurnoHorario(BaseModel):
+    """Intervalo de apertura/cierre en HH:MM (mismo día, sin cruce de medianoche)."""
+
+    abre: str = Field(..., pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$", examples=["10:00"])
+    cierra: str = Field(..., pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$", examples=["16:00"])
+
+    @model_validator(mode="after")
+    def _turno_valido(self) -> TurnoHorario:
+        if _minutos(self.cierra) <= _minutos(self.abre):
+            raise ValueError("El turno debe abrir antes de cerrar")
+        return self
+
+
+class HorarioDia(BaseModel):
+    """Un día de la semana (0=lunes … 6=domingo). ``cerrado`` sin turnos."""
+
+    dia_semana: int = Field(..., ge=0, le=6, examples=[0])
+    cerrado: bool = False
+    turnos: list[TurnoHorario] = Field(default_factory=list, max_length=10)
+
+    @model_validator(mode="after")
+    def _dia_valido(self) -> HorarioDia:
+        if self.cerrado:
+            if self.turnos:
+                raise ValueError("Un día cerrado no puede tener turnos")
+            return self
+        if not self.turnos:
+            raise ValueError("Un día abierto requiere al menos un turno")
+        turnos = sorted(self.turnos, key=lambda t: _minutos(t.abre))
+        for anterior, actual in zip(turnos, turnos[1:], strict=False):
+            if _minutos(actual.abre) < _minutos(anterior.cierra):
+                raise ValueError("Los turnos de un mismo día no pueden solaparse")
+        return self
+
+
+class HorarioUpdateRequest(BaseModel):
+    """Reemplazo completo del horario semanal de un establecimiento."""
+
+    dias: list[HorarioDia] = Field(..., max_length=7)
+
+    @model_validator(mode="after")
+    def _dias_no_repetidos(self) -> HorarioUpdateRequest:
+        if len({d.dia_semana for d in self.dias}) != len(self.dias):
+            raise ValueError("No se puede repetir un día de la semana")
+        return self
+
+
+class HorarioResponse(BaseModel):
+    """Horario completo de un establecimiento (ordenado lunes→domingo)."""
+
+    establecimiento_id: uuid.UUID
+    dias: list[HorarioDia] = Field(default_factory=list)
+    updated_at: datetime | None = None
+
+
 class WebNegocioPublica(BaseModel):
     """Datos de la web pública del establecimiento (ficha + carta)."""
 
@@ -618,6 +680,7 @@ class WebNegocioPublica(BaseModel):
     logo_url: str | None = None
     organizacion_nombre: str
     categorias: list[CategoriaCartaPublica] = Field(default_factory=list)
+    horario: list[HorarioDia] | None = None
 
 
 class JornadaIniciarRequest(BaseModel):
