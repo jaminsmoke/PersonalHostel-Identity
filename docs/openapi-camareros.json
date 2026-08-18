@@ -497,6 +497,66 @@
         "title": "InvitacionRechazarResponse",
         "type": "object"
       },
+      "JornadaIniciarRequest": {
+        "description": "Establecimiento donde el camarero abre su jornada.",
+        "properties": {
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "establecimiento_id"
+        ],
+        "title": "JornadaIniciarRequest",
+        "type": "object"
+      },
+      "JornadaResponse": {
+        "description": "Intervalo de jornada (abierta o cerrada).",
+        "properties": {
+          "camarero_id": {
+            "format": "uuid",
+            "title": "Camarero Id",
+            "type": "string"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "fin": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fin"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "inicio": {
+            "format": "date-time",
+            "title": "Inicio",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "camarero_id",
+          "establecimiento_id",
+          "inicio"
+        ],
+        "title": "JornadaResponse",
+        "type": "object"
+      },
       "LoginRequest": {
         "description": "Credenciales para recuperar la sesión y el QR tras reinstalar.",
         "properties": {
@@ -892,6 +952,69 @@
         "title": "RegistroResponse",
         "type": "object"
       },
+      "ResumenOficioResponse": {
+        "description": "Resumen del libro de oficio del camarero en una ventana.",
+        "properties": {
+          "desde": {
+            "format": "date-time",
+            "title": "Desde",
+            "type": "string"
+          },
+          "hasta": {
+            "format": "date-time",
+            "title": "Hasta",
+            "type": "string"
+          },
+          "horas_segundos": {
+            "title": "Horas Segundos",
+            "type": "integer"
+          },
+          "mesas_servidas": {
+            "title": "Mesas Servidas",
+            "type": "integer"
+          },
+          "por_establecimiento": {
+            "items": {
+              "$ref": "#/components/schemas/ResumenPorEstablecimiento"
+            },
+            "title": "Por Establecimiento",
+            "type": "array"
+          }
+        },
+        "required": [
+          "desde",
+          "hasta",
+          "horas_segundos",
+          "mesas_servidas"
+        ],
+        "title": "ResumenOficioResponse",
+        "type": "object"
+      },
+      "ResumenPorEstablecimiento": {
+        "description": "Agregado de oficio de un establecimiento en la ventana.",
+        "properties": {
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "horas_segundos": {
+            "title": "Horas Segundos",
+            "type": "integer"
+          },
+          "mesas_servidas": {
+            "title": "Mesas Servidas",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "establecimiento_id",
+          "horas_segundos",
+          "mesas_servidas"
+        ],
+        "title": "ResumenPorEstablecimiento",
+        "type": "object"
+      },
       "RevocarRequest": {
         "description": "Motivo opcional de la revocación.",
         "properties": {
@@ -929,6 +1052,45 @@
           "status"
         ],
         "title": "RevocarResponse",
+        "type": "object"
+      },
+      "ServicioInternalRequest": {
+        "properties": {
+          "cantidad": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Cantidad",
+            "type": "integer"
+          },
+          "data_origin": {
+            "default": "real",
+            "maxLength": 20,
+            "title": "Data Origin",
+            "type": "string"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "evento_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Evento Id",
+            "type": "string"
+          },
+          "tipo": {
+            "default": "mesa_servida",
+            "maxLength": 50,
+            "title": "Tipo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "establecimiento_id",
+          "evento_id"
+        ],
+        "title": "ServicioInternalRequest",
         "type": "object"
       },
       "SupresionRequest": {
@@ -1362,6 +1524,61 @@
           }
         },
         "summary": "Internal Perfil",
+        "tags": [
+          "internal"
+        ]
+      }
+    },
+    "/internal/camareros/{camarero_id}/servicios": {
+      "post": {
+        "operationId": "internal_registrar_servicio_internal_camareros__camarero_id__servicios_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "camarero_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Camarero Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServicioInternalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Internal Registrar Servicio Internal Camareros  Camarero Id  Servicios Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Internal Registrar Servicio",
         "tags": [
           "internal"
         ]
@@ -2159,6 +2376,214 @@
         ]
       }
     },
+    "/v1/camareros/me/jornadas": {
+      "get": {
+        "operationId": "listar_jornadas_v1_camareros_me_jornadas_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "desde",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Desde"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hasta",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JornadaResponse"
+                  },
+                  "title": "Response Listar Jornadas V1 Camareros Me Jornadas Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar Jornadas",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/me/jornadas/cortar": {
+      "post": {
+        "operationId": "cortar_jornada_v1_camareros_me_jornadas_cortar_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JornadaResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cortar Jornada",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/me/jornadas/iniciar": {
+      "post": {
+        "operationId": "iniciar_jornada_v1_camareros_me_jornadas_iniciar_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JornadaIniciarRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JornadaResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Iniciar Jornada",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
     "/v1/camareros/me/password": {
       "post": {
         "operationId": "cambiar_password_v1_camareros_me_password_post",
@@ -2292,6 +2717,88 @@
           }
         ],
         "summary": "Renovar",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/me/resumen": {
+      "get": {
+        "operationId": "resumen_oficio_v1_camareros_me_resumen_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "desde",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Desde"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hasta",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumenOficioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resumen Oficio",
         "tags": [
           "camareros"
         ]

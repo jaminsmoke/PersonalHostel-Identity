@@ -1714,6 +1714,93 @@
         "title": "ResolverConflictoRequest",
         "type": "object"
       },
+      "ServicioRegistroRequest": {
+        "description": "Evento de servicio que registra Bar (idempotente por ``evento_id``).",
+        "properties": {
+          "camarero_id": {
+            "format": "uuid",
+            "title": "Camarero Id",
+            "type": "string"
+          },
+          "cantidad": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Cantidad",
+            "type": "integer"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "evento_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Evento Id",
+            "type": "string"
+          },
+          "tipo": {
+            "default": "mesa_servida",
+            "maxLength": 50,
+            "title": "Tipo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "establecimiento_id",
+          "camarero_id",
+          "evento_id"
+        ],
+        "title": "ServicioRegistroRequest",
+        "type": "object"
+      },
+      "ServicioRegistroResponse": {
+        "description": "Resultado del registro de un evento de servicio.",
+        "properties": {
+          "camarero_id": {
+            "format": "uuid",
+            "title": "Camarero Id",
+            "type": "string"
+          },
+          "cantidad": {
+            "title": "Cantidad",
+            "type": "integer"
+          },
+          "duplicado": {
+            "title": "Duplicado",
+            "type": "boolean"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "evento_id": {
+            "title": "Evento Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "tipo": {
+            "title": "Tipo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "camarero_id",
+          "establecimiento_id",
+          "evento_id",
+          "tipo",
+          "cantidad",
+          "duplicado"
+        ],
+        "title": "ServicioRegistroResponse",
+        "type": "object"
+      },
       "SupresionNegocioRequest": {
         "properties": {
           "password": {
@@ -5311,6 +5398,82 @@
         "summary": "Carta Negocio",
         "tags": [
           "negocio público"
+        ]
+      }
+    },
+    "/v1/negocio/estadisticas/servicio": {
+      "post": {
+        "operationId": "registrar_servicio_v1_negocio_estadisticas_servicio_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServicioRegistroRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServicioRegistroResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Registrar Servicio",
+        "tags": [
+          "estadisticas"
         ]
       }
     },
