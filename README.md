@@ -90,8 +90,9 @@ migrar y termina comprobando health/meta de los dos servicios.
   fotos y manifiesto SHA-256; conserva siete días sin borrar nunca el último
   conjunto válido. `backup_restore.py restore-drill` solo admite bases con
   sufijo `_restore_test`, valida referencias/fotos y elimina las copias al
-  terminar. La recuperación externa cifrada se activa únicamente tras elegir
-  y aprobar el proveedor (ver `security/backups.md`).
+  terminar. La copia externa aprobada usa Cloudflare R2 + restic, pero permanece
+  apagada hasta completar el bootstrap, la descarga verificada y la custodia
+  separada de la clave (ver `security/backups.md`).
 - Caddyfile: bloques `reverse_proxy` en `/etc/caddy/Caddyfile` (la landing queda intacta): `:8080` camareros, `:8082` negocio, `:8083` `web.negocio`, `:8084` `web.camareros`. Los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 (`/ficha?qr=` → `web.camareros…/camareros?qr=`; `/negocio` y `/carta` → `web.negocio`).
 
 ### Observabilidad en el VPS (staging/producción)
@@ -106,7 +107,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml \
 
 - Piezas: **Prometheus** (métricas + reglas de alerta), **Grafana** (dashboards), **Loki + Promtail** (logs de contenedores), **node_exporter** (host), **postgres_exporter** (BD) y **Alertmanager** (email).
 - Acceso: Grafana en `https://grafana.siberia.solutions` con `basic_auth` de Caddy + login propio. `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` viven en `.env`.
-- Alertas: `up == 0`, 5xx, Postgres caído, CPU alta y disco bajo → email a `ALERTMANAGER_ROUTE_TO` (usa el SMTP de `EMAIL_*`).
+- Alertas: `up == 0`, 5xx, Postgres caído, CPU alta, disco bajo y backup R2 ausente/antiguo → email a `ALERTMANAGER_ROUTE_TO` (usa el SMTP de `EMAIL_*`).
 - Smoke sintético (no load test):
   ```bash
   CAMAREROS_API_URL=https://camareros.siberia.solutions \

@@ -4,4 +4,9 @@ set -euo pipefail
 umask 077
 
 cd /opt/identity || exit 1
-exec python3 services/identity/scripts/backup_restore.py backup
+python3 services/identity/scripts/backup_restore.py backup
+python3 services/identity/scripts/offsite_backup.py publish-metrics
+
+if grep -q '^OFFSITE_BACKUP_ENABLED=true$' .env; then
+    python3 services/identity/scripts/offsite_backup.py upload
+fi

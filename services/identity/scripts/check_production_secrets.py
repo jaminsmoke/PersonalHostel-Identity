@@ -48,6 +48,13 @@ class SecretError(StrEnum):
     GRAFANA_DEFAULT = "GRAFANA_ADMIN_PASSWORD: coincide con un default conocido"
     GRAFANA_SHORT = "GRAFANA_ADMIN_PASSWORD: longitud insuficiente"
     NON_REAL_DATA = "ALLOW_NON_REAL_DATA: debe ser false en producción"
+    R2_ACCOUNT_MISSING = "R2_ACCOUNT_ID: requerido cuando el backup externo está activo"
+    R2_BUCKET_MISSING = "R2_BUCKET: requerido cuando el backup externo está activo"
+    R2_ACCESS_MISSING = "R2_ACCESS_KEY_ID: requerido cuando el backup externo está activo"
+    R2_SECRET_MISSING = "R2_SECRET_ACCESS_KEY: requerido cuando el backup externo está activo"
+    RESTIC_PASSWORD_FILE_MISSING = (
+        "RESTIC_PASSWORD_FILE: requerido cuando el backup externo está activo"
+    )
 
 
 MISSING_ERRORS = {
@@ -124,6 +131,17 @@ def validate_production_secrets(
         errors.append(SecretError.QR_FORMAT)
     if values.get("ALLOW_NON_REAL_DATA", "").lower() != "false":
         errors.append(SecretError.NON_REAL_DATA)
+    if values.get("OFFSITE_BACKUP_ENABLED", "").lower() == "true":
+        offsite_required = {
+            "R2_ACCOUNT_ID": SecretError.R2_ACCOUNT_MISSING,
+            "R2_BUCKET": SecretError.R2_BUCKET_MISSING,
+            "R2_ACCESS_KEY_ID": SecretError.R2_ACCESS_MISSING,
+            "R2_SECRET_ACCESS_KEY": SecretError.R2_SECRET_MISSING,
+            "RESTIC_PASSWORD_FILE": SecretError.RESTIC_PASSWORD_FILE_MISSING,
+        }
+        for key, error in offsite_required.items():
+            if not values.get(key):
+                errors.append(error)
     return errors
 
 

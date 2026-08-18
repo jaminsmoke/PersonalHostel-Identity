@@ -64,11 +64,34 @@ archivos exactos del volumen. La cuarentena permite recuperación manual.
 7. Aplicar migraciones, arrancar servicios y comprobar health/meta y HTTPS.
 8. Restaurar Caddy, cron, observabilidad y DNS; confirmar el RPO real.
 
-## Puerta para copia externa
+## Copia externa aprobada: Cloudflare R2 + restic
 
-No hay proveedor ni credenciales configurados en este cambio. Antes de activar
-el Hito B se compararán almacenamiento S3 compatible u otra copia externa por
-región, coste, durabilidad, inmutabilidad, egress y recuperación. Requisitos no
-negociables: cifrado en el VPS antes de transferir, clave fuera del proveedor,
-credencial de mínimo privilegio, checksum tras descarga, 30 días de retención y
-alerta de antigüedad superior a 26–30 horas. PITR/WAL queda como evolución.
+R2 Standard aporta API S3, 10 GB-mes y egress gratuitos para el volumen inicial.
+`restic` 0.19.1 se instala desde el artefacto oficial fijado y su SHA-256 se
+comprueba con `install_restic.sh`. Restic cifra y autentica localmente antes de
+transferir; Cloudflare solo recibe ciphertext.
+
+Bootstrap, una única vez y después de crear el bucket/token:
+
+1. Crear un bucket privado dedicado y un token limitado a lectura/escritura de
+   ese bucket. No reutilizar el token global de Cloudflare.
+2. Generar una contraseña restic aleatoria y larga. Guardar la copia maestra en
+   el custodio personal cifrado, fuera de Cloudflare y del VPS.
+3. Crear `/opt/identity/.restic-password` como `root:root 0600`; es la copia
+   operacional necesaria para el cron.
+4. Añadir las variables R2 al `.env` mediante edición atómica, manteniendo
+   `OFFSITE_BACKUP_ENABLED=false`.
+5. Ejecutar `install_restic.sh`, después `offsite_backup.py init`, subir el
+   último conjunto y ejecutar `verify-download`.
+6. Solo tras una descarga verificada cambiar `OFFSITE_BACKUP_ENABLED=true`.
+
+Cada backup diario sube el último conjunto completo con la etiqueta
+`personalhostel-daily`, conserva 30 copias diarias y actualiza un estado local
+sanitizado. También publica únicamente el timestamp de éxito mediante el
+textfile collector de `node_exporter`: Alertmanager avisa si falta o supera 30
+horas. `freshness --max-hours 30` permite la misma comprobación manual. Nunca se
+imprimen endpoint con credenciales, secretos, rutas de fotos ni filas.
+
+La recuperación externa requiere la contraseña restic maestra y una credencial
+R2 de lectura. Si se pierde la contraseña, los objetos son irrecuperables. PITR
+y WAL continúan como evolución fuera de este alcance.
