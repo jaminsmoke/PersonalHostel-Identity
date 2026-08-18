@@ -3,10 +3,8 @@
 
   const apiBase = (window.IDENTITY_API_URL || "http://localhost:8080").replace(/\/+$/, "");
   const camarerosApiBase = (window.CAMAREROS_API_URL || "http://localhost:8080").replace(/\/+$/, "");
-  const negocioApiBase = (window.NEGOCIO_API_URL || "http://localhost:8082").replace(/\/+$/, "");
 
   const qr = new URLSearchParams(window.location.search).get("qr");
-  const slug = new URLSearchParams(window.location.search).get("slug");
   const path = window.location.pathname.replace(/^\/+/, "").replace(/\/+$/, "");
   const segments = path.split("/");
   const token = segments.length === 2 && segments[0] === "invitaciones" ? segments[1] : null;
@@ -62,55 +60,6 @@
       '<p class="edit-hint">¿Es tu cuenta? Edítala en tu app (Personal Comander).</p>';
   }
 
-  function renderFichaNegocio(ficha) {
-    document.title = (ficha.nombre || "Negocio") + " — Personal Hostel";
-    output.className = "output ok";
-
-    const logo = ficha.logo_url
-      ? '<img class="logo" src="' + esc(negocioApiBase + ficha.logo_url) + '" alt="Logo de ' + esc(ficha.nombre) + '" />'
-      : '<div class="logo logo-empty">' + esc((ficha.nombre || "?").charAt(0).toUpperCase()) + "</div>";
-
-    const tipo = ficha.tipo_establecimiento
-      ? '<p class="tipo">' + esc(ficha.tipo_establecimiento) + "</p>"
-      : "";
-
-    const organizacion = ficha.organizacion_nombre && ficha.organizacion_nombre !== ficha.nombre
-      ? '<p class="organizacion">' + esc(ficha.organizacion_nombre) + "</p>"
-      : "";
-
-    output.innerHTML =
-      '<p class="brand">Personal Hostel — Ficha del negocio</p>' +
-      logo +
-      '<p class="status">' + esc(ficha.nombre) + "</p>" +
-      tipo +
-      organizacion;
-  }
-
-  function formatPrecio(centimos, moneda) {
-    var simbolo = moneda === "EUR" ? "€" : moneda;
-    return (Number(centimos) / 100).toFixed(2) + " " + simbolo;
-  }
-
-  function renderCarta(carta) {
-    document.title = (carta.nombre || "Carta") + " — Personal Hostel";
-    document.querySelector("main").className = "card wide";
-    output.className = "output ok";
-
-    var bloques = (carta.categorias || []).map(function (cat) {
-      var items = (cat.productos || []).map(function (p) {
-        return '<li class="producto"><span>' + esc(p.nombre) +
-          '</span><span class="precio">' + esc(formatPrecio(p.precio_centimos, p.moneda)) + "</span></li>";
-      }).join("");
-      return '<section class="categoria"><h2>' + esc(cat.nombre) +
-        '</h2><ul class="productos">' + items + "</ul></section>";
-    }).join("");
-
-    output.innerHTML =
-      '<p class="brand">Personal Hostel — Carta</p>' +
-      '<p class="status">' + esc(carta.nombre) + "</p>" +
-      (bloques || '<p class="detail">No hay productos disponibles en este momento.</p>');
-  }
-
   if (qr) {
     fetch(camarerosApiBase + "/v1/camareros/ficha?qr=" + encodeURIComponent(qr), {
       headers: { "Accept": "application/json" },
@@ -142,52 +91,9 @@
     return;
   }
 
-  function errorPublico(status, code) {
-    if (code === "identity.enlace_no_encontrado" || status === 404) {
-      render("err", "❓", "Enlace no encontrado",
-        "No existe un enlace público con ese código. Comprueba que el enlace está completo.");
-    } else if (code === "identity.enlace_revocado" || status === 410) {
-      render("err", "🚫", "Enlace no disponible",
-        "Este enlace ya no está activo. Pide al negocio su enlace actualizado.");
-    } else {
-      render("err", "⚠️", "No se ha podido cargar",
-        "Ocurrió un error. Inténtalo de nuevo más tarde.");
-    }
-  }
-
-  function cargarPublico(url, okHandler) {
-    fetch(url, { headers: { "Accept": "application/json" } })
-      .then(function (res) {
-        return res.json().catch(function () { return {}; }).then(function (body) {
-          return { status: res.status, body: body };
-        });
-      })
-      .then(function (out) {
-        if (out.status === 200) {
-          okHandler(out.body);
-        } else {
-          errorPublico(out.status, (out.body && out.body.code) || "");
-        }
-      })
-      .catch(function () {
-        render("err", "🔌", "Sin conexión",
-          "No se ha podido conectar con el servicio. Inténtalo de nuevo en unos segundos.");
-      });
-  }
-
-  if (path === "negocio" && slug) {
-    cargarPublico(negocioApiBase + "/v1/negocio/ficha?slug=" + encodeURIComponent(slug), renderFichaNegocio);
-    return;
-  }
-
-  if (path === "carta" && slug) {
-    cargarPublico(negocioApiBase + "/v1/negocio/carta?slug=" + encodeURIComponent(slug), renderCarta);
-    return;
-  }
-
   if (!token) {
     render("err", "⚠️", "Enlace inválido",
-      "Esta dirección no corresponde a una ficha, carta o invitación de Personal Hostel.");
+      "Esta dirección no corresponde a una ficha o invitación de Personal Hostel.");
     return;
   }
 

@@ -280,16 +280,21 @@ Cada camarero controla qué campos de su ficha son **públicos**. Por defecto so
 ### Web de ficha pública
 
 `identity-web` (SPA vanilla, nginx) sirve, además de `/invitaciones/<token>`,
-las páginas públicas:
+la página pública:
 
 - `/ficha?qr=<phid1>` — ficha pública del camarero: tarjeta completa según
   visibilidad (nombre, apellidos, nick, email, teléfono, dirección, ciudad y
   foto opt-in). Staging: `https://ficha.siberia.solutions`. Origen autorizado
   por CORS en el servicio de camareros (`IDENTITY_WEB_ORIGIN`); base configurada
   con `FICHA_URL_BASE`.
-- `/negocio?slug=<slug>` y `/carta?slug=<slug>` — páginas legadas de ficha y
-  carta públicas que esta web sigue sirviendo; la superficie canónica vive en
-  `web.negocio.siberia.solutions` (ver abajo).
+
+Compatibilidad con los dominios históricos: las rutas de negocio que esta web
+sirvió como páginas legadas (`/negocio?slug=` y `/carta?slug=`) se retiraron.
+Los dominios `ficha.siberia.solutions` y `carta.siberia.solutions` responden un
+**301** a la superficie canónica de negocio (`web.negocio.siberia.solutions`,
+ver abajo) para que los QR emitidos antes de la migración sigan funcionando;
+el plazo de convivencia es de 6 meses desde el despliegue o hasta confirmar que
+no quedan QR impresos en uso.
 
 ### Web pública de negocios (`web-negocio`)
 
