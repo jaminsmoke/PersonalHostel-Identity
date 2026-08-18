@@ -13,7 +13,10 @@ import tempfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from backup_restore import BACKUP_ROOT, BackupError, latest_set, verify_manifest
+try:
+    from scripts.backup_restore import BACKUP_ROOT, BackupError, latest_set, verify_manifest
+except ModuleNotFoundError:  # ejecución directa desde services/identity/scripts
+    from backup_restore import BACKUP_ROOT, BackupError, latest_set, verify_manifest
 
 ROOT = Path("/opt/identity")
 ENV_FILE = ROOT / ".env"
