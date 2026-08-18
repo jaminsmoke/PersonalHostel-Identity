@@ -76,7 +76,7 @@ en el `.env` remoto sin mostrar secretos, crea un backup de ambas BD antes de
 migrar y termina comprobando health/meta de los dos servicios.
 
 - Backup diario: `services/identity/scripts/backup_staging.sh` (cron en el VPS; dumps de ambas BD a `/opt/identity/backups`, retención 7 días).
-- Caddyfile: bloques `reverse_proxy 127.0.0.1:8080` (camareros), `:8082` (negocio) y `:8081` (web — invitaciones, ficha y carta) añadidos a `/etc/caddy/Caddyfile` (la landing queda intacta).
+- Caddyfile: bloques `reverse_proxy` en `/etc/caddy/Caddyfile` (la landing queda intacta): `:8080` camareros, `:8082` negocio, `:8081` invitaciones (`invitaciones.siberia.solutions`), `:8083` `web.negocio`, `:8084` `web.camareros`. Los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 (`/ficha?qr=` → `web.camareros…/camareros?qr=`; `/negocio` y `/carta` → `web.negocio`).
 
 ### Observabilidad en el VPS (staging/producción)
 

@@ -31,8 +31,8 @@ services:
       INTERNAL_TRANSPORT: http
       NEGOCIO_INTERNAL_URL: http://identity-negocio:8080
       ALLOW_NON_REAL_DATA: ${ALLOW_NON_REAL_DATA:-true}
-      IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:8081}
-      FICHA_URL_BASE: ${FICHA_URL_BASE:-http://localhost:8081}
+      IDENTITY_WEB_ORIGIN: ${IDENTITY_WEB_ORIGIN:-http://localhost:8081,http://localhost:8084}
+      FICHA_URL_BASE: ${FICHA_URL_BASE:-http://localhost:8084}
     volumes:
       - fotos:/app/data/fotos
     depends_on:
