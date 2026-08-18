@@ -18,7 +18,7 @@ RUN groupadd --gid 10001 identity \
 FROM app AS test
 
 USER root
-COPY requirements-dev.txt pyproject.toml ./
+COPY requirements-dev.txt requirements-deploy.txt pyproject.toml ./
 RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY tests ./tests
 
