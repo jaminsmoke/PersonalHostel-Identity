@@ -149,6 +149,14 @@ volumen o bind mount heredado y deben completar antes del consumidor. La segunda
 permite que la validación Docker del VPS escriba JUnit y cobertura sin ejecutar
 la suite como root.
 
+Python tampoco escribe `__pycache__` en el checkout (ítem #112, cerrado): la
+guarda `PYTHONDONTWRITEBYTECODE=1` está en el Dockerfile (contenedor, cualquier
+usuario), en `backup_staging.sh` (python3 del host: backup/offsite) y en los
+comandos host-side de `deploy_staging.py` (`--backup-restore-drill`,
+`--quarantine-orphan-photos`). Un `__pycache__` con permisos de root en el
+checkout del VPS rompía `ruff format --check` del runner aislado porque
+`identity-tests` monta `./services/identity:/app` como bind mount.
+
 - `GET /health` → `{ "ok": true }`
 - `GET /v1/meta` → servicio, rol `identity`, `status: schema`
 - `GET /openapi.json` y `/docs` → spec del contrato `/v1`
@@ -548,7 +556,9 @@ Same family as Commander: public MIT. Do not put paid premium code in this publi
 Ver `README.md`. Desde esta carpeta, la verificación oficial es
 `python services/identity/scripts/deploy_staging.py --ref <rama> --validate-only`;
 ejecuta calidad, contrato, suite y migraciones reversibles en Docker sobre las
-BD `_test` del VPS, sin usar Docker local ni las BD activas.
+BD `_test` del VPS, sin usar Docker local ni las BD activas. El runner no falla
+por `__pycache__` root: la guarda `PYTHONDONTWRITEBYTECODE` está completa
+(Dockerfile, `backup_staging.sh` y `deploy_staging.py`; ítem #112).
 
 ## Observabilidad (solo staging/producción)
 
