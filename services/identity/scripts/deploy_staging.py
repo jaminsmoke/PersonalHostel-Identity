@@ -93,7 +93,7 @@ def ensure_staging_public_urls(client: paramiko.SSHClient) -> bool:
     temp_path = f"{path}.deploy-tmp"
     sftp = client.open_sftp()
     try:
-        stat = sftp.stat(path)
+        sftp.stat(path)
         with sftp.open(path, "r") as source:
             raw = source.read()
         text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
