@@ -73,3 +73,27 @@ def test_text_validation_detects_duplicate_required_key():
     text += f"\nSESSION_SECRET={values['SESSION_SECRET']}\n"
 
     assert "SESSION_SECRET: definición duplicada" in validate_env_text(text)
+
+
+def test_offsite_secrets_are_required_only_when_enabled():
+    values = valid_values()
+    values["OFFSITE_BACKUP_ENABLED"] = "true"
+
+    errors = validate_production_secrets(values)
+
+    assert "R2_ACCOUNT_ID: requerido cuando el backup externo está activo" in errors
+    assert "R2_BUCKET: requerido cuando el backup externo está activo" in errors
+    assert "R2_ACCESS_KEY_ID: requerido cuando el backup externo está activo" in errors
+    assert "R2_SECRET_ACCESS_KEY: requerido cuando el backup externo está activo" in errors
+    assert "RESTIC_PASSWORD_FILE: requerido cuando el backup externo está activo" in errors
+
+    values.update(
+        {
+            "R2_ACCOUNT_ID": "account",
+            "R2_BUCKET": "bucket",
+            "R2_ACCESS_KEY_ID": "access",
+            "R2_SECRET_ACCESS_KEY": "secret",
+            "RESTIC_PASSWORD_FILE": "/opt/identity/.restic-password",
+        }
+    )
+    assert validate_production_secrets(values) == []

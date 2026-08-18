@@ -52,3 +52,24 @@ groups:
         annotations:
           summary: "Disco bajo en {{ $labels.instance }}"
           description: "Menos del 10% de disco libre en /."
+
+      - alert: OffsiteBackupMissing
+        expr: absent(personalhostel_offsite_backup_enabled)
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No hay evidencia de una copia externa válida"
+          description: "node_exporter no encuentra la métrica del último backup R2 verificado."
+
+      - alert: OffsiteBackupStale
+        expr: |
+          personalhostel_offsite_backup_enabled == 1
+          and
+          time() - personalhostel_offsite_backup_last_success_timestamp_seconds > 108000
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "La copia externa supera 30 horas"
+          description: "El último backup cifrado confirmado en R2 ha superado el RPO operativo."
