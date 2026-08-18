@@ -94,12 +94,12 @@ def test_web_negocio_resuelve_slug_de_ficha_y_devuelve_ficha_mas_carta(db_ready,
     assert body["organizacion_nombre"] == "Negocio Web"
     assert body["categorias"] == [
         {
-            "nombre": "Cocina",
-            "productos": [{"nombre": "Tortilla", "precio_centimos": 450, "moneda": "EUR"}],
-        },
-        {
             "nombre": "Cafés",
             "productos": [{"nombre": "Café solo", "precio_centimos": 150, "moneda": "EUR"}],
+        },
+        {
+            "nombre": "Cocina",
+            "productos": [{"nombre": "Tortilla", "precio_centimos": 450, "moneda": "EUR"}],
         },
     ]
     assert "email" not in body
