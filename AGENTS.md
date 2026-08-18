@@ -103,7 +103,7 @@ PersonalHosteleriaServer/
 ├── services/identity-web/    # página de invitaciones (nginx + SPA vanilla, :8081)
 │   ├── Dockerfile
 │   ├── nginx.conf
-│   ├── 20-identity-web.sh    # genera config.js en runtime (IDENTITY/CAMAREROS/NEGOCIO_API_URL)
+│   ├── 20-identity-web.sh    # genera config.js en runtime (IDENTITY/CAMAREROS_API_URL)
 │   └── static/               # index.html, style.css, app.js
 ├── services/web-negocio/     # web pública de negocios (nginx + SPA vanilla, :8083)
 │   ├── Dockerfile
@@ -180,7 +180,7 @@ Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores l
 
 El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>`, **estable** entre reinstalaciones. La foto no viaja en el QR. Las respuestas que devuelven `qr` incluyen también `ficha_url` (`FICHA_URL_BASE` + `/ficha?qr=`), y la verificación acepta tanto `phid1:...` como la URL `https://...?qr=phid1:...`. La web pública de la ficha (`identity-web`, ruta `/ficha?qr=`) vive en `ficha.siberia.solutions`; el servicio de camareros autoriza su origen por CORS (`IDENTITY_WEB_ORIGIN`).
 
-`identity-web` también sirve las **páginas legadas** de la ficha (`/negocio?slug=`) y la carta (`/carta?slug=`) del establecimiento. La superficie canónica de ambas es la **web pública de negocios** `web-negocio` (`web.negocio.siberia.solutions/negocios/<slug>`, SPA vanilla en `services/web-negocio`, puerto dev `:8083`): renderiza la ficha como credencial y la carta como sección con una plantilla por `tipo_efectivo` y el rebranding del logo/colores del local, con una sola llamada `GET /v1/negocio/web?slug=` (ficha + carta) al servicio de negocio (`NEGOCIO_API_URL`) sin token. El logo efectivo del local es público por diseño y el precio de la carta siempre visible.
+`identity-web` sirve la ficha de camarero (`/ficha?qr=`) y las invitaciones (`/invitaciones/<token>`); ya **no** sirve páginas de negocio (las rutas legadas `/negocio?slug=` y `/carta?slug=` se retiraron). La superficie pública del establecimiento es la **web pública de negocios** `web-negocio` (`web.negocio.siberia.solutions/negocios/<slug>`, SPA vanilla en `services/web-negocio`, puerto dev `:8083`): renderiza la ficha como credencial y la carta como sección con una plantilla por `tipo_efectivo` y el rebranding del logo/colores del local, con una sola llamada `GET /v1/negocio/web?slug=` (ficha + carta) al servicio de negocio (`NEGOCIO_API_URL`) sin token. El logo efectivo del local es público por diseño y el precio de la carta siempre visible. **Compatibilidad**: los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 a `web.negocio` (plazo de convivencia 6 meses o hasta confirmar que no hay QR impresos); `ficha.siberia.solutions` conserva `/ficha?qr=` (ficha de camarero).
 
 La cuenta de negocio representa a la **organización propietaria**; cada entidad
 `Establecimiento` representa un local y posee nombre, tipo y logo opcional. Si

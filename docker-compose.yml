@@ -166,7 +166,6 @@ services:
     environment:
       IDENTITY_API_URL: ${IDENTITY_API_URL:-http://localhost:8082}
       CAMAREROS_API_URL: ${CAMAREROS_API_URL:-http://localhost:8080}
-      NEGOCIO_API_URL: ${NEGOCIO_API_URL:-http://localhost:8082}
     depends_on:
       identity-negocio:
         condition: service_healthy

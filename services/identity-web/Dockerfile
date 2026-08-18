@@ -9,7 +9,6 @@ RUN apk upgrade --no-cache \
     && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /etc/nginx/conf.d
 
 ENV IDENTITY_API_URL=http://localhost:8080
-ENV NEGOCIO_API_URL=http://localhost:8082
 
 USER nginx
 
