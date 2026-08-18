@@ -491,8 +491,8 @@
           }
         },
         "required": [
-          "estado",
-          "invitacion_id"
+          "invitacion_id",
+          "estado"
         ],
         "title": "InvitacionRechazarResponse",
         "type": "object"
