@@ -11,7 +11,7 @@ Uso:
         --negocio-openapi docs/openapi-negocio.json \\
         --bar-src path/IdentityNegocioClient.kt \\
         --commander-src path/IdentityCliente.kt \\
-        --web-src services/identity-web/static/app.js
+        --web-src services/web-camareros/static/app.js
 
     python scripts/check_family_contracts.py --selftest
 """
@@ -115,7 +115,7 @@ def comprobar(
     for cliente, rutas in (
         ("Bar", bar),
         ("Commander", commander),
-        ("Webs (identity-web, web-camareros)", web),
+        ("Webs (web-camareros)", web),
     ):
         for ruta in sorted(rutas):
             if ruta not in spec:
@@ -145,7 +145,7 @@ Lo no usado no falla el job: es señal para decidir ítem o deuda.
 
 {bullets(usadas_commander)}
 
-## Rutas usadas por las webs (identity-web, web-camareros)
+## Rutas usadas por las webs (web-camareros)
 
 {bullets(usadas_web)}
 
@@ -214,6 +214,7 @@ def _fixtures_ok() -> tuple[dict, dict, str, str, str]:
             "/v1/negocio/carta": {},
             "/v1/negocio/ficha": {},
             "/v1/invitaciones/{token}/aceptar": {},
+            "/v1/invitaciones/{token}/rechazar": {},
         }
     }
     bar = """
@@ -247,7 +248,8 @@ def _fixtures_ok() -> tuple[dict, dict, str, str, str]:
         fetch(camarerosApiBase + "/v1/camareros/ficha?qr=" + ...)
         fetch(negocioApiBase + "/v1/negocio/ficha?slug=" + ...)
         fetch(negocioApiBase + "/v1/negocio/carta?slug=" + ...)
-        fetch(apiBase + "/v1/invitaciones/" + token + "/aceptar", ...)
+        fetch(negocioApiBase + "/v1/invitaciones/" + token + "/aceptar", ...)
+        fetch(negocioApiBase + "/v1/invitaciones/" + token + "/rechazar", ...)
     """
     return camareros, negocio, bar, commander, web
 

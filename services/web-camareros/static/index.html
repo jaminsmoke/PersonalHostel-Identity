@@ -3,10 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Personal Hostel — Ficha del profesional</title>
+    <title>Personal Hostel — Profesional</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
-  <body>
+  <body class="theme-default">
+    <header class="topbar" id="topbar" hidden>
+      <span class="topbar-brand">Personal Hostel</span>
+      <nav class="topbar-nav">
+        <a class="topbar-link" id="nav-perfil" href="#perfil">Perfil</a>
+        <button class="topbar-bell" id="nav-invitaciones" type="button" aria-label="Invitaciones">
+          🔔<span class="badge" id="badge" hidden>0</span>
+        </button>
+        <button class="topbar-link" id="logout" type="button">Salir</button>
+      </nav>
+    </header>
     <main class="page" role="main" aria-live="polite">
       <div id="output" class="output">
         <p class="hint">Cargando…</p>

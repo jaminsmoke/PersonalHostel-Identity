@@ -47,7 +47,7 @@ mount_access_log(app)
 
 _web_origins = [
     o.strip()
-    for o in os.environ.get("IDENTITY_WEB_ORIGIN", "http://localhost:8081").split(",")
+    for o in os.environ.get("IDENTITY_WEB_ORIGIN", "http://localhost:8083,http://localhost:8084,https://web.negocio.siberia.solutions,https://web.camareros.siberia.solutions").split(",")
     if o.strip()
 ]
 if _web_origins:

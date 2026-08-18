@@ -5,8 +5,8 @@ workflows, imágenes y configuración. Sus herramientas y superficies son:
 
 - `pip-audit`: dependencias Python de ejecución y desarrollo.
 - `actionlint` y `zizmor`: sintaxis y seguridad de GitHub Actions.
-- Trivy: runtime Identity, Identity Web, PostgreSQL 16 y configuración del repo.
-- SPDX JSON: un SBOM por cada una de las tres imágenes desplegables.
+- Trivy: runtime Identity, PostgreSQL 16 y configuración del repo.
+- SPDX JSON: un SBOM por cada una de las imágenes desplegables.
 - CodeQL default setup: análisis estático Python administrado por GitHub.
 - Dependabot: pip, Dockerfiles, Compose y GitHub Actions.
 
