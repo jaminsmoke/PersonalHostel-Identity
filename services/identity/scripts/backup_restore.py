@@ -113,9 +113,7 @@ def pg_user() -> str:
 
 
 def database_scalar(user: str, database: str, sql: str) -> str:
-    return run(
-        compose("exec", "-T", "db", "psql", "-XAt", "-U", user, "-d", database, "-c", sql)
-    )
+    return run(compose("exec", "-T", "db", "psql", "-XAt", "-U", user, "-d", database, "-c", sql))
 
 
 def dump_database(user: str, database: str, target: Path) -> None:
@@ -195,7 +193,19 @@ def create_backup(root: Path = BACKUP_ROOT) -> Path:
 def psql_admin(user: str, sql: str) -> None:
     run(
         compose(
-            "exec", "-T", "db", "psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", user, "-d", "postgres", "-c", sql
+            "exec",
+            "-T",
+            "db",
+            "psql",
+            "-X",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-U",
+            user,
+            "-d",
+            "postgres",
+            "-c",
+            sql,
         )
     )
 
@@ -208,7 +218,16 @@ def recreate_restore_database(user: str, database: str) -> None:
 
 def restore_dump(user: str, database: str, dump: Path) -> None:
     command = compose(
-        "exec", "-T", "db", "pg_restore", "--exit-on-error", "--no-owner", "-U", user, "-d", database
+        "exec",
+        "-T",
+        "db",
+        "pg_restore",
+        "--exit-on-error",
+        "--no-owner",
+        "-U",
+        user,
+        "-d",
+        database,
     )
     with dump.open("rb") as source:
         subprocess.run(command, check=True, stdin=source)
