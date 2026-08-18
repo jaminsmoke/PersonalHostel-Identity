@@ -46,7 +46,7 @@ services:
       EMAIL_HOST: ${EMAIL_HOST:-}
       EMAIL_PORT: ${EMAIL_PORT:-587}
       EMAIL_USERNAME: ${EMAIL_USERNAME:-}
-      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:?EMAIL_PASSWORD es obligatorio para observabilidad}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.test}
 
   grafana:
@@ -57,7 +57,7 @@ services:
       - "127.0.0.1:3001:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD es obligatorio}
       GF_AUTH_ANONYMOUS_ENABLED: "false"
     volumes:
       - grafana-data:/var/lib/grafana
@@ -115,7 +115,7 @@ services:
     image: prometheuscommunity/postgres-exporter:v0.20.1
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:-devlocal}@db:5432/identity_negocio?sslmode=disable
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatorio para observabilidad}@db:5432/identity_negocio?sslmode=disable
     depends_on:
       db:
         condition: service_healthy

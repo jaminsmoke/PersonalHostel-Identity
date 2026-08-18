@@ -29,6 +29,11 @@ import sys
 
 import paramiko
 
+try:
+    from scripts.check_production_secrets import validate_env_text
+except ModuleNotFoundError:  # ejecución directa desde la raíz del repositorio
+    from check_production_secrets import validate_env_text
+
 # En consolas Windows (cp1252) el output de `docker compose` trae caracteres
 # Unicode (barras de progreso, flechas) que rompen print(); forzamos UTF-8.
 if hasattr(sys.stdout, "reconfigure"):
@@ -113,9 +118,36 @@ def ensure_staging_public_urls(client: paramiko.SSHClient) -> bool:
         payload = ("\n".join(lines).rstrip("\n") + "\n").encode()
         with sftp.open(temp_path, "wb") as target:
             target.write(payload)
-        sftp.chmod(temp_path, stat.st_mode & 0o777)
+        sftp.chmod(temp_path, 0o600)
         sftp.posix_rename(temp_path, path)
         return True
+    finally:
+        sftp.close()
+
+
+def read_remote_env(client: paramiko.SSHClient) -> str:
+    """Lee el `.env` remoto para validarlo sin registrarlo ni devolverlo al output."""
+    sftp = client.open_sftp()
+    try:
+        with sftp.open(f"{REMOTE_DIR}/.env", "r") as source:
+            raw = source.read()
+        return raw.decode("utf-8") if isinstance(raw, bytes) else raw
+    finally:
+        sftp.close()
+
+
+def validate_remote_env(client: paramiko.SSHClient) -> None:
+    errors = validate_env_text(read_remote_env(client))
+    if errors:
+        details = "\n".join(f"- {error}" for error in errors)
+        raise RuntimeError(f"Configuración de producción inválida:\n{details}")
+
+
+def harden_remote_env_permissions(client: paramiko.SSHClient) -> None:
+    """Impone mínimo privilegio aunque el fichero previo heredase modo 0644."""
+    sftp = client.open_sftp()
+    try:
+        sftp.chmod(f"{REMOTE_DIR}/.env", 0o600)
     finally:
         sftp.close()
 
@@ -141,6 +173,11 @@ def main() -> int:
         "--smoke-profile",
         action="store_true",
         help="Ejecuta en Docker del VPS el E2E público autolimpiable del perfil de local.",
+    )
+    parser.add_argument(
+        "--preflight-only",
+        action="store_true",
+        help="Valida el .env remoto sin fetch, build, cambios de permisos ni despliegue.",
     )
     args = parser.parse_args()
     if not SAFE_REF.fullmatch(args.ref) or ".." in args.ref or args.ref.endswith("/"):
@@ -218,6 +255,11 @@ def main() -> int:
             client.close()
             return 1
 
+        validate_remote_env(client)
+        if args.preflight_only:
+            print("Preflight remoto OK: secretos válidos; no se modificó el VPS")
+            return 0
+
         remote_ref = shlex.quote(f"origin/{args.ref}")
         run(f"cd {remote} && git fetch origin && git reset --hard {remote_ref}")
         compose = "docker compose -f docker-compose.yml -f docker-compose.prod.yml"
@@ -280,6 +322,7 @@ def main() -> int:
                 "python scripts/smoke_staging_profile.py"
             )
         else:
+            harden_remote_env_permissions(client)
             changed = ensure_staging_public_urls(client)
             print(
                 "URLs públicas de staging actualizadas en el .env remoto."

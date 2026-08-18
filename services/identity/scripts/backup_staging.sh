@@ -2,9 +2,14 @@
 # Backup de las dos BD de Identity en el VPS de staging.
 # Se ejecuta desde cron (diario). Debe correr en /opt/identity.
 set -euo pipefail
+umask 077
 
 cd /opt/identity || exit 1
-mkdir -p backups
+mkdir -p -m 700 backups
+chmod 700 backups
+if [[ -f backups/backup.log ]]; then
+    chmod 600 backups/backup.log
+fi
 
 PGUSER=$(grep -E '^POSTGRES_USER=' .env | cut -d= -f2- | tr -d '\r')
 PGUSER=${PGUSER:-hosteleria}

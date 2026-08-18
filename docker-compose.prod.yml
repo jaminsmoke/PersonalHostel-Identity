@@ -10,14 +10,34 @@
 services:
   db:
     ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatorio en producción}
 
   identity-camareros:
     ports: !override
       - "127.0.0.1:8080:8080"
+    environment:
+      CAMAREROS_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatorio en producción}@db:5432/identity_camareros
+      NEGOCIO_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatorio en producción}@db:5432/identity_negocio
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET es obligatorio en producción}
+      QR_SIGNING_KEY: ${QR_SIGNING_KEY:?QR_SIGNING_KEY es obligatorio en producción}
+      ALLOW_NON_REAL_DATA: "false"
 
   identity-negocio:
     ports: !override
       - "127.0.0.1:8082:8080"
+    environment:
+      NEGOCIO_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatorio en producción}@db:5432/identity_negocio
+      CAMAREROS_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatorio en producción}@db:5432/identity_camareros
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET es obligatorio en producción}
+      QR_SIGNING_KEY: ${QR_SIGNING_KEY:?QR_SIGNING_KEY es obligatorio en producción}
+      ALLOW_NON_REAL_DATA: "false"
+
+  email-worker:
+    environment:
+      NEGOCIO_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-hosteleria}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatorio en producción}@db:5432/identity_negocio
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET es obligatorio en producción}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:?EMAIL_PASSWORD es obligatorio en producción}
 
   web-negocio:
     ports: !override

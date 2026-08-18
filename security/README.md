@@ -1,5 +1,8 @@
 # Política de seguridad de CI y cadena de suministro
 
+La política operativa, inventario y runbooks de secretos del VPS están en
+[`secrets.md`](secrets.md).
+
 El job requerido `security` aplica una única política versionada a dependencias,
 workflows, imágenes y configuración. Sus herramientas y superficies son:
 

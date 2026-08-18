@@ -54,9 +54,16 @@ El staging es producción en configuración (HTTPS, secretos reales, datos borra
 
 - Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `ficha.siberia.solutions` (histórico con 301), `web.negocio.siberia.solutions` (:8083, web pública de negocios: ficha + carta del establecimiento) y `web.camareros.siberia.solutions` (:8084, web del profesional: credencial, login e invitaciones).
 - `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
-- El `.env` de producción vive en `/opt/identity/.env` (gitignored): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
+- El `.env` de producción vive en `/opt/identity/.env` (gitignored, `root:root`
+  y modo `0600`): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
+  El override productivo no admite fallbacks secretos y el despliegue ejecuta
+  un preflight sanitizado antes de fetch/build/migraciones. Inventario,
+  recuperación y rotación: [`security/secrets.md`](security/secrets.md).
 
 ```bash
+# Solo secretos/configuración remota: no hace fetch, build ni cambios en VPS
+python services/identity/scripts/deploy_staging.py --preflight-only
+
 # Validación oficial: Docker del VPS + BD `_test`, sin recrear el stack activo
 python services/identity/scripts/deploy_staging.py --ref feature/mi-rama --validate-only
 
