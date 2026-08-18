@@ -85,7 +85,13 @@ esta fase. El despliegue normal fija las URLs públicas canónicas de ficha/cart
 en el `.env` remoto sin mostrar secretos, crea un backup de ambas BD antes de
 migrar y termina comprobando health/meta de los dos servicios.
 
-- Backup diario: `services/identity/scripts/backup_staging.sh` (cron en el VPS; dumps de ambas BD a `/opt/identity/backups`, retención 7 días).
+- Backup diario: `services/identity/scripts/backup_staging.sh` crea en
+  `/opt/identity/backups` un conjunto atómico con dumps custom de ambas BD,
+  fotos y manifiesto SHA-256; conserva siete días sin borrar nunca el último
+  conjunto válido. `backup_restore.py restore-drill` solo admite bases con
+  sufijo `_restore_test`, valida referencias/fotos y elimina las copias al
+  terminar. La recuperación externa cifrada se activa únicamente tras elegir
+  y aprobar el proveedor (ver `security/backups.md`).
 - Caddyfile: bloques `reverse_proxy` en `/etc/caddy/Caddyfile` (la landing queda intacta): `:8080` camareros, `:8082` negocio, `:8083` `web.negocio`, `:8084` `web.camareros`. Los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 (`/ficha?qr=` → `web.camareros…/camareros?qr=`; `/negocio` y `/carta` → `web.negocio`).
 
 ### Observabilidad en el VPS (staging/producción)
