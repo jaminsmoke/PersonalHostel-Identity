@@ -21,8 +21,9 @@ from app.models import (
     Establecimiento,
     ProductoCatalogo,
 )
+from app.routes.horario import filas_horario_establecimiento
 from app.routes.negocio_ficha import servir_logo_efectivo
-from app.schemas import ErrorResponse, WebNegocioPublica
+from app.schemas import ErrorResponse, HorarioDia, WebNegocioPublica
 
 router = APIRouter(prefix="/v1/negocio", tags=["negocio público"])
 
@@ -72,6 +73,21 @@ def _logo_url(slug: str, establecimiento: Establecimiento) -> str | None:
     return f"/v1/negocio/web/logo?slug={slug}"
 
 
+def _horario_publico(db: Session, establecimiento: Establecimiento) -> list[HorarioDia] | None:
+    """Horario del establecimiento para la web pública, o None si no hay."""
+    filas = filas_horario_establecimiento(db, establecimiento.id)
+    if not filas:
+        return None
+    return [
+        HorarioDia(
+            dia_semana=fila.dia_semana,
+            cerrado=fila.cerrado,
+            turnos=fila.turnos or [],
+        )
+        for fila in filas
+    ]
+
+
 def _categorias(db: Session, establecimiento: Establecimiento) -> list[dict]:
     productos = (
         db.query(ProductoCatalogo)
@@ -117,6 +133,7 @@ def web_negocio(
         "logo_url": _logo_url(slug, establecimiento),
         "organizacion_nombre": establecimiento.cuenta_negocio.nombre_mostrar,
         "categorias": _categorias(db, establecimiento),
+        "horario": _horario_publico(db, establecimiento),
     }
 
 

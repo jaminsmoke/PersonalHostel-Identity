@@ -27,7 +27,12 @@ def _msg_espanol(err: dict) -> str:
         return f"El campo '{campo}' no puede estar vacío"
     if tipo == "string_too_long":
         return f"El campo '{campo}' es demasiado largo"
-    if tipo == "value_error" or "email" in tipo:
+    if tipo == "value_error":
+        msg = err.get("msg") or ""
+        if "email" in msg.lower():
+            return f"El campo '{campo}' no es un email válido"
+        return msg or f"Valor inválido en el campo '{campo}'"
+    if "email" in tipo:
         return f"El campo '{campo}' no es un email válido"
     return f"Valor inválido en el campo '{campo}'"
 

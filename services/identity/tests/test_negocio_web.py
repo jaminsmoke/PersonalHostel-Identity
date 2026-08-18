@@ -103,7 +103,37 @@ def test_web_negocio_resuelve_slug_de_ficha_y_devuelve_ficha_mas_carta(db_ready,
         },
     ]
     assert "email" not in body
+    assert body["horario"] is None
     assert resp.headers["cache-control"] == "public, max-age=300"
+
+
+def test_web_negocio_incluye_horario_configurado(db_ready, negocio_client):
+    headers, est_id = _crear_negocio_establecimiento(negocio_client)
+    slug = f"web-horario-{uuid.uuid4().hex[:8]}"
+    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+
+    patch = negocio_client.patch(
+        f"/v1/establecimientos/{est_id}/horario",
+        headers=headers,
+        json={
+            "dias": [
+                {"dia_semana": 0, "turnos": [{"abre": "10:00", "cierra": "16:00"}]},
+                {"dia_semana": 6, "cerrado": True, "turnos": []},
+            ]
+        },
+    )
+    assert patch.status_code == 200, patch.text
+
+    resp = negocio_client.get("/v1/negocio/web", params={"slug": slug})
+    assert resp.status_code == 200
+    assert resp.json()["horario"] == [
+        {
+            "dia_semana": 0,
+            "cerrado": False,
+            "turnos": [{"abre": "10:00", "cierra": "16:00"}],
+        },
+        {"dia_semana": 6, "cerrado": True, "turnos": []},
+    ]
 
 
 def test_web_negocio_resuelve_tambien_slug_de_carta(db_ready, negocio_client):
