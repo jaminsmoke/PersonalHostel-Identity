@@ -278,11 +278,15 @@ def main() -> int:
         compose = "docker compose -f docker-compose.yml -f docker-compose.prod.yml"
         if args.quarantine_orphan_photos:
             run(
-                f"cd {remote} && python3 services/identity/scripts/backup_restore.py "
+                f"cd {remote} && PYTHONDONTWRITEBYTECODE=1 "
+                "python3 services/identity/scripts/backup_restore.py "
                 "quarantine-orphan-photos"
             )
         elif args.backup_restore_drill:
-            run(f"cd {remote} && python3 services/identity/scripts/backup_restore.py restore-drill")
+            run(
+                f"cd {remote} && PYTHONDONTWRITEBYTECODE=1 "
+                "python3 services/identity/scripts/backup_restore.py restore-drill"
+            )
         elif args.sync_openapi:
             run(f"cd {remote} && {compose} build identity-tests")
             run(
