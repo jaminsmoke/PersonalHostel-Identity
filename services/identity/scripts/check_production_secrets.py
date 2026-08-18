@@ -44,7 +44,7 @@ def parse_env(text: str) -> tuple[dict[str, str], set[str]]:
 def _valid_qr_key(value: str) -> bool:
     try:
         return len(base64.b64decode(value, validate=True)) == 32
-    except (binascii.Error, ValueError):
+    except binascii.Error, ValueError:
         return False
 
 
