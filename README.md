@@ -52,7 +52,7 @@ docker compose up --build
 
 El staging es producción en configuración (HTTPS, secretos reales, datos borrables). Corre en el VPS de Hostinger (la IP vive en `.env`, no en este README), detrás del **Caddy** ya instalado (que también sirve la landing `siberia.solutions`).
 
-- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `invitaciones.siberia.solutions` (:8081), `ficha.siberia.solutions` (:8081, ficha del camarero) y `web.negocio.siberia.solutions` (:8083, web pública de negocios: ficha + carta del establecimiento).
+- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `invitaciones.siberia.solutions` (:8081, invitaciones), `ficha.siberia.solutions` (:8081, histórico con 301), `web.negocio.siberia.solutions` (:8083, web pública de negocios: ficha + carta del establecimiento) y `web.camareros.siberia.solutions` (:8084, web pública del profesional: credencial del camarero).
 - `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
 - El `.env` de producción vive en `/opt/identity/.env` (gitignored): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
 
@@ -76,7 +76,7 @@ en el `.env` remoto sin mostrar secretos, crea un backup de ambas BD antes de
 migrar y termina comprobando health/meta de los dos servicios.
 
 - Backup diario: `services/identity/scripts/backup_staging.sh` (cron en el VPS; dumps de ambas BD a `/opt/identity/backups`, retención 7 días).
-- Caddyfile: bloques `reverse_proxy 127.0.0.1:8080` (camareros), `:8082` (negocio) y `:8081` (web — invitaciones, ficha y carta) añadidos a `/etc/caddy/Caddyfile` (la landing queda intacta).
+- Caddyfile: bloques `reverse_proxy` en `/etc/caddy/Caddyfile` (la landing queda intacta): `:8080` camareros, `:8082` negocio, `:8081` invitaciones (`invitaciones.siberia.solutions`), `:8083` `web.negocio`, `:8084` `web.camareros`. Los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 (`/ficha?qr=` → `web.camareros…/camareros?qr=`; `/negocio` y `/carta` → `web.negocio`).
 
 ### Observabilidad en el VPS (staging/producción)
 
@@ -194,12 +194,11 @@ Toda respuesta de error lleva `detail` (mensaje en español) y `code` (código e
   "id": "<uuid del camarero>",
   "data_origin": "real",
   "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>",
-  "ficha_url": "https://ficha.example/ficha?qr=phid1:..."
+  "ficha_url": "https://ficha.example/camareros?qr=phid1:..."
 }
 ```
 
-- `ficha_url` es la URL pública de la ficha (configurable con `FICHA_URL_BASE`);
-  los clientes pueden emitir el QR como esta URL para que escanearlo abra la web.
+- `ficha_url` es la URL pública de la credencial del camarero (configurable con `FICHA_URL_BASE`; en el VPS apunta a `web.camareros.siberia.solutions`); los clientes pueden emitir el QR como esta URL para que escanearlo abra la web.
 - La verificación del QR acepta tanto `phid1:...` como `https://...?qr=phid1:...`.
 - `data_origin` es opcional y vale `real` por defecto. `test` y `demo` solo se
   admiten cuando el servidor tiene `ALLOW_NON_REAL_DATA=true`; en el VPS debe
@@ -234,7 +233,7 @@ Respuesta `200`:
     "data_origin": "real"
   },
   "qr": "phid1:<camarero_id>:<credencial_id>:<firma-ed25519>",
-  "ficha_url": "https://ficha.example/ficha?qr=phid1:..."
+  "ficha_url": "https://ficha.example/camareros?qr=phid1:..."
 }
 ```
 
@@ -277,24 +276,27 @@ Cada camarero controla qué campos de su ficha son **públicos**. Por defecto so
 - La verificación del QR acepta tanto `phid1:...` como la URL
   `https://...?qr=phid1:...` (extrae el parámetro `qr`).
 
-### Web de ficha pública
+### Web pública del profesional (`web-camareros`)
 
-`identity-web` (SPA vanilla, nginx) sirve, además de `/invitaciones/<token>`,
-la página pública:
+`web-camareros` (SPA vanilla, nginx, puerto dev `:8084`) es la web pública del
+profesional en `web.camareros.siberia.solutions/camareros?qr=`. Renderiza la
+credencial del camarero (avatar/foto, nombre y apellidos, nick y campos de
+contacto visibles) con una sola llamada al servicio de camareros
+(`CAMAREROS_API_URL`):
 
-- `/ficha?qr=<phid1>` — ficha pública del camarero: tarjeta completa según
-  visibilidad (nombre, apellidos, nick, email, teléfono, dirección, ciudad y
-  foto opt-in). Staging: `https://ficha.siberia.solutions`. Origen autorizado
-  por CORS en el servicio de camareros (`IDENTITY_WEB_ORIGIN`); base configurada
-  con `FICHA_URL_BASE`.
+- `GET /v1/camareros/ficha?qr=<phid1>` → ficha pública **sin token**, solo
+  campos visibles (`visibilidad`): `nombre`, `apellidos`, y `nick`, `email`,
+  `telefono`, `direccion`, `ciudad` y `foto_url` si son visibles. QR inválido →
+  `422`, credencial revocada/renovada → `409`. Origen autorizado por CORS en el
+  servicio de camareros (`IDENTITY_WEB_ORIGIN`); la URL canónica la fija
+  `FICHA_URL_BASE` en `.env` (respuestas de registro/login/me/qr).
 
-Compatibilidad con los dominios históricos: las rutas de negocio que esta web
-sirvió como páginas legadas (`/negocio?slug=` y `/carta?slug=`) se retiraron.
-Los dominios `ficha.siberia.solutions` y `carta.siberia.solutions` responden un
-**301** a la superficie canónica de negocio (`web.negocio.siberia.solutions`,
-ver abajo) para que los QR emitidos antes de la migración sigan funcionando;
-el plazo de convivencia es de 6 meses desde el despliegue o hasta confirmar que
-no quedan QR impresos en uso.
+`identity-web` (SPA vanilla, nginx) sirve **solo** `/invitaciones/<token>`:
+aceptación de invitaciones por magic-link sin JWT (base configurada con
+`IDENTITY_API_URL`; staging: `https://invitaciones.siberia.solutions`).
+
+Compatibilidad con los dominios históricos: `ficha.siberia.solutions` responde
+**301** a la superficie canónica (`/ficha?qr=` → `web.camareros.siberia.solutions/camareros?qr=`; `/negocio` → `web.negocio.siberia.solutions`) y `carta.siberia.solutions` → `web.negocio` para que los QR emitidos antes de la migración sigan funcionando; el plazo de convivencia es de 6 meses desde el despliegue o hasta confirmar que no quedan QR impresos en uso.
 
 ### Web pública de negocios (`web-negocio`)
 

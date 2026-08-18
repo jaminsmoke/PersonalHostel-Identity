@@ -519,7 +519,7 @@
               }
             ],
             "examples": [
-              "https://ficha.example/ficha?qr=phid1:..."
+              "https://ficha.example/camareros?qr=phid1:..."
             ],
             "title": "Ficha Url"
           },
@@ -681,7 +681,7 @@
               }
             ],
             "examples": [
-              "https://ficha.example/ficha?qr=phid1:..."
+              "https://ficha.example/camareros?qr=phid1:..."
             ],
             "title": "Ficha Url"
           },
@@ -844,7 +844,7 @@
               }
             ],
             "examples": [
-              "https://ficha.example/ficha?qr=phid1:..."
+              "https://ficha.example/camareros?qr=phid1:..."
             ],
             "title": "Ficha Url"
           },

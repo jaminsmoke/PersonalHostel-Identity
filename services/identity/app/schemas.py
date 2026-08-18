@@ -32,7 +32,7 @@ class RegistroResponse(BaseModel):
     id: uuid.UUID = Field(..., examples=["3fa85f64-5717-4562-b3fc-2c963f66afa6"])
     qr: str = Field(..., examples=["phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"])
     ficha_url: str | None = Field(
-        default=None, examples=["https://ficha.example/ficha?qr=phid1:..."]
+        default=None, examples=["https://ficha.example/camareros?qr=phid1:..."]
     )
     data_origin: DataOrigin
 
@@ -135,7 +135,7 @@ class LoginResponse(BaseModel):
     camarero: CamareroPerfil
     qr: str = Field(..., examples=["phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"])
     ficha_url: str | None = Field(
-        default=None, examples=["https://ficha.example/ficha?qr=phid1:..."]
+        default=None, examples=["https://ficha.example/camareros?qr=phid1:..."]
     )
 
 
@@ -144,7 +144,7 @@ class QrResponse(BaseModel):
 
     qr: str = Field(..., examples=["phid1:<camarero_id>:<credencial_id>:<firma-ed25519>"])
     ficha_url: str | None = Field(
-        default=None, examples=["https://ficha.example/ficha?qr=phid1:..."]
+        default=None, examples=["https://ficha.example/camareros?qr=phid1:..."]
     )
 
 

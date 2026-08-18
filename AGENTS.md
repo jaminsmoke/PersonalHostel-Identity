@@ -103,12 +103,17 @@ PersonalHosteleriaServer/
 ├── services/identity-web/    # página de invitaciones (nginx + SPA vanilla, :8081)
 │   ├── Dockerfile
 │   ├── nginx.conf
-│   ├── 20-identity-web.sh    # genera config.js en runtime (IDENTITY/CAMAREROS_API_URL)
+│   ├── 20-identity-web.sh    # genera config.js en runtime (IDENTITY_API_URL)
 │   └── static/               # index.html, style.css, app.js
 ├── services/web-negocio/     # web pública de negocios (nginx + SPA vanilla, :8083)
 │   ├── Dockerfile
 │   ├── nginx.conf
 │   ├── 20-web-negocio.sh     # genera config.js en runtime (NEGOCIO_API_URL)
+│   └── static/               # index.html, style.css, app.js
+├── services/web-camareros/   # web pública del profesional (nginx + SPA vanilla, :8084)
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   ├── 20-web-camareros.sh   # genera config.js en runtime (CAMAREROS_API_URL)
 │   └── static/               # index.html, style.css, app.js
 └── tools/
     ├── README.md
@@ -128,12 +133,12 @@ suprimir hallazgos directamente en el workflow. CodeQL usa default setup para
 Python y Dependabot mantiene pip, Docker, Compose y Actions.
 
 El job `family-contracts` comprueba que los clientes de la familia (Bar,
-Commander e identity-web) no piden rutas que Identity ya no expone: hace
-sparse-checkout de los repos públicos Bar y Commander, barre `app.js` y publica
-en el summary del job una tabla de rutas usadas por cada cliente y las públicas
-sin consumidor (aviso, no rojo). Falla solo si un cliente llama una ruta que el
-OpenAPI ya no tiene. Es el espejo del check de familia de Commander: cada
-miembro cuida sus propias integraciones.
+Commander, identity-web y web-camareros) no piden rutas que Identity ya no
+expone: hace sparse-checkout de los repos públicos Bar y Commander, barre
+`app.js` y publica en el summary del job una tabla de rutas usadas por cada
+cliente y las públicas sin consumidor (aviso, no rojo). Falla solo si un
+cliente llama una ruta que el OpenAPI ya no tiene. Es el espejo del check de
+familia de Commander: cada miembro cuida sus propias integraciones.
 
 El job `migrations-check` valida la reversibilidad de ambas cadenas Alembic
 (`alembic/` y `alembic_negocio/`) con el ciclo `upgrade head → downgrade base
@@ -178,9 +183,9 @@ Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores l
 | GET | `/v1/camareros/me/foto` | Sirve la foto (WebP) |
 | DELETE | `/v1/camareros/me/foto` | Borra la foto |
 
-El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>`, **estable** entre reinstalaciones. La foto no viaja en el QR. Las respuestas que devuelven `qr` incluyen también `ficha_url` (`FICHA_URL_BASE` + `/ficha?qr=`), y la verificación acepta tanto `phid1:...` como la URL `https://...?qr=phid1:...`. La web pública de la ficha (`identity-web`, ruta `/ficha?qr=`) vive en `ficha.siberia.solutions`; el servicio de camareros autoriza su origen por CORS (`IDENTITY_WEB_ORIGIN`).
+El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>`, **estable** entre reinstalaciones. La foto no viaja en el QR. Las respuestas que devuelven `qr` incluyen también `ficha_url` (`FICHA_URL_BASE` + `/camareros?qr=`), y la verificación acepta tanto `phid1:...` como la URL `https://...?qr=phid1:...`. La web pública del profesional es **`web-camareros`** (`web.camareros.siberia.solutions/camareros?qr=`, SPA vanilla en `services/web-camareros`, puerto dev `:8084`): renderiza la credencial del camarero con `GET /v1/camareros/ficha?qr=` (sin token, solo campos visibles). El servicio de camareros autoriza el origen por CORS (`IDENTITY_WEB_ORIGIN`).
 
-`identity-web` sirve la ficha de camarero (`/ficha?qr=`) y las invitaciones (`/invitaciones/<token>`); ya **no** sirve páginas de negocio (las rutas legadas `/negocio?slug=` y `/carta?slug=` se retiraron). La superficie pública del establecimiento es la **web pública de negocios** `web-negocio` (`web.negocio.siberia.solutions/negocios/<slug>`, SPA vanilla en `services/web-negocio`, puerto dev `:8083`): renderiza la ficha como credencial y la carta como sección con una plantilla por `tipo_efectivo` y el rebranding del logo/colores del local, con una sola llamada `GET /v1/negocio/web?slug=` (ficha + carta) al servicio de negocio (`NEGOCIO_API_URL`) sin token. El logo efectivo del local es público por diseño y el precio de la carta siempre visible. **Compatibilidad**: los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 a `web.negocio` (plazo de convivencia 6 meses o hasta confirmar que no hay QR impresos); `ficha.siberia.solutions` conserva `/ficha?qr=` (ficha de camarero).
+`identity-web` sirve **solo** las invitaciones (`/invitaciones/<token>`); ya no sirve la ficha de camarero ni páginas de negocio. La superficie pública del establecimiento es la **web pública de negocios** `web-negocio` (`web.negocio.siberia.solutions/negocios/<slug>`, SPA vanilla en `services/web-negocio`, puerto dev `:8083`): renderiza la ficha como credencial y la carta como sección con una plantilla por `tipo_efectivo` y el rebranding del logo/colores del local, con una sola llamada `GET /v1/negocio/web?slug=` (ficha + carta) al servicio de negocio (`NEGOCIO_API_URL`) sin token. El logo efectivo del local es público por diseño y el precio de la carta siempre visible. **Compatibilidad**: los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 a sus superficies canónicas (`/negocio` y `/carta` → `web.negocio`; `/ficha?qr=` → `web.camareros`), con plazo de convivencia 6 meses o hasta confirmar que no hay QR impresos.
 
 La cuenta de negocio representa a la **organización propietaria**; cada entidad
 `Establecimiento` representa un local y posee nombre, tipo y logo opcional. Si

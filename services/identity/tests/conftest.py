@@ -25,6 +25,10 @@ os.environ.setdefault(
 )
 os.environ.setdefault("ALLOW_NON_REAL_DATA", "true")
 os.environ.setdefault("WEB_NEGOCIO_URL_BASE", "http://web.test")
+os.environ.setdefault(
+    "IDENTITY_WEB_ORIGIN",
+    "http://localhost:8081,https://web.camareros.siberia.solutions",
+)
 
 
 # Los tests NO tocan las BD de desarrollo: usan BD de prueba separadas.
