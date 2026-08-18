@@ -25,6 +25,7 @@ METRICS_DIR = BACKUP_ROOT / "metrics"
 METRICS_FILE = METRICS_DIR / "offsite.prom"
 RESTIC_BIN = Path("/usr/local/bin/restic")
 REQUIRED = ("R2_ACCOUNT_ID", "R2_BUCKET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY")
+STATUS_PARSE_ERRORS = (KeyError, ValueError, json.JSONDecodeError)
 
 
 def read_env(path: Path = ENV_FILE) -> dict[str, str]:
@@ -98,7 +99,7 @@ def publish_metrics(*, enabled: bool, last_success: datetime | None = None) -> N
         try:
             payload = json.loads(STATUS_FILE.read_text(encoding="utf-8"))
             last_success = datetime.fromisoformat(payload["last_success_at"])
-        except KeyError, ValueError, json.JSONDecodeError:
+        except STATUS_PARSE_ERRORS:
             last_success = None
     METRICS_DIR.mkdir(mode=0o755, parents=True, exist_ok=True)
     METRICS_DIR.chmod(0o755)
