@@ -55,7 +55,7 @@ def _token(email: str) -> str:
 
 
 def _expected_url(qr: str) -> str:
-    return f"http://ficha.test/ficha?qr={quote(qr)}"
+    return f"http://ficha.test/camareros?qr={quote(qr)}"
 
 
 def test_registro_incluye_ficha_url(db_ready):

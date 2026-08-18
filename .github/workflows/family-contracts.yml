@@ -63,3 +63,4 @@ jobs:
           --bar-src .family/bar/app/src/main/java/com/jaminsmoke/personalbar/lan/IdentityCamareroClient.kt
           --commander-src .family/commander/app/src/main/java/com/jaminsmoke/personalcomander/data/sesion/IdentityCliente.kt
           --web-src services/identity-web/static/app.js
+          --web-src services/web-camareros/static/app.js

@@ -91,7 +91,7 @@ def ficha_url(qr: str) -> str | None:
     base = os.environ.get(FICHA_URL_BASE_ENV)
     if not base:
         return None
-    return f"{base.rstrip('/')}/ficha?qr={quote(qr)}"
+    return f"{base.rstrip('/')}/camareros?qr={quote(qr)}"
 
 
 def _extract_qr_payload(payload: str) -> str:

@@ -98,7 +98,7 @@ def comprobar(
     negocio_openapi: Path,
     bar_srcs: list[str],
     commander_srcs: list[str],
-    web_src: str,
+    web_srcs: list[str],
 ) -> Informe:
     camareros = openapi_paths(camareros_openapi)
     negocio = openapi_paths(negocio_openapi)
@@ -106,7 +106,7 @@ def comprobar(
 
     bar = client_paths(bar_srcs)
     commander = client_paths(commander_srcs)
-    web = client_paths([fusionar_concatenadas(web_src)])
+    web = client_paths([fusionar_concatenadas(src) for src in web_srcs])
 
     fallos: list[str] = []
     warnings: list[str] = []
@@ -115,7 +115,7 @@ def comprobar(
     for cliente, rutas in (
         ("Bar", bar),
         ("Commander", commander),
-        ("identity-web", web),
+        ("Webs (identity-web, web-camareros)", web),
     ):
         for ruta in sorted(rutas):
             if ruta not in spec:
@@ -145,7 +145,7 @@ Lo no usado no falla el job: es señal para decidir ítem o deuda.
 
 {bullets(usadas_commander)}
 
-## Rutas usadas por identity-web
+## Rutas usadas por las webs (identity-web, web-camareros)
 
 {bullets(usadas_web)}
 
@@ -261,7 +261,7 @@ def selftest() -> int:
         cam.write_text(json.dumps(camareros), encoding="utf-8")
         neg.write_text(json.dumps(negocio), encoding="utf-8")
 
-        informe = comprobar(cam, neg, [bar], [commander], web)
+        informe = comprobar(cam, neg, [bar], [commander], [web])
         if informe.fallos:
             print("SELFTEST FAIL: fixtures completas deberían pasar", file=sys.stderr)
             return 1
@@ -294,7 +294,7 @@ def selftest() -> int:
         broken["paths"] = dict(camareros["paths"])
         del broken["paths"]["/v1/auth/login"]
         cam.write_text(json.dumps(broken), encoding="utf-8")
-        fallos = comprobar(cam, neg, [bar], [commander], web).fallos
+        fallos = comprobar(cam, neg, [bar], [commander], [web]).fallos
         if not any("Commander" in f and "login" in f for f in fallos):
             print("SELFTEST FAIL: debía detectar /v1/auth/login ausente", file=sys.stderr)
             return 1
@@ -304,7 +304,7 @@ def selftest() -> int:
         broken2["paths"] = dict(negocio["paths"])
         del broken2["paths"]["/v1/establecimientos/{establecimiento_id}/layout"]
         neg.write_text(json.dumps(broken2), encoding="utf-8")
-        fallos2 = comprobar(cam, neg, [bar], [commander], web).fallos
+        fallos2 = comprobar(cam, neg, [bar], [commander], [web]).fallos
         if not any("Bar" in f and "layout" in f for f in fallos2):
             print("SELFTEST FAIL: debía detectar layout ausente para Bar", file=sys.stderr)
             return 1
@@ -319,7 +319,7 @@ def main() -> int:
     parser.add_argument("--negocio-openapi", type=Path)
     parser.add_argument("--bar-src", action="append", default=[])
     parser.add_argument("--commander-src", action="append", default=[])
-    parser.add_argument("--web-src", type=str)
+    parser.add_argument("--web-src", action="append", default=[])
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
 
@@ -336,19 +336,19 @@ def main() -> int:
         )
     ):
         parser.error(
-            "Se requieren --camareros-openapi, --negocio-openapi, --bar-src (1+), --commander-src (1+) y --web-src"
+            "Se requieren --camareros-openapi, --negocio-openapi, --bar-src (1+), --commander-src (1+) y --web-src (1+)"
         )
 
     bar_srcs = [Path(p).read_text(encoding="utf-8") for p in args.bar_src]
     commander_srcs = [Path(p).read_text(encoding="utf-8") for p in args.commander_src]
-    web_src = Path(args.web_src).read_text(encoding="utf-8")
+    web_srcs = [Path(p).read_text(encoding="utf-8") for p in args.web_src]
 
     informe = comprobar(
         args.camareros_openapi,
         args.negocio_openapi,
         bar_srcs,
         commander_srcs,
-        web_src,
+        web_srcs,
     )
     escribir_informe(informe)
     if informe.fallos:
