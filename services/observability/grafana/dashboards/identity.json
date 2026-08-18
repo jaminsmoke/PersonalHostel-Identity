@@ -1,6 +1,6 @@
 {
   "uid": "identity",
-  "title": "PersonalHostel Identity",
+  "title": "PersonalHostel Server",
   "tags": ["identity", "staging"],
   "timezone": "utc",
   "schemaVersion": 39,

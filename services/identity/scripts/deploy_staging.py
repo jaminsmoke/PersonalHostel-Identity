@@ -35,7 +35,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-REPO = "https://github.com/jaminsmoke/PersonalHostel-Identity.git"
+REPO = "https://github.com/jaminsmoke/PersonalHostel-Server.git"
 REMOTE_DIR = "/opt/identity"
 ENV_FILE = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".env")

@@ -1,6 +1,6 @@
 # Changelog
 
-Todos los cambios notables de **PersonalHostel Identity** (el servidor de identidad
+Todos los cambios notables de **PersonalHostel Server** (el servidor de identidad
 de la familia PersonalHostel) se documentan aquí.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
@@ -68,5 +68,5 @@ login, revocación/renovación y foto de perfil — con contrato HTTP documentad
   estables (`identity.*`), `docs/openapi.json` en git y gate de CI anti-drift.
   ([#5](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/5), `9bf6681`, Docs)
 
-[Unreleased]: https://github.com/jaminsmoke/PersonalHostel-Identity/compare/v0.1...main
-[v0.1]: https://github.com/jaminsmoke/PersonalHostel-Identity/releases/tag/v0.1
+[Unreleased]: https://github.com/jaminsmoke/PersonalHostel-Server/compare/v0.1...main
+[v0.1]: https://github.com/jaminsmoke/PersonalHostel-Server/releases/tag/v0.1

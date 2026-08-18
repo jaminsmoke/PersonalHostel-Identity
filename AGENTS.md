@@ -1,10 +1,10 @@
-# AGENTS.md — PersonalHostel Identity
+# AGENTS.md — PersonalHostel Server
 
 ## Project
 
-**PersonalHostel Identity** is the **organization identity** server of the **PersonalHostel** family (Comander, Bar, Kitchen, TPV, this server). It stores the **permanent professional identity** (waiter / bar / kitchen): name, photo, QR/key. **It is not the LAN room node.** The host for tables and rounds is **Personal Bar**.
+**PersonalHostel Server** is the **organization identity** server of the **PersonalHostel** family (Comander, Bar, Kitchen, TPV, this server). It stores the **permanent professional identity** (waiter / bar / kitchen): name, photo, QR/key. **It is not the LAN room node.** The host for tables and rounds is **Personal Bar**.
 
-- GitHub repo: `jaminsmoke/PersonalHostel-Identity`
+- GitHub repo: `jaminsmoke/PersonalHostel-Server`
 - Local folder: `AndroidStudioProjects/PersonalHosteleriaServer` (sibling of `PersonalComander` and `PersonalBar`)
 - Version target: **v0.1** (no releases yet — `gh release list`; next version must be > latest)
 - Verificación oficial: **Docker Compose en el VPS de staging**, con bases
@@ -24,7 +24,7 @@ Familia de producto de hostelería. Owner GitHub: [`jaminsmoke`](https://github.
 |---|---|---|---|
 | **Personal Comander** | [`jaminsmoke/PersonalComander`](https://github.com/jaminsmoke/PersonalComander) | App del camarero (móvil vertical): mesas, comanda, cuenta profesional | [Project 9](https://github.com/users/jaminsmoke/projects/9) |
 | **Personal Bar** | [`jaminsmoke/PersonalBar`](https://github.com/jaminsmoke/PersonalBar) | Puesto del negocio (tablet apaisada): nodo LAN `:8787`, colas, lista blanca, mapa | [Project 11](https://github.com/users/jaminsmoke/projects/11) |
-| **PersonalHostel Identity** (este) | [`jaminsmoke/PersonalHostel-Identity`](https://github.com/jaminsmoke/PersonalHostel-Identity) | Registro canónico (Docker/VPS): camareros `:8080`, negocio `:8082` | [Project 10](https://github.com/users/jaminsmoke/projects/10) |
+| **PersonalHostel Server** (este) | [`jaminsmoke/PersonalHostel-Server`](https://github.com/jaminsmoke/PersonalHostel-Server) | Registro canónico (Docker/VPS): camareros `:8080`, negocio `:8082` | [Project 10](https://github.com/users/jaminsmoke/projects/10) |
 
 Kanban: cada app tiene el suyo. Cambio que necesite al otro lado → Detectado en **su** Project. Commander no llama a `:8082`.
 
@@ -55,7 +55,7 @@ agentes validan mediante `deploy_staging.py --validate-only` en el VPS.
 
 | Repo | Oficio | Red |
 |---|---|---|
-| **PersonalHostel-Identity** (este) | Identidad de profesionales (y luego org/establecimiento) | Internet / VPS |
+| **PersonalHostel-Server** (este) | Identidad de profesionales (y luego org/establecimiento) | Internet / VPS |
 | Personal Bar | Expo barra + **nodo LAN** (mapa, rondas, tickets) | LAN del local |
 | Personal Comander | Puesto de sala: mapa, tomar comanda, recoger | Cliente LAN de Bar; login contra este servidor |
 | Personal Kitchen (futuro) | Tickets de comida | Cliente del nodo; login aquí |
@@ -419,7 +419,7 @@ $KANBAN set-field <itemId> --field "Status" --option "Debate"
 
 # Convert draft → issue (only at Ejecutando)
 $KANBAN convert-draft <itemId>
-gh issue edit <N> --repo jaminsmoke/PersonalHostel-Identity --add-label "tipo:feature,area:api"
+gh issue edit <N> --repo jaminsmoke/PersonalHostel-Server --add-label "tipo:feature,area:api"
 
 # Verificando
 python services/identity/scripts/deploy_staging.py --ref <rama> --validate-only
@@ -432,8 +432,8 @@ $KANBAN body <itemId> --append "Commit" --content "SHA: \`$(git rev-parse --shor
 $KANBAN set-field <itemId> --field "Status" --option "Changelog"
 $KANBAN set-field <itemId> --field "Completado" --date "YYYY-MM-DD"
 $KANBAN set-field <itemId> --field "Completado exacto" --text "YYYY-MM-DDTHH:MM:SSZ"
-gh issue edit <N> --repo jaminsmoke/PersonalHostel-Identity --title "✅ ..."
-gh issue close <N> --repo jaminsmoke/PersonalHostel-Identity -r completed
+gh issue edit <N> --repo jaminsmoke/PersonalHostel-Server --title "✅ ..."
+gh issue close <N> --repo jaminsmoke/PersonalHostel-Server -r completed
 git push
 
 # Delete (IRREVERSIBLE, requires --yes)
@@ -508,7 +508,7 @@ pueden cambiar. Regenerar y validar inmediatamente:
 $KANBAN config generate --project PVT_kwHOBM87Yc4BgQqZ
 # El generador deja estos valores como REPLACE_ME; restaurarlos antes de continuar:
 # repoId: R_kgDOT3ZYEg
-# repo: jaminsmoke/PersonalHostel-Identity
+# repo: jaminsmoke/PersonalHostel-Server
 $KANBAN config validate
 ```
 
