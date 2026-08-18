@@ -35,9 +35,7 @@ def _crear_negocio_establecimiento(negocio_client, nombre="Local Web") -> tuple[
     )
     assert login.status_code == 200
     headers = {"Authorization": f"Bearer {login.json()['token']}"}
-    est = negocio_client.post(
-        "/v1/establecimientos", headers=headers, json={"nombre": nombre}
-    )
+    est = negocio_client.post("/v1/establecimientos", headers=headers, json={"nombre": nombre})
     assert est.status_code == 201
     return headers, est.json()["id"]
 
@@ -95,8 +93,14 @@ def test_web_negocio_resuelve_slug_de_ficha_y_devuelve_ficha_mas_carta(db_ready,
     assert body["logo_url"] is None
     assert body["organizacion_nombre"] == "Negocio Web"
     assert body["categorias"] == [
-        {"nombre": "Cocina", "productos": [{"nombre": "Tortilla", "precio_centimos": 450, "moneda": "EUR"}]},
-        {"nombre": "Cafés", "productos": [{"nombre": "Café solo", "precio_centimos": 150, "moneda": "EUR"}]},
+        {
+            "nombre": "Cocina",
+            "productos": [{"nombre": "Tortilla", "precio_centimos": 450, "moneda": "EUR"}],
+        },
+        {
+            "nombre": "Cafés",
+            "productos": [{"nombre": "Café solo", "precio_centimos": 150, "moneda": "EUR"}],
+        },
     ]
     assert "email" not in body
     assert resp.headers["cache-control"] == "public, max-age=300"
