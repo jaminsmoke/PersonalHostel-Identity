@@ -1,8 +1,10 @@
 """Cliente interno entre los dos servicios (profesionales ↔ negocio).
 
-Cada servicio tiene su propia BD y no puede leer la del otro. Para las pocas
-consultas que cruzan la frontera (buscar/verificar camarero, listar
-establecimientos de un camarero) se usa este cliente, con dos transportes:
+Es la única vía para cruzar la frontera entre las dos bases de datos
+(``identity_camareros`` y ``identity_negocio``): cada servicio tiene su propia
+BD y no puede leer la del otro. Para las pocas consultas que cruzan la frontera
+(buscar/verificar camarero, listar establecimientos de un camarero) se usa este
+cliente, con dos transportes:
 
 - ``direct`` (default, tests y ejecución en un solo proceso): consulta la BD del
   otro servicio directamente, sin red.

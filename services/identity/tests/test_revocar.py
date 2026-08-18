@@ -1,14 +1,8 @@
-import os
 import uuid
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
-
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
 
 from app.main import app  # noqa: E402
 from app.security import get_verify_key, verify_qr_payload  # noqa: E402
@@ -18,9 +12,9 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def db_ready():
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
@@ -81,9 +75,9 @@ def test_renovar_qr_verifica(db_ready):
     _crear(email)
     token = _login(email)["token"]
     qr = client.post("/v1/camareros/me/renovar", headers=_auth(token)).json()["qr"]
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         vk = get_verify_key(session)
     assert verify_qr_payload(qr, vk)
 
@@ -153,10 +147,10 @@ def test_revocar_con_motivo(db_ready):
     )
     assert resp.status_code == 200
 
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
     from app.models import Credencial, CredencialEstado
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         creds = (
             session.query(Credencial)
             .filter_by(estado=CredencialEstado.revocada)
@@ -172,9 +166,9 @@ def test_verify_formato_antiguo_false(db_ready):
     partes = reg["qr"].split(":")
     assert len(partes) == 4
     antiguo = f"{partes[0]}:{partes[1]}:{partes[3]}"
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         vk = get_verify_key(session)
     assert not verify_qr_payload(antiguo, vk)
 

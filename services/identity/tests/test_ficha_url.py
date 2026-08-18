@@ -7,11 +7,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 os.environ.setdefault("FICHA_URL_BASE", "http://ficha.test")
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
-
 from app.main import app  # noqa: E402
 from app.security import get_verify_key, verify_qr_payload  # noqa: E402
 
@@ -20,9 +15,9 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def db_ready():
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
@@ -91,9 +86,9 @@ def test_me_qr_incluye_ficha_url(db_ready):
 def test_verificar_qr_acepta_forma_url(db_ready):
     reg = _registro(_email())
     url = reg["ficha_url"]
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         vk = get_verify_key(session)
     assert verify_qr_payload(reg["qr"], vk)
     assert verify_qr_payload(url, vk)

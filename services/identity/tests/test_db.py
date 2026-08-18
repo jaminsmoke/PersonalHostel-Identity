@@ -1,33 +1,27 @@
-import os
 import uuid
 
 import pytest
 from sqlalchemy import text
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
-
-from app.db import SessionLocal, engine  # noqa: E402
+from app.db import CamareroSessionLocal, camarero_engine  # noqa: E402
 from app.models import Camarero, Credencial, CredencialEstado, DataOrigin  # noqa: E402
 
 
 @pytest.fixture(scope="module")
 def db_ready():
-    with engine.connect() as conn:
+    with camarero_engine.connect() as conn:
         conn.execute(text("SELECT 1"))
     yield
 
 
 def test_ping(db_ready):
-    with engine.connect() as conn:
+    with camarero_engine.connect() as conn:
         result = conn.execute(text("SELECT 1"))
         assert result.scalar() == 1
 
 
 def test_credencial_insert_select(db_ready):
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         camarero = Camarero(
             nombre="Prueba",
             apellidos="Test",

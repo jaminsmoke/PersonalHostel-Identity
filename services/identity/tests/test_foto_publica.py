@@ -1,4 +1,3 @@
-import os
 import uuid
 from io import BytesIO
 from urllib.parse import quote
@@ -8,11 +7,6 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy import text
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+psycopg://hosteleria:devlocal@localhost:5432/identity",
-)
-
 from app.main import app  # noqa: E402
 
 client = TestClient(app)
@@ -20,9 +14,9 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def db_ready():
-    from app.db import SessionLocal
+    from app.db import CamareroSessionLocal
 
-    with SessionLocal() as session:
+    with CamareroSessionLocal() as session:
         session.execute(text("SELECT 1"))
     yield
 
