@@ -8,6 +8,7 @@ import base64
 import binascii
 import sys
 from collections.abc import Mapping
+from enum import StrEnum
 from pathlib import Path
 
 KNOWN_DEFAULTS = {
@@ -22,6 +23,59 @@ REQUIRED_SECRETS = {
     "QR_SIGNING_KEY": 44,
     "EMAIL_PASSWORD": 8,
     "GRAFANA_ADMIN_PASSWORD": 12,
+}
+
+
+class SecretError(StrEnum):
+    POSTGRES_MISSING = "POSTGRES_PASSWORD: ausente o vacío"
+    POSTGRES_DUPLICATE = "POSTGRES_PASSWORD: definición duplicada"
+    POSTGRES_DEFAULT = "POSTGRES_PASSWORD: coincide con un default conocido"
+    POSTGRES_SHORT = "POSTGRES_PASSWORD: longitud insuficiente"
+    SESSION_MISSING = "SESSION_SECRET: ausente o vacío"
+    SESSION_DUPLICATE = "SESSION_SECRET: definición duplicada"
+    SESSION_DEFAULT = "SESSION_SECRET: coincide con un default conocido"
+    SESSION_SHORT = "SESSION_SECRET: longitud insuficiente"
+    QR_MISSING = "QR_SIGNING_KEY: ausente o vacío"
+    QR_DUPLICATE = "QR_SIGNING_KEY: definición duplicada"
+    QR_DEFAULT = "QR_SIGNING_KEY: coincide con un default conocido"
+    QR_SHORT = "QR_SIGNING_KEY: longitud insuficiente"
+    QR_FORMAT = "QR_SIGNING_KEY: debe ser base64 de 32 bytes"
+    EMAIL_MISSING = "EMAIL_PASSWORD: ausente o vacío"
+    EMAIL_DUPLICATE = "EMAIL_PASSWORD: definición duplicada"
+    EMAIL_SHORT = "EMAIL_PASSWORD: longitud insuficiente"
+    GRAFANA_MISSING = "GRAFANA_ADMIN_PASSWORD: ausente o vacío"
+    GRAFANA_DUPLICATE = "GRAFANA_ADMIN_PASSWORD: definición duplicada"
+    GRAFANA_DEFAULT = "GRAFANA_ADMIN_PASSWORD: coincide con un default conocido"
+    GRAFANA_SHORT = "GRAFANA_ADMIN_PASSWORD: longitud insuficiente"
+    NON_REAL_DATA = "ALLOW_NON_REAL_DATA: debe ser false en producción"
+
+
+MISSING_ERRORS = {
+    "POSTGRES_PASSWORD": SecretError.POSTGRES_MISSING,
+    "SESSION_SECRET": SecretError.SESSION_MISSING,
+    "QR_SIGNING_KEY": SecretError.QR_MISSING,
+    "EMAIL_PASSWORD": SecretError.EMAIL_MISSING,
+    "GRAFANA_ADMIN_PASSWORD": SecretError.GRAFANA_MISSING,
+}
+DUPLICATE_ERRORS = {
+    "POSTGRES_PASSWORD": SecretError.POSTGRES_DUPLICATE,
+    "SESSION_SECRET": SecretError.SESSION_DUPLICATE,
+    "QR_SIGNING_KEY": SecretError.QR_DUPLICATE,
+    "EMAIL_PASSWORD": SecretError.EMAIL_DUPLICATE,
+    "GRAFANA_ADMIN_PASSWORD": SecretError.GRAFANA_DUPLICATE,
+}
+DEFAULT_ERRORS = {
+    "POSTGRES_PASSWORD": SecretError.POSTGRES_DEFAULT,
+    "SESSION_SECRET": SecretError.SESSION_DEFAULT,
+    "QR_SIGNING_KEY": SecretError.QR_DEFAULT,
+    "GRAFANA_ADMIN_PASSWORD": SecretError.GRAFANA_DEFAULT,
+}
+SHORT_ERRORS = {
+    "POSTGRES_PASSWORD": SecretError.POSTGRES_SHORT,
+    "SESSION_SECRET": SecretError.SESSION_SHORT,
+    "QR_SIGNING_KEY": SecretError.QR_SHORT,
+    "EMAIL_PASSWORD": SecretError.EMAIL_SHORT,
+    "GRAFANA_ADMIN_PASSWORD": SecretError.GRAFANA_SHORT,
 }
 
 
@@ -50,30 +104,30 @@ def _valid_qr_key(value: str) -> bool:
 
 def validate_production_secrets(
     values: Mapping[str, str], duplicates: set[str] | None = None
-) -> list[str]:
+) -> list[SecretError]:
     """Devuelve errores sanitizados; nunca incorpora valores a los mensajes."""
-    errors: list[str] = []
+    errors: list[SecretError] = []
     duplicates = duplicates or set()
     for key, minimum in REQUIRED_SECRETS.items():
         value = values.get(key, "")
         if key in duplicates:
-            errors.append(f"{key}: definición duplicada")
+            errors.append(DUPLICATE_ERRORS[key])
         if not value:
-            errors.append(f"{key}: ausente o vacío")
+            errors.append(MISSING_ERRORS[key])
             continue
         if value in KNOWN_DEFAULTS.get(key, set()):
-            errors.append(f"{key}: coincide con un default conocido")
+            errors.append(DEFAULT_ERRORS[key])
         if len(value) < minimum:
-            errors.append(f"{key}: longitud insuficiente")
+            errors.append(SHORT_ERRORS[key])
     qr_key = values.get("QR_SIGNING_KEY", "")
     if qr_key and not _valid_qr_key(qr_key):
-        errors.append("QR_SIGNING_KEY: debe ser base64 de 32 bytes")
+        errors.append(SecretError.QR_FORMAT)
     if values.get("ALLOW_NON_REAL_DATA", "").lower() != "false":
-        errors.append("ALLOW_NON_REAL_DATA: debe ser false en producción")
+        errors.append(SecretError.NON_REAL_DATA)
     return errors
 
 
-def validate_env_text(text: str) -> list[str]:
+def validate_env_text(text: str) -> list[SecretError]:
     values, duplicates = parse_env(text)
     return validate_production_secrets(values, duplicates)
 
@@ -89,7 +143,7 @@ def main() -> int:
         return 2
     if errors:
         for error in errors:
-            print(f"ERROR: {error}", file=sys.stderr)
+            print("ERROR: " + error.value, file=sys.stderr)
         return 1
     print("Secretos de producción: configuración válida")
     return 0
