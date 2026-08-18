@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from scripts import deploy_staging
 
 
@@ -75,3 +77,10 @@ def test_harden_remote_env_permissions_forces_0600():
         (f"{deploy_staging.REMOTE_DIR}/.env.deploy-tmp", 0o600),
     ]
     assert sftp.closed is True
+
+
+def test_deploy_exposes_isolated_backup_restore_drill():
+    source = Path(deploy_staging.__file__).read_text(encoding="utf-8")
+
+    assert '"--backup-restore-drill"' in source
+    assert "backup_restore.py restore-drill" in source

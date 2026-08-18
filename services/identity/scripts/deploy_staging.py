@@ -182,6 +182,11 @@ def main() -> int:
         action="store_true",
         help="Valida el .env remoto sin fetch, build, cambios de permisos ni despliegue.",
     )
+    parser.add_argument(
+        "--backup-restore-drill",
+        action="store_true",
+        help="Verifica y restaura el último backup solo en bases *_restore_test.",
+    )
     args = parser.parse_args()
     if not SAFE_REF.fullmatch(args.ref) or ".." in args.ref or args.ref.endswith("/"):
         print(f"Referencia no válida: {args.ref}")
@@ -266,7 +271,12 @@ def main() -> int:
         remote_ref = shlex.quote(f"origin/{args.ref}")
         run(f"cd {remote} && git fetch origin && git reset --hard {remote_ref}")
         compose = "docker compose -f docker-compose.yml -f docker-compose.prod.yml"
-        if args.sync_openapi:
+        if args.backup_restore_drill:
+            run(
+                f"cd {remote} && python3 services/identity/scripts/backup_restore.py "
+                "restore-drill"
+            )
+        elif args.sync_openapi:
             run(f"cd {remote} && {compose} build identity-tests")
             run(
                 f"cd {remote} && {compose} run --rm "
@@ -343,7 +353,9 @@ def main() -> int:
     finally:
         client.close()
 
-    if args.sync_openapi:
+    if args.backup_restore_drill:
+        print("Restore drill aislado OK")
+    elif args.sync_openapi:
         print("OpenAPI generado en el VPS y sincronizado al checkout local")
     elif args.smoke_profile:
         print("Smoke público ejecutado dentro del Docker del VPS")

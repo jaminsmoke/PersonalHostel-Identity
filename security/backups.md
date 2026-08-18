@@ -28,7 +28,7 @@ python3 services/identity/scripts/backup_restore.py verify
 Drill aislado (crea, valida y retira las dos bases temporales):
 
 ```sh
-python3 services/identity/scripts/backup_restore.py restore-drill
+python services/identity/scripts/deploy_staging.py --ref main --backup-restore-drill
 ```
 
 El restaurador rechaza las bases activas y cualquier nombre que no termine en
