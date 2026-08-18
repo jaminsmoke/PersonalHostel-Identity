@@ -150,6 +150,52 @@ body {
   font-size: 0.95rem;
 }
 
+/* Horario como sección de la web. */
+.horario {
+  margin-top: 28px;
+}
+
+.horario-title {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 6px;
+}
+
+.horario-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.horario-dia {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.horario-dias {
+  font-weight: 600;
+}
+
+.horario-tramos {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.horario-tramos time {
+  color: var(--ink);
+}
+
+.horario-cerrado {
+  color: var(--muted);
+}
+
 /* Carta como sección de la web. */
 .carta {
   margin-top: 28px;

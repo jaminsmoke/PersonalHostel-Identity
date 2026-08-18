@@ -10,6 +10,9 @@
 
   const output = document.getElementById("output");
 
+  // dia_semana del contrato: 0=lunes … 6=domingo.
+  const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
   function esc(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
@@ -49,6 +52,50 @@
     return "theme-default";
   }
 
+  function firmaHorario(dia) {
+    return dia.cerrado ? "cerrado" : JSON.stringify(dia.turnos || []);
+  }
+
+  function renderHorario(horario) {
+    if (!horario || !horario.length) return "";
+
+    // Agrupa días contiguos con el mismo horario (misma firma).
+    const grupos = [];
+    for (const dia of horario) {
+      const firma = firmaHorario(dia);
+      const ultimo = grupos[grupos.length - 1];
+      if (ultimo && ultimo.firma === firma) {
+        ultimo.hasta = dia.dia_semana;
+      } else {
+        grupos.push({
+          firma: firma,
+          desde: dia.dia_semana,
+          hasta: dia.dia_semana,
+          cerrado: dia.cerrado,
+          turnos: dia.turnos || [],
+        });
+      }
+    }
+
+    const filas = grupos.map(function (g) {
+      const etiqueta = g.desde === g.hasta
+        ? DIAS[g.desde]
+        : DIAS[g.desde] + " a " + DIAS[g.hasta];
+      const tramos = g.cerrado
+        ? '<span class="horario-cerrado">Cerrado</span>'
+        : g.turnos.map(function (t) {
+            return '<time datetime="' + esc(t.abre) + '">' + esc(t.abre) + "</time>–" +
+              '<time datetime="' + esc(t.cierra) + '">' + esc(t.cierra) + "</time>";
+          }).join('<span class="horario-y"> y </span>');
+      return '<li class="horario-dia"><span class="horario-dias">' + esc(etiqueta) +
+        '</span><span class="horario-tramos">' + tramos + "</span></li>";
+    }).join("");
+
+    return '<section class="horario" id="horario" aria-label="Horario de apertura">' +
+      '<h2 class="horario-title">Horario</h2>' +
+      '<ul class="horario-lista">' + filas + "</ul></section>";
+  }
+
   function renderWeb(web) {
     document.title = (web.nombre || "Negocio") + " — Personal Hostel";
     document.body.className = plantillaPorTipo(web.tipo_establecimiento);
@@ -74,6 +121,8 @@
         '</h2><ul class="productos">' + items + "</ul></section>";
     }).join("");
 
+    const horario = renderHorario(web.horario);
+
     output.innerHTML =
       '<header class="hero">' + logo +
         '<div class="hero-text">' +
@@ -81,13 +130,14 @@
           tipo + organizacion +
         "</div>" +
       "</header>" +
+      horario +
       '<section class="carta" id="carta">' +
         '<h2 class="carta-title">Carta</h2>' +
         (bloques || '<p class="detail">No hay productos disponibles en este momento.</p>') +
       "</section>";
 
-    if (seccion === "carta") {
-      const target = document.getElementById("carta");
+    if (seccion === "carta" || seccion === "horario") {
+      const target = document.getElementById(seccion);
       if (target && target.scrollIntoView) {
         target.scrollIntoView({ behavior: "smooth", block: "start" });
       }
