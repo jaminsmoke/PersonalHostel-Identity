@@ -22,3 +22,11 @@ services:
   identity-web:
     ports: !override
       - "127.0.0.1:8081:8080"
+
+  web-negocio:
+    ports: !override
+      - "127.0.0.1:8083:8080"
+
+  web-camareros:
+    ports: !override
+      - "127.0.0.1:8084:8080"
