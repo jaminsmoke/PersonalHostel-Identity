@@ -18,11 +18,12 @@ def _email(prefix: str) -> str:
 
 
 def _crear_cuenta(negocio_client, nombre_mostrar: str) -> dict:
+    email = _email("horario")
     reg = negocio_client.post(
         "/v1/auth/negocio/registro",
         json={
             "nombre_mostrar": nombre_mostrar,
-            "email": _email("horario"),
+            "email": email,
             "password": "negocio-12345678",
             "tipo_establecimiento": "bar",
         },
@@ -30,7 +31,7 @@ def _crear_cuenta(negocio_client, nombre_mostrar: str) -> dict:
     assert reg.status_code == 201, reg.text
     login = negocio_client.post(
         "/v1/auth/negocio/login",
-        json={"email": reg.json()["email"], "password": "negocio-12345678"},
+        json={"email": email, "password": "negocio-12345678"},
     )
     assert login.status_code == 200
     return {"Authorization": f"Bearer {login.json()['token']}"}
