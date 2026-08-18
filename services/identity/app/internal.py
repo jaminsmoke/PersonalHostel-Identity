@@ -34,9 +34,11 @@ from app.models import (
     Camarero,
     Credencial,
     CredencialEstado,
+    DataOrigin,
     Establecimiento,
     Membresia,
     MembresiaEstado,
+    Servicio,
 )
 from app.security import get_verify_key, parse_and_verify_qr_payload
 
@@ -76,6 +78,18 @@ def _directorio_dict(c: Camarero) -> dict:
     }
 
 
+def _servicio_dict(s: Servicio, duplicado: bool) -> dict:
+    return {
+        "id": str(s.id),
+        "camarero_id": str(s.camarero_id),
+        "establecimiento_id": str(s.establecimiento_id),
+        "evento_id": s.evento_id,
+        "tipo": s.tipo,
+        "cantidad": s.cantidad,
+        "duplicado": duplicado,
+    }
+
+
 class CamarerosInternal(Protocol):
     def buscar_por_email(self, email: str) -> dict | None:
         """Perfil del camarero por email, o ``None`` si no existe."""
@@ -95,6 +109,17 @@ class CamarerosInternal(Protocol):
         Sin email; el servicio de negocio aplica los filtros de "libre", dueños,
         miembros propios y ``data_origin``.
         """
+
+    def registrar_servicio(
+        self,
+        camarero_id: uuid.UUID,
+        establecimiento_id: uuid.UUID,
+        evento_id: str,
+        tipo: str,
+        cantidad: int,
+        data_origin: str,
+    ) -> dict:
+        """Registra un evento de servicio (idempotente por ``evento_id``)."""
 
 
 class NegocioInternal(Protocol):
@@ -154,6 +179,36 @@ class DirectCamarerosInternal:
                 .all()
             )
         return [_directorio_dict(c) for c in rows]
+
+    def registrar_servicio(
+        self,
+        camarero_id: uuid.UUID,
+        establecimiento_id: uuid.UUID,
+        evento_id: str,
+        tipo: str,
+        cantidad: int,
+        data_origin: str,
+    ) -> dict:
+        with CamareroSessionLocal() as db:
+            existente = (
+                db.query(Servicio)
+                .filter_by(establecimiento_id=establecimiento_id, evento_id=evento_id)
+                .one_or_none()
+            )
+            if existente is not None:
+                return _servicio_dict(existente, duplicado=True)
+            servicio = Servicio(
+                camarero_id=camarero_id,
+                establecimiento_id=establecimiento_id,
+                evento_id=evento_id,
+                tipo=tipo,
+                cantidad=cantidad,
+                data_origin=DataOrigin(data_origin),
+            )
+            db.add(servicio)
+            db.commit()
+            db.refresh(servicio)
+            return _servicio_dict(servicio, duplicado=False)
 
 
 class DirectNegocioInternal:
@@ -246,6 +301,30 @@ class HttpCamarerosInternal:
 
     def directorio(self) -> list[dict]:
         response = self._request("GET", "/internal/camareros/directorio")
+        if response.status_code != 200:
+            _raise_from_response(response, "identity.internal_error")
+        return response.json()
+
+    def registrar_servicio(
+        self,
+        camarero_id: uuid.UUID,
+        establecimiento_id: uuid.UUID,
+        evento_id: str,
+        tipo: str,
+        cantidad: int,
+        data_origin: str,
+    ) -> dict:
+        response = self._request(
+            "POST",
+            f"/internal/camareros/{camarero_id}/servicios",
+            json={
+                "establecimiento_id": str(establecimiento_id),
+                "evento_id": evento_id,
+                "tipo": tipo,
+                "cantidad": cantidad,
+                "data_origin": data_origin,
+            },
+        )
         if response.status_code != 200:
             _raise_from_response(response, "identity.internal_error")
         return response.json()

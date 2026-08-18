@@ -618,3 +618,59 @@ class WebNegocioPublica(BaseModel):
     logo_url: str | None = None
     organizacion_nombre: str
     categorias: list[CategoriaCartaPublica] = Field(default_factory=list)
+
+
+class JornadaIniciarRequest(BaseModel):
+    """Establecimiento donde el camarero abre su jornada."""
+
+    establecimiento_id: uuid.UUID
+
+
+class JornadaResponse(BaseModel):
+    """Intervalo de jornada (abierta o cerrada)."""
+
+    id: uuid.UUID
+    camarero_id: uuid.UUID
+    establecimiento_id: uuid.UUID
+    inicio: datetime
+    fin: datetime | None = None
+
+
+class ResumenPorEstablecimiento(BaseModel):
+    """Agregado de oficio de un establecimiento en la ventana."""
+
+    establecimiento_id: uuid.UUID
+    horas_segundos: int
+    mesas_servidas: int
+
+
+class ResumenOficioResponse(BaseModel):
+    """Resumen del libro de oficio del camarero en una ventana."""
+
+    desde: datetime
+    hasta: datetime
+    horas_segundos: int
+    mesas_servidas: int
+    por_establecimiento: list[ResumenPorEstablecimiento] = Field(default_factory=list)
+
+
+class ServicioRegistroRequest(BaseModel):
+    """Evento de servicio que registra Bar (idempotente por ``evento_id``)."""
+
+    establecimiento_id: uuid.UUID
+    camarero_id: uuid.UUID
+    evento_id: str = Field(..., min_length=1, max_length=64)
+    tipo: str = Field(default="mesa_servida", max_length=50)
+    cantidad: int = Field(default=1, ge=1)
+
+
+class ServicioRegistroResponse(BaseModel):
+    """Resultado del registro de un evento de servicio."""
+
+    id: uuid.UUID
+    camarero_id: uuid.UUID
+    establecimiento_id: uuid.UUID
+    evento_id: str
+    tipo: str
+    cantidad: int
+    duplicado: bool

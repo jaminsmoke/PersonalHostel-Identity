@@ -21,6 +21,14 @@ class QrVerifyRequest(BaseModel):
     qr: str = Field(..., min_length=20, max_length=500)
 
 
+class ServicioInternalRequest(BaseModel):
+    establecimiento_id: uuid.UUID
+    evento_id: str = Field(..., min_length=1, max_length=64)
+    tipo: str = Field(default="mesa_servida", max_length=50)
+    cantidad: int = Field(default=1, ge=1)
+    data_origin: str = Field(default="real", max_length=20)
+
+
 @camareros_internal_router.get("/buscar")
 def internal_buscar(email: str) -> dict:
     perfil = DirectCamarerosInternal().buscar_por_email(email)
@@ -75,3 +83,15 @@ def internal_aceptar_invitacion(camarero_id: uuid.UUID, invitacion_id: uuid.UUID
 @negocio_internal_router.post("/{camarero_id}/invitaciones/{invitacion_id}/rechazar")
 def internal_rechazar_invitacion(camarero_id: uuid.UUID, invitacion_id: uuid.UUID) -> dict:
     return DirectNegocioInternal().rechazar_invitacion(invitacion_id, camarero_id)
+
+
+@camareros_internal_router.post("/{camarero_id}/servicios")
+def internal_registrar_servicio(camarero_id: uuid.UUID, payload: ServicioInternalRequest) -> dict:
+    return DirectCamarerosInternal().registrar_servicio(
+        camarero_id=camarero_id,
+        establecimiento_id=payload.establecimiento_id,
+        evento_id=payload.evento_id,
+        tipo=payload.tipo,
+        cantidad=payload.cantidad,
+        data_origin=payload.data_origin,
+    )

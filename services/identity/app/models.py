@@ -203,6 +203,12 @@ class Camarero(CamareroBase):
     credenciales: Mapped[list[Credencial]] = relationship(
         back_populates="camarero", cascade="all, delete-orphan"
     )
+    jornadas: Mapped[list[Jornada]] = relationship(
+        back_populates="camarero", cascade="all, delete-orphan"
+    )
+    servicios: Mapped[list[Servicio]] = relationship(
+        back_populates="camarero", cascade="all, delete-orphan"
+    )
 
     @property
     def foto_url(self) -> str | None:
@@ -238,6 +244,91 @@ class Credencial(CamareroBase):
     motivo_revocacion: Mapped[str | None] = mapped_column(String(500))
 
     camarero: Mapped[Camarero] = relationship(back_populates="credenciales")
+
+
+class Jornada(CamareroBase):
+    """Intervalo de jornada de un camarero en un establecimiento.
+
+    ``establecimiento_id`` es un UUID plano (la entidad vive en la BD de
+    negocio); la validación de membresía la hace el servicio de negocio antes
+    de dejar registrar el intervalo.
+    """
+
+    __tablename__ = "jornadas"
+    __table_args__ = (
+        CheckConstraint("fin IS NULL OR fin >= inicio", name="ck_jornadas_intervalo"),
+        Index("ix_jornadas_camarero_ventana", "camarero_id", "inicio"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    camarero_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("camareros.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False, index=True
+    )
+    inicio: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    fin: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    data_origin: Mapped[DataOrigin] = mapped_column(
+        Enum(DataOrigin, name="data_origin"),
+        nullable=False,
+        default=DataOrigin.real,
+        server_default=DataOrigin.real.value,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    camarero: Mapped[Camarero] = relationship(back_populates="jornadas")
+
+
+class Servicio(CamareroBase):
+    """Evento bruto de servicio (p. ej. «mesa servida») por camarero y
+    establecimiento. Agregable por período para la ficha de oficio.
+    ``evento_id`` es la clave de idempotencia que envía Bar.
+    """
+
+    __tablename__ = "servicios"
+    __table_args__ = (
+        UniqueConstraint(
+            "establecimiento_id", "evento_id", name="uq_servicios_establecimiento_evento"
+        ),
+        CheckConstraint("cantidad > 0", name="ck_servicios_cantidad_positiva"),
+        Index("ix_servicios_camarero_ventana", "camarero_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    camarero_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("camareros.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False, index=True
+    )
+    evento_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    tipo: Mapped[str] = mapped_column(String(50), nullable=False, default="mesa_servida")
+    cantidad: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    data_origin: Mapped[DataOrigin] = mapped_column(
+        Enum(DataOrigin, name="data_origin"),
+        nullable=False,
+        default=DataOrigin.real,
+        server_default=DataOrigin.real.value,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    camarero: Mapped[Camarero] = relationship(back_populates="servicios")
 
 
 # ── BD de negocio ──────────────────────────────────────────────────────────

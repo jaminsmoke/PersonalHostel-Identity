@@ -22,6 +22,7 @@ from app.routes.negocio_auth import router as negocio_auth_router
 from app.routes.negocio_carta import router as negocio_carta_router
 from app.routes.negocio_ficha import router as negocio_ficha_router
 from app.routes.negocio_web import router as negocio_web_router
+from app.routes.oficio_negocio import router as oficio_negocio_router
 
 
 @asynccontextmanager
@@ -71,6 +72,7 @@ app.include_router(catalogo_router)
 app.include_router(enlaces_router)
 app.include_router(enlaces_public_router)
 app.include_router(invitations_router)
+app.include_router(oficio_negocio_router)
 app.include_router(negocio_internal_router)
 
 
