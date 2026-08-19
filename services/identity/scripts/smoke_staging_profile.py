@@ -114,29 +114,30 @@ def run(base_url: str) -> None:
             enlace = _expect(
                 client.post(link_path, headers=headers, json={"tipo": "ficha_negocio"}),
                 201,
-                "crear enlace ficha",
+                "crear enlace web (alias ficha_negocio)",
             )
             repetido = _expect(
                 client.post(link_path, headers=headers, json={"tipo": "ficha_negocio"}),
                 200,
-                "repetir enlace ficha",
+                "repetir enlace web",
             )
             assert repetido["id"] == enlace["id"]
+            assert enlace["tipo"] == "web"
             assert enlace["url_publica"].startswith(
                 "https://web.negocio.siberia.solutions/negocios/"
             )
+            assert "/carta" not in enlace["url_publica"].split("negocios/")[-1]
 
-            ficha = _expect(
-                client.get(f"{base_url}/v1/negocio/ficha", params={"slug": enlace["slug"]}),
+            web = _expect(
+                client.get(f"{base_url}/v1/negocio/web", params={"slug": enlace["slug"]}),
                 200,
-                "leer ficha pública",
+                "leer web pública",
             )
-            assert ficha["establecimiento_id"] == first_id
-            assert ficha["nombre"] == "Restaurante Smoke"
-            assert ficha["tipo_establecimiento"] == "restaurante"
-            assert "establecimientos" not in ficha
-            assert ficha["logo_url"]
-            logo = client.get(f"{base_url}{ficha['logo_url']}")
+            assert web["establecimiento_id"] == first_id
+            assert web["nombre"] == "Restaurante Smoke"
+            assert web["tipo_establecimiento"] == "restaurante"
+            assert web["logo_url"]
+            logo = client.get(f"{base_url}{web['logo_url']}")
             if logo.status_code != 200 or logo.headers.get("content-type") != "image/webp":
                 raise RuntimeError("servir logo público: respuesta inesperada")
 
@@ -151,12 +152,12 @@ def run(base_url: str) -> None:
             )
             last_slug = rotado["slug"]
             _expect(
-                client.get(f"{base_url}/v1/negocio/ficha", params={"slug": enlace["slug"]}),
+                client.get(f"{base_url}/v1/negocio/web", params={"slug": enlace["slug"]}),
                 410,
                 "rechazar enlace anterior",
             )
             _expect(
-                client.get(f"{base_url}/v1/negocio/ficha", params={"slug": last_slug}),
+                client.get(f"{base_url}/v1/negocio/web", params={"slug": last_slug}),
                 200,
                 "aceptar enlace rotado",
             )
@@ -173,14 +174,15 @@ def run(base_url: str) -> None:
             assert carta["url_publica"].startswith(
                 "https://web.negocio.siberia.solutions/negocios/"
             )
-            assert "seccion=carta" in carta["url_publica"]
+            assert carta["url_publica"].endswith("/carta")
+            assert "seccion=carta" not in carta["url_publica"]
             _expect(
                 client.get(f"{base_url}/v1/negocio/carta", params={"slug": carta["slug"]}),
                 200,
                 "leer carta pública",
             )
             if client.get(rotado["url_publica"]).status_code != 200:
-                raise RuntimeError("render web de ficha: respuesta inesperada")
+                raise RuntimeError("render web del local: respuesta inesperada")
             if client.get(carta["url_publica"]).status_code != 200:
                 raise RuntimeError("render web de carta: respuesta inesperada")
         finally:
@@ -203,7 +205,7 @@ def run(base_url: str) -> None:
         if denied.status_code != 401:
             raise RuntimeError("limpieza: la cuenta sintética aún permite login")
         if last_slug is not None:
-            removed = client.get(f"{base_url}/v1/negocio/ficha", params={"slug": last_slug})
+            removed = client.get(f"{base_url}/v1/negocio/web", params={"slug": last_slug})
             if removed.status_code != 404:
                 raise RuntimeError("limpieza: el enlace sintético aún existe")
 

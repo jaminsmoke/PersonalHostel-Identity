@@ -1,24 +1,27 @@
 import { absUrl } from "../config";
-import type { WebNegocio } from "../types";
+import { useWeb } from "../web-context";
 
-export function Equipo({ web }: { web: WebNegocio }) {
+export function Equipo() {
+  const web = useWeb();
   return (
-    <section
-      id="equipo"
-      className="py-section-gap px-margin-mobile md:px-gutter max-w-page mx-auto scroll-mt-20"
-    >
-      <h2 className="text-label-md text-primary-fixed-dim uppercase tracking-widest mb-stack-md">
-        Equipo
-      </h2>
+    <section className="flex-grow pt-32 pb-section-gap px-gutter max-w-page mx-auto w-full">
+      <section className="mb-section-gap max-w-3xl">
+        <h1 className="font-display text-headline-lg-mobile md:text-display-lg text-on-surface mb-stack-lg">
+          El equipo
+        </h1>
+        <p className="text-body-lg text-on-surface-variant">
+          Las personas de {web.nombre} que el local ha elegido mostrar.
+        </p>
+      </section>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {web.equipo.map((m) => (
           <div
             key={m.camarero_id}
-            className="flex flex-col bg-surface-variant rounded-lg border border-outline-variant/50 overflow-hidden"
+            className="flex flex-col bg-surface-variant rounded border border-outline-variant/50 overflow-hidden"
           >
             {m.foto_url && (
               <img
-                className="h-64 w-full object-cover"
+                className="h-80 w-full object-cover"
                 src={absUrl(m.foto_url)}
                 alt={`${m.nombre} ${m.apellidos}`}
                 loading="lazy"
@@ -31,9 +34,7 @@ export function Equipo({ web }: { web: WebNegocio }) {
               {m.nick && (
                 <p className="text-label-md text-primary uppercase tracking-wider">{m.nick}</p>
               )}
-              <p className="text-label-md text-on-surface-variant uppercase tracking-wider">
-                {m.rol}
-              </p>
+              <p className="text-label-md text-on-surface-variant uppercase tracking-wider">{m.rol}</p>
             </div>
           </div>
         ))}

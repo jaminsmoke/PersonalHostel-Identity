@@ -10,6 +10,15 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Web pública Estate Hospitality con rutas reales**: `web-negocio` deja el
+  one-pager con hashes y sirve páginas `/negocios/<slug>` (inicio, horario,
+  carta, equipo, contacto, galería). La carta pública expone `destino`
+  (tabs Cocina/Barra) y `descripcion` opcional del plato (migración `0010`).
+  El tipo de enlace canónico pasa a `web` (`ficha_negocio` queda como alias);
+  `url_publica` apunta a `/negocios/<slug>` y `/negocios/<slug>/carta`.
+  Se retira `GET /v1/negocio/ficha`: la lectura canónica es `/v1/negocio/web`.
+  ([#130](https://github.com/jaminsmoke/PersonalHostel-Server/issues/130), API)
+
 - **Política raíz de seguridad de CI y cadena de suministro**: CodeQL y
   Dependabot, auditoría Python/workflows/contenedores con `pip-audit`,
   `actionlint`, `zizmor` y Trivy, SBOM SPDX por imagen, pines inmutables y

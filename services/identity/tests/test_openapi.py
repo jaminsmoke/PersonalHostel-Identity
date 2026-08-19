@@ -24,8 +24,6 @@ NEGOCIO_RUTAS = [
     "/v1/auth/negocio/registro",
     "/v1/auth/negocio/login",
     "/v1/auth/negocio/me",
-    "/v1/negocio/ficha",
-    "/v1/negocio/ficha/logo",
     "/v1/negocio/carta",
     "/v1/establecimientos",
     "/v1/establecimientos/mios",
@@ -78,6 +76,8 @@ def test_openapi_negocio_documenta_rutas_y_version(negocio_client):
     paths = spec["paths"]
     for ruta in NEGOCIO_RUTAS:
         assert ruta in paths, f"Falta {ruta} en el spec de negocio"
+    assert "/v1/negocio/ficha" not in paths
+    assert "/v1/negocio/ficha/logo" not in paths
     assert "get" in paths["/v1/auth/negocio/me"]
     assert "patch" in paths["/v1/auth/negocio/me"]
     assert "patch" in paths["/v1/establecimientos/{establecimiento_id}"]

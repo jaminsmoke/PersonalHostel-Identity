@@ -1,6 +1,7 @@
-import type { WebNegocio } from "../types";
+import { useWeb } from "../web-context";
 
-export function Footer({ web }: { web: WebNegocio }) {
+export function Footer() {
+  const web = useWeb();
   return (
     <footer className="w-full py-stack-lg bg-surface-lowest border-t border-outline-variant/40">
       <div className="max-w-page mx-auto px-margin-mobile md:px-gutter flex flex-col md:flex-row justify-between items-center gap-stack-md">

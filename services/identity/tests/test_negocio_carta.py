@@ -109,9 +109,10 @@ def test_carta_publica_agrupada_con_precio(db_ready, negocio_client):
     assert [p["nombre"] for p in categorias["Cocina"]] == ["Tortilla"]
     # no disponible excluido
     assert "Agotado" not in [p["nombre"] for p in categorias["Cafés"]]
-    # sin campos internos
-    assert "destino" not in categorias["Cafés"][0]
+    # destino público para tabs Cocina/Barra; sin revisión ni procedencia
+    assert categorias["Cafés"][0]["destino"] == "barra"
     assert "revision" not in categorias["Cafés"][0]
+    assert "data_origin" not in categorias["Cafés"][0]
 
 
 def test_carta_enlace_ficha_negocio_no_sirve(db_ready, negocio_client):

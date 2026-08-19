@@ -62,10 +62,15 @@ class ProductoDestino(str, enum.Enum):
 
 
 class EnlaceTipo(str, enum.Enum):
-    """Tipos de enlace público (crece sin migración)."""
+    """Tipos de enlace público (VARCHAR; crece sin enum de Postgres).
 
-    ficha_negocio = "ficha_negocio"
+    ``web`` es el canónico de la web del local. ``ficha_negocio`` queda como
+    alias HTTP deprecado (se persiste como ``web``).
+    """
+
+    web = "web"
     carta = "carta"
+    ficha_negocio = "ficha_negocio"
 
 
 class EnlaceEstado(str, enum.Enum):
@@ -617,6 +622,7 @@ class ProductoCatalogo(NegocioBase):
         index=True,
     )
     categoria: Mapped[str] = mapped_column(String(100), nullable=False)
+    descripcion: Mapped[str | None] = mapped_column(Text)
     destino: Mapped[ProductoDestino] = mapped_column(
         Enum(ProductoDestino, name="producto_destino"), nullable=False
     )

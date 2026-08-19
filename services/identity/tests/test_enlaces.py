@@ -76,6 +76,7 @@ def test_crear_enlace_con_slug_explicito(db_ready, negocio_client):
     )
     assert resp.status_code == 201
     assert resp.json()["slug"] == "mi-ficha"
+    assert resp.json()["tipo"] == "web"
 
 
 def test_crear_enlace_slug_duplicado_409(db_ready, negocio_client):
@@ -215,6 +216,7 @@ def test_crear_enlace_es_idempotente_y_devuelve_url_publica(db_ready, negocio_cl
         json={"tipo": "ficha_negocio"},
     )
     assert first.status_code == 201
+    assert first.json()["tipo"] == "web"
     assert second.status_code == 200
     assert second.json()["id"] == first.json()["id"]
     assert first.json()["url_publica"] == (
@@ -251,7 +253,8 @@ def test_rotar_enlace_revoca_anterior_y_crea_sustituto(db_ready, negocio_client)
     assert rotated.json()["url_publica"].startswith(
         f"{os.environ['WEB_NEGOCIO_URL_BASE']}/negocios/"
     )
-    assert "seccion=carta" in rotated.json()["url_publica"]
+    assert rotated.json()["url_publica"].endswith("/carta")
+    assert "seccion=carta" not in rotated.json()["url_publica"]
     assert negocio_client.get(f"/v1/enlaces/{original['slug']}").status_code == 410
     assert negocio_client.get(f"/v1/enlaces/{rotated.json()['slug']}").status_code == 200
 

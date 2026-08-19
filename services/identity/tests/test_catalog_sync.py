@@ -102,7 +102,22 @@ def test_catalogo_aplica_operaciones_idempotentes_y_expone_deltas(negocio_client
     assert collision.json()["code"] == "identity.operation_id_en_uso"
 
 
-def test_actualizar_y_archivar_generan_revisiones_y_tombstone(negocio_client):
+def test_descripcion_opcional_en_sync_y_snapshot(negocio_client):
+    headers, establishment_id = _create_business_and_establishment(negocio_client)
+    product_id = str(uuid.uuid4())
+    create = _operation(product_id)
+    assert _post_operation(negocio_client, establishment_id, headers, create).status_code == 200
+    catalog = negocio_client.get(
+        f"/v1/establecimientos/{establishment_id}/catalogo", headers=headers
+    )
+    assert catalog.json()["productos"][0]["descripcion"] is None
+
+    update = _operation(product_id, action="actualizar", base_revision=1)
+    update["payload"]["descripcion"] = "  Espresso de finca  "
+    updated = _post_operation(negocio_client, establishment_id, headers, update)
+    assert updated.status_code == 200
+    assert updated.json()["result_snapshot"]["descripcion"] == "Espresso de finca"
+
     headers, establishment_id = _create_business_and_establishment(negocio_client)
     product_id = str(uuid.uuid4())
     assert (

@@ -458,6 +458,7 @@ class LayoutResponse(BaseModel):
 class ProductoPayload(BaseModel):
     nombre: str = Field(..., min_length=1, max_length=200)
     categoria: str = Field(..., min_length=1, max_length=100)
+    descripcion: str | None = Field(default=None, max_length=800)
     destino: str = Field(..., pattern="^(barra|cocina)$")
     precio_centimos: int = Field(..., ge=0, le=2_147_483_647)
     moneda: str = Field(default="EUR", pattern="^[A-Z]{3}$")
@@ -566,7 +567,7 @@ class NotificacionNegocioResponse(BaseModel):
 class EnlacePublicoCreateRequest(BaseModel):
     """Alta de un enlace público para un establecimiento."""
 
-    tipo: str = Field(..., pattern="^(ficha_negocio|carta)$")
+    tipo: str = Field(..., pattern="^(web|carta|ficha_negocio)$")
     slug: str | None = Field(default=None, min_length=1, max_length=100, pattern="^[a-z0-9-]+$")
 
 
@@ -595,22 +596,14 @@ class EnlacePublicoResolucion(BaseModel):
     establecimiento_id: uuid.UUID
 
 
-class NegocioFichaPublica(BaseModel):
-    """Ficha pública del establecimiento identificado por el enlace."""
-
-    establecimiento_id: uuid.UUID
-    nombre: str
-    tipo_establecimiento: str | None = None
-    logo_url: str | None = None
-    organizacion_nombre: str
-
-
 class ProductoCartaPublica(BaseModel):
-    """Producto visible en la carta pública (sin campos internos)."""
+    """Producto visible en la carta pública (sin revisión ni procedencia)."""
 
     nombre: str
     precio_centimos: int
     moneda: str
+    destino: str
+    descripcion: str | None = None
 
 
 class CategoriaCartaPublica(BaseModel):

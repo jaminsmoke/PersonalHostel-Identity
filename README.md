@@ -55,7 +55,7 @@ El staging es producción en configuración (HTTPS, secretos reales, datos borra
 El cliente de despliegue usa una dependencia fijada: `pip install -r
 services/identity/requirements-deploy.txt`.
 
-- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `ficha.siberia.solutions` (histórico con 301), `web.negocio.siberia.solutions` (:8083, web pública de negocios: ficha + carta del establecimiento) y `web.camareros.siberia.solutions` (:8084, web del profesional: credencial, login e invitaciones).
+- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `ficha.siberia.solutions` (histórico con 301), `web.negocio.siberia.solutions` (:8083, web pública de negocios: plantilla Estate Hospitality por slug) y `web.camareros.siberia.solutions` (:8084, web del profesional: credencial, login e invitaciones).
 - `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
 - El `.env` de producción vive en `/opt/identity/.env` (gitignored, `root:root`
   y modo `0600`): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
@@ -349,21 +349,28 @@ Compatibilidad con los dominios históricos: `ficha.siberia.solutions` responde
 
 `web-negocio` (React + Vite + Tailwind compilado, nginx, puerto dev `:8083`) es la
 web pública del establecimiento en `web.negocio.siberia.solutions/negocios/<slug>`.
-Renderiza la ficha como credencial (logo, nombre, tipo y organización), la carta
-como sección (`?seccion=carta` para saltar a ella) y el resto de secciones
-configurables (perfil, contacto, hero, galería, horario, equipo) con una
-**plantilla por tipo** (`bar`, `restaurante`/`cafeteria`, `pub`/`copas`) y el
-rebranding del logo y colores del local. Todo se sirve con una sola llamada al
-servicio de negocio (`NEGOCIO_API_URL`, variable runtime inyectada por
-`20-web-negocio.sh`):
+Una sola plantilla Estate Hospitality para todos los locales; los datos salen
+del slug. Páginas reales (no un one-pager con hashes):
+
+- `/negocios/<slug>` — inicio (hero + nosotros)
+- `/negocios/<slug>/horario`
+- `/negocios/<slug>/carta` — tabs Cocina/Barra si hay ambos destinos
+- `/negocios/<slug>/equipo`
+- `/negocios/<slug>/contacto` — mapa placeholder
+- `/negocios/<slug>/galeria` — solo si hay fotos
+
+Los query/hash legacy (`?seccion=carta`, `#carta`) redirigen a la ruta nueva.
+Todo se sirve con una sola llamada al servicio de negocio (`NEGOCIO_API_URL`,
+variable runtime inyectada por `20-web-negocio.sh`):
 
 - `GET /v1/negocio/web?slug=<enlace>` → datos públicos agregados **sin token**:
   `establecimiento_id`, `nombre`, `tipo_establecimiento`, `logo_url`,
   `organizacion_nombre`, `plantilla`, `color_primario`, `perfil`, `contacto`,
   `hero`, `galeria`, `abierto_ahora`, `horario`, `equipo` y `categorias` (carta
-  con `precio_centimos` + `moneda`). El slug resuelve tanto un enlace
-  `ficha_negocio` como uno `carta`; inexistente → `404`, revocado → `410`.
-  Cache pública `max-age=300`.
+  con `precio_centimos`, `moneda`, `destino` y `descripcion` opcional). El slug
+  resuelve un enlace `web` (o el alias `ficha_negocio`) **o** `carta`;
+  inexistente → `404`, revocado → `410`. Cache pública `max-age=300`.
+  `GET /v1/negocio/ficha` se retiró.
 - `GET /v1/negocio/web/logo?slug=<enlace>` → logo efectivo (WebP) público con
   cache `max-age=86400` + `ETag`, resoluble por cualquier slug del local.
 - `GET /v1/negocio/web/hero?slug=<enlace>` y
@@ -437,12 +444,10 @@ Rutas principales:
   resuelve en servidor y nunca se expone).
 - `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT (magic-link desde el email): token one-time + TTL 72h.
 - `PUT/GET /v1/establecimientos/{id}/layout` → **copia de respaldo del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la cuenta de negocio dueña.
-- `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar|rotar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`ficha_negocio | carta`) y `slug` opcional. Solo puede existir uno activo por tipo; crear es idempotente y rotar revoca el anterior. La respuesta incluye `url_publica`, construida con `WEB_NEGOCIO_URL_BASE` (`…/negocios/<slug>`, carta con `?seccion=carta`) para que Bar no hardcodee dominios.
+- `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar|rotar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`web | carta`; `ficha_negocio` es alias deprecado que se persiste como `web`) y `slug` opcional. Solo puede existir uno activo por tipo; crear es idempotente y rotar revoca el anterior. La respuesta incluye `url_publica`, construida con `WEB_NEGOCIO_URL_BASE` (`…/negocios/<slug>`, carta en `…/negocios/<slug>/carta`) para que Bar no hardcodee dominios.
 - `GET /v1/enlaces/{slug}` → resolución pública **sin token**: devuelve `{ tipo, establecimiento_id }` con cache pública (`max-age=300`). Slug inexistente → `404`, revocado → `410`.
-- `GET /v1/negocio/ficha?slug=<enlace>` → ficha pública **sin token** del único establecimiento enlazado: `establecimiento_id`, `nombre`, `tipo_establecimiento`, `logo_url` y `organizacion_nombre`. No filtra otros locales. Enlace `carta` o inexistente → `404`, revocado → `410`.
-- `GET /v1/negocio/ficha/logo?slug=<enlace>` → logo público (WebP) con cache pública (`max-age=86400` + `ETag`).
-- `GET /v1/negocio/carta?slug=<enlace>` → carta pública **sin token**: productos disponibles agrupados por categoría, con `precio_centimos` + `moneda`. Solo lectura; no expone `destino`/`revision`. Enlace `ficha_negocio` o inexistente → `404`, revocado → `410`.
-- `GET /v1/negocio/web?slug=<enlace>` → datos agregados de la web pública **sin token** (ficha + carta en una llamada): `establecimiento_id`, `nombre`, `tipo_establecimiento`, `logo_url`, `organizacion_nombre` y `categorias`. El slug resuelve enlaces `ficha_negocio` **o** `carta`. Inexistente → `404`, revocado → `410`; cache `max-age=300`.
+- `GET /v1/negocio/carta?slug=<enlace>` → carta pública **sin token**: productos disponibles agrupados por categoría, con `precio_centimos`, `moneda`, `destino` y `descripcion` opcional. Solo lectura; no expone `revision`. Enlace que no sea `carta` o inexistente → `404`, revocado → `410`.
+- `GET /v1/negocio/web?slug=<enlace>` → datos agregados de la web pública **sin token** (perfil, carta y el resto de secciones en una llamada). El slug resuelve enlaces `web` (o el alias `ficha_negocio`) **o** `carta`. Inexistente → `404`, revocado → `410`; cache `max-age=300`. `GET /v1/negocio/ficha` se retiró.
 - `GET /v1/negocio/web/logo?slug=<enlace>` → logo efectivo público (WebP) por cualquier slug del local, cache `max-age=86400` + `ETag`.
 
 El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar.

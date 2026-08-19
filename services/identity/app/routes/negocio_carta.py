@@ -1,8 +1,8 @@
 """Carta pública del establecimiento por enlace.
 
 Sin token: el ``slug`` del enlace ``carta`` es la llave. Devuelve solo lectura
-los productos disponibles (no archivados), agrupados por categoría, con precio.
-No expone campos internos (``destino``, ``revision``, ``data_origin``).
+los productos disponibles (no archivados), agrupados por categoría, con precio
+y destino (barra|cocina). No expone ``revision`` ni ``data_origin``.
 """
 
 from datetime import UTC, datetime
@@ -19,6 +19,7 @@ from app.models import (
     Establecimiento,
     ProductoCatalogo,
 )
+from app.routes.negocio_web import producto_carta_publico
 from app.schemas import CartaPublicaResponse, ErrorResponse
 
 router = APIRouter(prefix="/v1/negocio", tags=["negocio público"])
@@ -77,13 +78,7 @@ def carta_negocio(
     )
     categorias: dict[str, list[dict]] = {}
     for producto in productos:
-        categorias.setdefault(producto.categoria, []).append(
-            {
-                "nombre": producto.nombre,
-                "precio_centimos": producto.precio_centimos,
-                "moneda": producto.moneda,
-            }
-        )
+        categorias.setdefault(producto.categoria, []).append(producto_carta_publico(producto))
     response.headers["Cache-Control"] = "public, max-age=300"
     return {
         "establecimiento_id": establecimiento.id,
