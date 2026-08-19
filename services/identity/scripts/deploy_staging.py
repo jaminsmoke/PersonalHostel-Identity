@@ -355,6 +355,10 @@ def main() -> int:
             )
             run(f"cd {remote} && bash services/identity/scripts/backup_staging.sh")
             run(f"cd {remote} && {compose} up -d --build")
+            # Observabilidad es prod-only y vive en un 3.er compose. Sin este
+            # paso, un compose de solo 2 ficheros marca la pila como orphan y
+            # un down/prune la borra (ítem #115). validate-only no la toca.
+            run(f"cd {remote} && bash services/identity/scripts/obs_up.sh up")
             run(
                 "curl --fail --silent --show-error http://127.0.0.1:8080/health && "
                 "curl --fail --silent --show-error http://127.0.0.1:8080/v1/meta && "

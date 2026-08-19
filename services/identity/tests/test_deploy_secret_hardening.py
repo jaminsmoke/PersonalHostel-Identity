@@ -84,3 +84,13 @@ def test_deploy_exposes_isolated_backup_restore_drill():
 
     assert '"--backup-restore-drill"' in source
     assert "backup_restore.py restore-drill" in source
+
+
+def test_deploy_restores_observability_stack_after_core_up():
+    source = Path(deploy_staging.__file__).read_text(encoding="utf-8")
+
+    assert "obs_up.sh up" in source
+    assert source.index('up -d --build"') < source.index("obs_up.sh up")
+    # validate-only no debe levantar observabilidad (solo 2 compose).
+    validate_block = source.split("elif args.validate_only:", 1)[1].split("elif ", 1)[0]
+    assert "obs_up.sh" not in validate_block
