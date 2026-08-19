@@ -2,7 +2,7 @@
 
 - ``/metrics`` (formato Prometheus) lo expone ``prometheus-fastapi-instrumentator``.
   No se sirve por Caddy; Prometheus lo raspa por la red interna de Docker.
-- El access log JSON emite una línea por request para que Promtail/Loki la
+- El access log JSON emite una línea por request para que Alloy/Loki la
   parsee (método, ruta, status y latencia). Sustituye el access log plano de
   uvicorn (que se desactiva con ``--no-access-log`` en entrypoint).
 """
