@@ -14,6 +14,7 @@ build/
 *.log
 .kanbanrc.json
 .freebuff/
+stitch_personal_hostel_business_web/
 .agents/
 .claude/
 skills-lock.json
