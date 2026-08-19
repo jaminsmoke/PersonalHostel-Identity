@@ -85,7 +85,7 @@ def _crear_producto(
 def test_web_negocio_resuelve_slug_de_ficha_y_devuelve_ficha_mas_carta(db_ready, negocio_client):
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"web-ficha-{uuid.uuid4().hex[:8]}"
-    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+    _crear_enlace(negocio_client, headers, est_id, "web", slug)
     _crear_producto(negocio_client, est_id, headers, "Café solo", "Cafés", 150)
     _crear_producto(negocio_client, est_id, headers, "Tortilla", "Cocina", 450)
 
@@ -129,7 +129,7 @@ def test_web_negocio_resuelve_slug_de_ficha_y_devuelve_ficha_mas_carta(db_ready,
 def test_web_negocio_incluye_horario_configurado(db_ready, negocio_client):
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"web-horario-{uuid.uuid4().hex[:8]}"
-    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+    _crear_enlace(negocio_client, headers, est_id, "web", slug)
 
     patch = negocio_client.patch(
         f"/v1/establecimientos/{est_id}/horario",
@@ -174,7 +174,7 @@ def test_web_negocio_logo_url_y_servido_por_cualquier_slug(db_ready, negocio_cli
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug_ficha = f"web-logo-f-{uuid.uuid4().hex[:8]}"
     slug_carta = f"web-logo-c-{uuid.uuid4().hex[:8]}"
-    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug_ficha)
+    _crear_enlace(negocio_client, headers, est_id, "web", slug_ficha)
     _crear_enlace(negocio_client, headers, est_id, "carta", slug_carta)
 
     img = Image.new("RGB", (300, 200), (200, 80, 40))
@@ -207,7 +207,7 @@ def test_web_negocio_slug_inexistente_404(db_ready, negocio_client):
 def test_web_negocio_revocada_410(db_ready, negocio_client):
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"web-revocada-{uuid.uuid4().hex[:8]}"
-    enlace = _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+    enlace = _crear_enlace(negocio_client, headers, est_id, "web", slug)
 
     revoke = negocio_client.post(
         f"/v1/establecimientos/{est_id}/enlaces/{enlace['id']}/revocar",
@@ -223,7 +223,7 @@ def test_web_negocio_revocada_410(db_ready, negocio_client):
 def test_web_negocio_incluye_perfil_contacto_y_rebranding(db_ready, negocio_client):
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"web-perfil-{uuid.uuid4().hex[:8]}"
-    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+    _crear_enlace(negocio_client, headers, est_id, "web", slug)
 
     patch = negocio_client.patch(
         f"/v1/establecimientos/{est_id}/perfil-web",
@@ -270,7 +270,7 @@ def test_web_negocio_hero_y_galeria_publicos(db_ready, negocio_client):
 
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"web-imagenes-{uuid.uuid4().hex[:8]}"
-    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+    _crear_enlace(negocio_client, headers, est_id, "web", slug)
 
     def png(color, size=(1200, 800)):
         image = Image.new("RGB", size, color)
@@ -316,7 +316,7 @@ def test_web_negocio_privada_410_no_store_y_logo_sigue_publico(db_ready, negocio
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"web-privada-{uuid.uuid4().hex[:8]}"
     slug_carta = f"web-privada-carta-{uuid.uuid4().hex[:8]}"
-    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+    _crear_enlace(negocio_client, headers, est_id, "web", slug)
     _crear_enlace(negocio_client, headers, est_id, "carta", slug_carta)
 
     off = negocio_client.patch(
@@ -361,7 +361,7 @@ def test_web_negocio_privada_410_no_store_y_logo_sigue_publico(db_ready, negocio
 def test_web_negocio_abierto_ahora_con_horario(db_ready, negocio_client):
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"web-abierto-{uuid.uuid4().hex[:8]}"
-    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+    _crear_enlace(negocio_client, headers, est_id, "web", slug)
 
     patch = negocio_client.patch(
         f"/v1/establecimientos/{est_id}/horario",
@@ -410,7 +410,7 @@ def test_web_negocio_equipo_matriz_and(db_ready, camarero_client, negocio_client
 
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"web-equipo-{uuid.uuid4().hex[:8]}"
-    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+    _crear_enlace(negocio_client, headers, est_id, "web", slug)
 
     with NegocioSessionLocal() as session:
         session.add(

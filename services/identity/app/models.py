@@ -65,7 +65,7 @@ class EnlaceTipo(str, enum.Enum):
     """Tipos de enlace público (VARCHAR; crece sin enum de Postgres).
 
     ``web`` es el canónico de la web del local. ``ficha_negocio`` queda como
-    alias HTTP deprecado (se persiste como ``web``).
+    valor residual de lectura (GET); ya no se acepta en POST.
     """
 
     web = "web"

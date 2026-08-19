@@ -5,8 +5,8 @@ que verificar, solo un ``slug`` opaco que resuelve a ``(tipo, establecimiento)``
 y un toggle activo/revocado. La cache pública es de TTL corto para que la
 revocación sea efectiva en minutos.
 
-``ficha_negocio`` es un alias deprecado de ``web``: se acepta en POST y se
-persiste como ``web``.
+``POST`` acepta solo ``web`` y ``carta``. ``ficha_negocio`` quedó como valor
+residual en lectura (GET /web resuelve slugs históricos).
 """
 
 import os
@@ -57,7 +57,7 @@ _TIPO_URL_ENV = {
 
 
 def tipo_canonico(tipo: str) -> str:
-    """``ficha_negocio`` se guarda y se resuelve como ``web``."""
+    """Residuales ``ficha_negocio`` se tratan como ``web`` al resolver."""
     if tipo == EnlaceTipo.ficha_negocio.value:
         return EnlaceTipo.web.value
     return tipo

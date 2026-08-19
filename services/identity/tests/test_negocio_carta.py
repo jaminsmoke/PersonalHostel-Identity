@@ -118,7 +118,7 @@ def test_carta_publica_agrupada_con_precio(db_ready, negocio_client):
 def test_carta_enlace_ficha_negocio_no_sirve(db_ready, negocio_client):
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"ficha-{uuid.uuid4().hex[:8]}"
-    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+    _crear_enlace(negocio_client, headers, est_id, "web", slug)
 
     resp = negocio_client.get("/v1/negocio/carta", params={"slug": slug})
     assert resp.status_code == 404

@@ -658,7 +658,7 @@
             "title": "Slug"
           },
           "tipo": {
-            "pattern": "^(web|carta|ficha_negocio)$",
+            "pattern": "^(web|carta)$",
             "title": "Tipo",
             "type": "string"
           }

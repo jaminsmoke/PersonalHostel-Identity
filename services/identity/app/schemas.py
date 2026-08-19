@@ -567,7 +567,7 @@ class NotificacionNegocioResponse(BaseModel):
 class EnlacePublicoCreateRequest(BaseModel):
     """Alta de un enlace público para un establecimiento."""
 
-    tipo: str = Field(..., pattern="^(web|carta|ficha_negocio)$")
+    tipo: str = Field(..., pattern="^(web|carta)$")
     slug: str | None = Field(default=None, min_length=1, max_length=100, pattern="^[a-z0-9-]+$")
 
 

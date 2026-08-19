@@ -112,12 +112,12 @@ def run(base_url: str) -> None:
 
             link_path = f"{base_url}/v1/establecimientos/{first_id}/enlaces"
             enlace = _expect(
-                client.post(link_path, headers=headers, json={"tipo": "ficha_negocio"}),
+                client.post(link_path, headers=headers, json={"tipo": "web"}),
                 201,
-                "crear enlace web (alias ficha_negocio)",
+                "crear enlace web",
             )
             repetido = _expect(
-                client.post(link_path, headers=headers, json={"tipo": "ficha_negocio"}),
+                client.post(link_path, headers=headers, json={"tipo": "web"}),
                 200,
                 "repetir enlace web",
             )
