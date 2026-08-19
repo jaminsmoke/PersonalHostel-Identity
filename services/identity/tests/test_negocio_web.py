@@ -50,7 +50,19 @@ def _crear_enlace(negocio_client, headers, est_id, tipo, slug) -> dict:
     return resp.json()
 
 
-def _crear_producto(negocio_client, est_id, headers, nombre, categoria, precio):
+def _crear_producto(
+    negocio_client, est_id, headers, nombre, categoria, precio, destino="barra", descripcion=None
+):
+    payload = {
+        "nombre": nombre,
+        "categoria": categoria,
+        "destino": destino,
+        "precio_centimos": precio,
+        "moneda": "EUR",
+        "disponible": True,
+    }
+    if descripcion is not None:
+        payload["descripcion"] = descripcion
     body = {
         "operation_id": str(uuid.uuid4()),
         "device_id": "web-test-01",
@@ -60,14 +72,7 @@ def _crear_producto(negocio_client, est_id, headers, nombre, categoria, precio):
         "base_revision": 0,
         "base_snapshot": None,
         "client_created_at": datetime.now(UTC).isoformat(),
-        "payload": {
-            "nombre": nombre,
-            "categoria": categoria,
-            "destino": "barra",
-            "precio_centimos": precio,
-            "moneda": "EUR",
-            "disponible": True,
-        },
+        "payload": payload,
     }
     resp = negocio_client.post(
         f"/v1/establecimientos/{est_id}/sync/operaciones",
@@ -95,11 +100,25 @@ def test_web_negocio_resuelve_slug_de_ficha_y_devuelve_ficha_mas_carta(db_ready,
     assert body["categorias"] == [
         {
             "nombre": "Cafés",
-            "productos": [{"nombre": "Café solo", "precio_centimos": 150, "moneda": "EUR"}],
+            "productos": [
+                {
+                    "nombre": "Café solo",
+                    "precio_centimos": 150,
+                    "moneda": "EUR",
+                    "destino": "barra",
+                }
+            ],
         },
         {
             "nombre": "Cocina",
-            "productos": [{"nombre": "Tortilla", "precio_centimos": 450, "moneda": "EUR"}],
+            "productos": [
+                {
+                    "nombre": "Tortilla",
+                    "precio_centimos": 450,
+                    "moneda": "EUR",
+                    "destino": "barra",
+                }
+            ],
         },
     ]
     assert "email" not in body
@@ -444,3 +463,28 @@ def test_web_negocio_equipo_matriz_and(db_ready, camarero_client, negocio_client
     assert off.status_code == 200
     body = negocio_client.get("/v1/negocio/web", params={"slug": slug}).json()
     assert body["equipo"] == []
+
+
+def test_web_negocio_expone_destino_y_descripcion(db_ready, negocio_client):
+    headers, est_id = _crear_negocio_establecimiento(negocio_client)
+    slug = f"web-carta-destino-{uuid.uuid4().hex[:8]}"
+    created = _crear_enlace(negocio_client, headers, est_id, "web", slug)
+    assert created["tipo"] == "web"
+    _crear_producto(
+        negocio_client,
+        est_id,
+        headers,
+        "Negroni",
+        "Cócteles",
+        900,
+        destino="barra",
+        descripcion="Gin, vermut y Campari",
+    )
+    _crear_producto(negocio_client, est_id, headers, "Bravas", "Entrantes", 700, destino="cocina")
+
+    body = negocio_client.get("/v1/negocio/web", params={"slug": slug}).json()
+    por_nombre = {p["nombre"]: p for c in body["categorias"] for p in c["productos"]}
+    assert por_nombre["Negroni"]["destino"] == "barra"
+    assert por_nombre["Negroni"]["descripcion"] == "Gin, vermut y Campari"
+    assert por_nombre["Bravas"]["destino"] == "cocina"
+    assert "descripcion" not in por_nombre["Bravas"]

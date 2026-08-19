@@ -212,7 +212,7 @@ def _fixtures_ok() -> tuple[dict, dict, str, str, str]:
             "/v1/establecimientos/{establecimiento_id}/invitaciones/{invitacion_id}/revocar": {},
             "/v1/establecimientos/{establecimiento_id}/layout": {},
             "/v1/negocio/carta": {},
-            "/v1/negocio/ficha": {},
+            "/v1/negocio/web": {},
             "/v1/invitaciones/{token}/aceptar": {},
             "/v1/invitaciones/{token}/rechazar": {},
         }
@@ -246,7 +246,7 @@ def _fixtures_ok() -> tuple[dict, dict, str, str, str]:
     """
     web = """
         fetch(camarerosApiBase + "/v1/camareros/ficha?qr=" + ...)
-        fetch(negocioApiBase + "/v1/negocio/ficha?slug=" + ...)
+        fetch(negocioApiBase + "/v1/negocio/web?slug=" + ...)
         fetch(negocioApiBase + "/v1/negocio/carta?slug=" + ...)
         fetch(negocioApiBase + "/v1/invitaciones/" + token + "/aceptar", ...)
         fetch(negocioApiBase + "/v1/invitaciones/" + token + "/rechazar", ...)

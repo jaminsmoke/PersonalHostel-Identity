@@ -1,9 +1,12 @@
-"""Enlaces públicos revocables (ficha de negocio, carta, futuros compartibles).
+"""Enlaces públicos revocables (web del negocio, carta, futuros compartibles).
 
 Un enlace es un "compartible público" por diseño: no lleva firma ni identidad
 que verificar, solo un ``slug`` opaco que resuelve a ``(tipo, establecimiento)``
 y un toggle activo/revocado. La cache pública es de TTL corto para que la
 revocación sea efectiva en minutos.
+
+``ficha_negocio`` es un alias deprecado de ``web``: se acepta en POST y se
+persiste como ``web``.
 """
 
 import os
@@ -46,11 +49,19 @@ from app.schemas import (
 router = APIRouter(prefix="/v1/establecimientos", tags=["enlaces públicos"])
 public_router = APIRouter(prefix="/v1/enlaces", tags=["enlaces públicos"])
 
-_TIPO_SLUG_SUFIJO = {"ficha_negocio": "ficha", "carta": "carta"}
+_TIPO_SLUG_SUFIJO = {"web": "web", "carta": "carta"}
 _TIPO_URL_ENV = {
-    "ficha_negocio": "WEB_NEGOCIO_URL_BASE",
-    "carta": "WEB_NEGOCIO_URL_BASE",
+    EnlaceTipo.web.value: "WEB_NEGOCIO_URL_BASE",
+    EnlaceTipo.carta.value: "WEB_NEGOCIO_URL_BASE",
 }
+
+
+def tipo_canonico(tipo: str) -> str:
+    """``ficha_negocio`` se guarda y se resuelve como ``web``."""
+    if tipo == EnlaceTipo.ficha_negocio.value:
+        return EnlaceTipo.web.value
+    return tipo
+
 
 _UNAUTHORIZED = {
     "model": ErrorResponse,
@@ -66,11 +77,14 @@ def _slugify(value: str) -> str:
 
 
 def _url_publica(tipo: str, slug: str) -> str | None:
-    base = os.environ.get(_TIPO_URL_ENV[tipo])
+    canonico = tipo_canonico(tipo)
+    base = os.environ.get(_TIPO_URL_ENV[canonico])
     if not base:
         return None
-    seccion = "?seccion=carta" if tipo == EnlaceTipo.carta.value else ""
-    return f"{base.rstrip('/')}/negocios/{quote(slug)}{seccion}"
+    ruta = f"/negocios/{quote(slug)}"
+    if canonico == EnlaceTipo.carta.value:
+        ruta += "/carta"
+    return f"{base.rstrip('/')}{ruta}"
 
 
 def _respuesta(enlace: EnlacePublico) -> EnlacePublicoResponse:
@@ -194,7 +208,8 @@ def crear_enlace(
     db: Session = Depends(get_negocio_db),
 ) -> EnlacePublicoResponse:
     establecimiento = _owner_establishment(db, establecimiento_id, cuenta)
-    activo = _activo_del_tipo(db, establecimiento.id, payload.tipo)
+    tipo = tipo_canonico(payload.tipo)
+    activo = _activo_del_tipo(db, establecimiento.id, tipo)
     if activo is not None:
         if payload.slug is None or payload.slug.strip() == activo.slug:
             response.status_code = status.HTTP_200_OK
@@ -215,11 +230,11 @@ def crear_enlace(
     else:
         slug = _slug_disponible(
             db,
-            f"{_slugify(establecimiento.nombre)}-{_TIPO_SLUG_SUFIJO[payload.tipo]}",
+            f"{_slugify(establecimiento.nombre)}-{_TIPO_SLUG_SUFIJO[tipo]}",
         )
     enlace = EnlacePublico(
         establecimiento_id=establecimiento.id,
-        tipo=payload.tipo,
+        tipo=tipo,
         slug=slug,
         estado=EnlaceEstado.activo.value,
     )
@@ -333,7 +348,7 @@ def rotar_enlace(
     else:
         slug = _slug_disponible(
             db,
-            f"{_slugify(establecimiento.nombre)}-{_TIPO_SLUG_SUFIJO[anterior.tipo]}",
+            f"{_slugify(establecimiento.nombre)}-{_TIPO_SLUG_SUFIJO[tipo_canonico(anterior.tipo)]}",
         )
     if anterior.estado == EnlaceEstado.activo.value:
         anterior.estado = EnlaceEstado.revocado.value

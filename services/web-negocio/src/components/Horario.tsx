@@ -1,4 +1,6 @@
-import type { HorarioDia, WebNegocio } from "../types";
+import type { HorarioDia } from "../types";
+import { absUrl } from "../config";
+import { useWeb } from "../web-context";
 
 const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
@@ -34,33 +36,75 @@ function agrupar(horario: HorarioDia[]): Grupo[] {
   return grupos;
 }
 
-export function Horario({ web }: { web: WebNegocio }) {
-  const grupos = agrupar(web.horario!);
+export function Horario() {
+  const web = useWeb();
+  const grupos = agrupar(web.horario || []);
+  const abierto = web.abierto_ahora;
+  const heroUrl = absUrl(web.hero?.url);
+
   return (
-    <section
-      id="horario"
-      className="py-section-gap px-margin-mobile md:px-gutter max-w-page mx-auto scroll-mt-20"
-    >
-      <h2 className="text-label-md text-primary-fixed-dim uppercase tracking-widest mb-stack-md">
-        Horario
-      </h2>
-      <ul className="border-t border-outline-variant/40">
-        {grupos.map((g, i) => (
-          <li
-            key={i}
-            className="flex justify-between gap-4 py-stack-md border-b border-outline-variant/40 text-body-md"
-          >
-            <span className="font-semibold text-on-surface">
-              {g.desde === g.hasta ? DIAS[g.desde] : `${DIAS[g.desde]} a ${DIAS[g.hasta]}`}
-            </span>
-            <span className="text-on-surface-variant tabular-nums">
-              {g.cerrado
-                ? "Cerrado"
-                : g.turnos.map((t) => `${t.abre}–${t.cierra}`).join(" y ")}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <section className="relative min-h-[calc(100vh-5rem)] pt-20">
+      <div className="absolute inset-0 z-0">
+        {heroUrl ? (
+          <div
+            className="w-full h-full bg-cover bg-center"
+            style={{ backgroundImage: `url(${heroUrl})` }}
+            aria-hidden
+          />
+        ) : (
+          <div className="w-full h-full bg-surface-high" />
+        )}
+        <div className="absolute inset-0 bg-background/85" />
+      </div>
+      <div className="relative z-10 max-w-page mx-auto px-gutter py-section-gap flex flex-col items-center">
+        <div className="text-center mb-stack-lg">
+          <h1 className="font-display text-headline-lg-mobile md:text-display-lg text-primary mb-stack-sm">
+            Horario
+          </h1>
+          <p className="text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+            Te esperamos en {web.nombre}.
+          </p>
+        </div>
+        <div className="w-full max-w-2xl bg-surface-high/90 backdrop-blur-sm border border-outline-variant rounded-lg p-stack-lg md:p-12">
+          {abierto && (
+            <div className="flex justify-center mb-stack-lg">
+              <div
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${
+                  abierto.abierto
+                    ? "bg-[#1b5e20]/20 text-[#a5d6a7] border-[#1b5e20]"
+                    : "bg-danger/10 text-danger border-danger/40"
+                }`}
+              >
+                <div
+                  className={`w-2 h-2 rounded-full ${abierto.abierto ? "bg-[#81c784] animate-pulse" : "bg-danger"}`}
+                />
+                <span className="text-label-md uppercase tracking-wider">
+                  {abierto.abierto ? "Abierto ahora" : "Cerrado ahora"}
+                </span>
+              </div>
+            </div>
+          )}
+          <ul>
+            {grupos.map((g, i) => (
+              <li
+                key={i}
+                className="flex justify-between items-center py-stack-md border-b border-outline-variant/30 px-4"
+              >
+                <span className="font-display text-headline-sm text-on-surface">
+                  {g.desde === g.hasta ? DIAS[g.desde] : `${DIAS[g.desde]} a ${DIAS[g.hasta]}`}
+                </span>
+                <span className="text-right">
+                  <span className="block text-label-md text-primary tabular-nums">
+                    {g.cerrado
+                      ? "Cerrado"
+                      : g.turnos.map((t) => `${t.abre}–${t.cierra}`).join(" y ")}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </section>
   );
 }

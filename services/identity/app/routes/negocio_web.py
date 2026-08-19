@@ -1,9 +1,9 @@
-"""Web pública del negocio por enlace (ficha + carta en una sola página).
+"""Web pública del negocio por enlace (sitio completo en una llamada).
 
-Sin token: el ``slug`` de un enlace público (``ficha_negocio`` o ``carta``) es la
-llave. Devuelve los datos de la ficha y de la carta agrupados, para que la web
-``web.negocio.siberia.solutions/negocios/{slug}`` renderice toda la superficie con
-una sola llamada. No expone campos internos ni PII del negocio.
+Sin token: el ``slug`` de un enlace público (``web`` o ``carta``; alias
+deprecado ``ficha_negocio``) es la llave. La SPA en
+``web.negocio.siberia.solutions/negocios/{slug}`` (y rutas hijas ``/carta``,
+``/horario``, …) pinta toda la superficie con esta respuesta.
 
 Si el establecimiento tiene ``web_publica=false``, toda la superficie responde
 ``410 identity.web_privada`` con ``Cache-Control: no-store``; el logo del local
@@ -19,7 +19,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.db import get_negocio_db
-from app.errors import ENLACE_NOT_FOUND, ENLACE_REVOCADO, WEB_PRIVADA, ApiError
+from app.errors import ENLACE_NOT_FOUND, ENLACE_REVOCADO, FOTO_INEXISTENTE, WEB_PRIVADA, ApiError
 from app.internal import get_camareros_internal
 from app.models import (
     CuentaNegocio,
@@ -34,7 +34,6 @@ from app.models import (
     ProductoCatalogo,
 )
 from app.routes.horario import filas_horario_establecimiento
-from app.routes.negocio_ficha import servir_logo_efectivo
 from app.routes.perfil_web import get_perfil
 from app.schemas import (
     ErrorResponse,
@@ -45,7 +44,11 @@ from app.storage import get_foto_storage
 
 router = APIRouter(prefix="/v1/negocio", tags=["negocio público"])
 
-_TIPOS_WEB = (EnlaceTipo.ficha_negocio.value, EnlaceTipo.carta.value)
+_TIPOS_WEB = (
+    EnlaceTipo.web.value,
+    EnlaceTipo.carta.value,
+    EnlaceTipo.ficha_negocio.value,
+)
 
 
 def _establecimiento_por_slug(db: Session, slug: str) -> Establecimiento:
@@ -251,6 +254,45 @@ def _servir_publico(clave: str, mimetype: str | None) -> Response:
     )
 
 
+def servir_logo_efectivo(establecimiento: Establecimiento) -> Response:
+    """Sirve el logo efectivo del establecimiento con cache pública."""
+    clave = establecimiento.logo_efectivo_clave
+    if not clave:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=FOTO_INEXISTENTE,
+            detail="El negocio no tiene logo",
+        )
+    data = get_foto_storage().leer(clave)
+    if data is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=FOTO_INEXISTENTE,
+            detail="El logo no está disponible",
+        )
+    return Response(
+        content=data,
+        media_type=establecimiento.logo_efectivo_mimetype or "image/webp",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "ETag": f'"{clave}"',
+        },
+    )
+
+
+def producto_carta_publico(producto: ProductoCatalogo) -> dict:
+    """DTO de carta: nombre, precio, destino y descripción opcional."""
+    item: dict = {
+        "nombre": producto.nombre,
+        "precio_centimos": producto.precio_centimos,
+        "moneda": producto.moneda,
+        "destino": producto.destino.value,
+    }
+    if producto.descripcion:
+        item["descripcion"] = producto.descripcion
+    return item
+
+
 def _categorias(db: Session, establecimiento: Establecimiento) -> list[dict]:
     productos = (
         db.query(ProductoCatalogo)
@@ -264,19 +306,14 @@ def _categorias(db: Session, establecimiento: Establecimiento) -> list[dict]:
     )
     categorias: dict[str, list[dict]] = {}
     for producto in productos:
-        categorias.setdefault(producto.categoria, []).append(
-            {
-                "nombre": producto.nombre,
-                "precio_centimos": producto.precio_centimos,
-                "moneda": producto.moneda,
-            }
-        )
+        categorias.setdefault(producto.categoria, []).append(producto_carta_publico(producto))
     return [{"nombre": nombre, "productos": items} for nombre, items in categorias.items()]
 
 
 @router.get(
     "/web",
     response_model=WebNegocioPublica,
+    response_model_exclude_unset=True,
     responses={
         status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
         status.HTTP_410_GONE: {"model": ErrorResponse},

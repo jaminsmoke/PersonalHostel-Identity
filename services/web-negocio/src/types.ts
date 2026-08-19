@@ -13,6 +13,8 @@ export interface ProductoPublico {
   nombre: string;
   precio_centimos: number;
   moneda: string;
+  destino: "barra" | "cocina";
+  descripcion?: string | null;
 }
 
 export interface CategoriaCarta {

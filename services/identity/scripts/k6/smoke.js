@@ -5,7 +5,7 @@
 // Uso (staging), con slugs públicos opcionales:
 //   CAMAREROS_API_URL=https://camareros.siberia.solutions \
 //   NEGOCIO_API_URL=https://negocio.siberia.solutions \
-//   SLUG_FICHA=<slug> SLUG_CARTA=<slug> \
+//   SLUG_WEB=<slug> SLUG_CARTA=<slug> \
 //   k6 run services/identity/scripts/k6/smoke.js
 
 import http from "k6/http";
@@ -37,10 +37,10 @@ export default function () {
     "negocio /v1/meta 200": (r) => r.status === 200,
   });
 
-  const slugFicha = __ENV.SLUG_FICHA;
-  if (slugFicha) {
-    check(http.get(`${NEGOCIO}/v1/negocio/ficha?slug=${slugFicha}`), {
-      "ficha pública 200": (r) => r.status === 200,
+  const slugWeb = __ENV.SLUG_WEB || __ENV.SLUG_FICHA;
+  if (slugWeb) {
+    check(http.get(`${NEGOCIO}/v1/negocio/web?slug=${slugWeb}`), {
+      "web pública 200": (r) => r.status === 200,
     });
   }
 

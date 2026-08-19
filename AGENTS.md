@@ -189,7 +189,7 @@ Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores l
 
 El QR es un payload firmado Ed25519 `phid1:<camarero_id>:<credencial_id>:<firma>`, **estable** entre reinstalaciones. La foto no viaja en el QR. Las respuestas que devuelven `qr` incluyen también `ficha_url` (`FICHA_URL_BASE` + `/camareros?qr=`), y la verificación acepta tanto `phid1:...` como la URL `https://...?qr=phid1:...`. La web pública del profesional es **`web-camareros`** (`web.camareros.siberia.solutions/camareros?qr=`, SPA vanilla en `services/web-camareros`, puerto dev `:8084`): renderiza la credencial del camarero con `GET /v1/camareros/ficha?qr=` (sin token, solo campos visibles), permite iniciar sesión (JWT) y gestiona la bandeja de invitaciones y el estado «trabajador de X». El servicio de camareros autoriza el origen por CORS (`IDENTITY_WEB_ORIGIN`).
 
-El magic-link de invitación (`/invitaciones/<token>`, aceptar o rechazar sin JWT) vive en `web-camareros`; ya no hay un servicio `identity-web` aparte. La superficie pública del establecimiento es la **web pública de negocios** `web-negocio` (`web.negocio.siberia.solutions/negocios/<slug>`, SPA vanilla en `services/web-negocio`, puerto dev `:8083`): renderiza la ficha como credencial y la carta como sección con una plantilla por `tipo_efectivo` y el rebranding del logo/colores del local, con una sola llamada `GET /v1/negocio/web?slug=` (ficha + carta) al servicio de negocio (`NEGOCIO_API_URL`) sin token. El logo efectivo del local es público por diseño y el precio de la carta siempre visible. **Compatibilidad**: los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 a sus superficies canónicas (`/negocio` y `/carta` → `web.negocio`; `/ficha?qr=` → `web.camareros`), con plazo de convivencia 6 meses o hasta confirmar que no hay QR impresos.
+El magic-link de invitación (`/invitaciones/<token>`, aceptar o rechazar sin JWT) vive en `web-camareros`; ya no hay un servicio `identity-web` aparte. La superficie pública del establecimiento es **`web-negocio`** (`web.negocio.siberia.solutions/negocios/<slug>`, React + Vite + Tailwind en `services/web-negocio`, puerto dev `:8083`): plantilla Estate Hospitality para todos los locales, con rutas reales (`/carta`, `/horario`, `/equipo`, `/contacto`, `/galeria`) y una sola llamada `GET /v1/negocio/web?slug=` al servicio de negocio (`NEGOCIO_API_URL`) sin token. El logo efectivo del local es público por diseño y el precio de la carta siempre visible. **Compatibilidad**: los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 a sus superficies canónicas (`/negocio` y `/carta` → `web.negocio`; `/ficha?qr=` → `web.camareros`), con plazo de convivencia 6 meses o hasta confirmar que no hay QR impresos. Los query/hash legacy (`?seccion=carta`, `#carta`) redirigen a `/negocios/<slug>/carta`.
 
 La cuenta de negocio representa a la **organización propietaria**; cada entidad
 `Establecimiento` representa un local y posee nombre, tipo y logo opcional. Si
@@ -200,20 +200,23 @@ operativo únicamente en la cuenta: una organización puede tener locales distin
 
 La web pública de negocios es **`web-negocio`**
 (`web.negocio.siberia.solutions/negocios/<slug>`, **React + Vite + Tailwind
-compilado** en `services/web-negocio`, puerto dev `:8083`): renderiza la ficha
-como credencial y la carta como sección con una plantilla por `tipo_efectivo` y
-el rebranding del logo/colores del local, con una sola llamada
-`GET /v1/negocio/web?slug=` (ficha + carta) al servicio de negocio
+compilado** en `services/web-negocio`, puerto dev `:8083`): una plantilla
+Estate Hospitality para todos los locales, con páginas en rutas reales
+(`/`, `/horario`, `/carta`, `/equipo`, `/contacto`, `/galeria`) y rebranding
+del logo/colores del local. Una sola llamada `GET /v1/negocio/web?slug=`
 (`NEGOCIO_API_URL`, runtime en `config.js`) sin token. El contrato público
-incluye `perfil`, `contacto`, `hero`, `galeria`, `horario`, `abierto_ahora` y
+incluye `perfil`, `contacto`, `hero`, `galeria`, `horario`, `abierto_ahora`,
 `equipo` (matriz AND: el local muestra el equipo solo si `mostrar_equipo` y el
-camarero `aparecer_web_negocio`); con `web_publica=false` toda la superficie
-responde `410 identity.web_privada` (`Cache-Control: no-store`). El logo efectivo
+camarero `aparecer_web_negocio`) y `categorias` con `destino` y `descripcion`
+opcional. Con `web_publica=false` toda la superficie responde
+`410 identity.web_privada` (`Cache-Control: no-store`). El logo efectivo
 del local es público por diseño y el precio de la carta siempre visible.
+`GET /v1/negocio/ficha` se retiró: la lectura pública canónica es `/v1/negocio/web`.
 **Compatibilidad**: los dominios históricos `ficha.siberia.solutions` y
 `carta.siberia.solutions` responden 301 a sus superficies canónicas (`/negocio`
 y `/carta` → `web.negocio`; `/ficha?qr=` → `web.camareros`), con plazo de
-convivencia 6 meses o hasta confirmar que no hay QR impresos.
+convivencia 6 meses o hasta confirmar que no hay QR impresos. La SPA redirige
+`?seccion=` y hashes `#carta`/`#horario`/… a las rutas nuevas.
 
 Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones (con invitación por magic-link sin JWT); el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar. Identity solo guarda un **espejo de respaldo** del layout de Bar (`PUT/GET /v1/establecimientos/{id}/layout`, tabla `layouts_establecimiento`) para restaurar el mapa en un dispositivo nuevo; no lo interpreta ni lo sirve a Commander.
 
@@ -239,7 +242,8 @@ base. PostgreSQL asigna la revisión global; el timestamp del cliente se audita
 pero no decide conflictos.
 
 La primera vertical soportada es `producto`: UUID estable, precio en céntimos,
-categoría visible, destino explícito `barra|cocina`, disponibilidad y tombstone.
+categoría visible, destino explícito `barra|cocina`, `descripcion` opcional
+(texto del plato en la carta pública), disponibilidad y tombstone.
 `GET .../catalogo` entrega snapshot, `GET .../sync/cambios` entrega deltas,
 `GET/POST .../sync/conflictos` permite revisar y resolver, y
 `GET/POST .../notificaciones` mantiene el aviso durable. La cuenta titular
@@ -251,24 +255,25 @@ contrato. No extender este mecanismo a salas, mesas, rondas o colas dentro del
 ### Enlaces públicos (v0.2)
 
 Identity emite **enlaces públicos revocables** para las superficies compartibles
-del negocio (ficha, carta, futuros). Son públicos por diseño: sin firma, se
+del negocio (web, carta, futuros). Son públicos por diseño: sin firma, se
 resuelven por `slug` opaco y se revocan con un toggle. La tabla `enlaces_publicos`
 vive en la BD de negocio. `POST/GET /v1/establecimientos/{id}/enlaces` (cuenta
 titular) crean/listan; `POST .../enlaces/{enlace_id}/revocar` revoca;
 `POST .../enlaces/{enlace_id}/rotar` lo sustituye; hay como máximo uno activo
-por establecimiento/tipo. Las respuestas incluyen `url_publica` a partir de
-`WEB_NEGOCIO_URL_BASE` (`…/negocios/<slug>`, carta con `?seccion=carta`), nunca
-dominios hardcodeados en Bar.
+por establecimiento/tipo. El tipo canónico de la web del local es `web`;
+`ficha_negocio` se acepta en POST como alias y **se persiste como `web`**.
+Las respuestas incluyen `url_publica` a partir de `WEB_NEGOCIO_URL_BASE`
+(`…/negocios/<slug>`, carta en `…/negocios/<slug>/carta`), nunca dominios
+hardcodeados en Bar.
 `GET /v1/enlaces/{slug}` (sin token) resuelve a `{ tipo, establecimiento_id }`
-con cache pública de TTL corto. La web que renderiza ficha/carta vive en
+con cache pública de TTL corto. La web que renderiza esas rutas vive en
 `services/web-negocio` (`web.negocio.siberia.solutions`).
-La ficha pública del establecimiento ya está disponible: `GET /v1/negocio/ficha?slug=` y
-`GET /v1/negocio/ficha/logo?slug=` (sin token; solo el local enlazado, logo efectivo público).
-La carta pública también está disponible: `GET /v1/negocio/carta?slug=` (sin token,
-solo lectura, agrupada por categoría con precio).
-La web pública agrega ambas en una llamada: `GET /v1/negocio/web?slug=` y
-`GET /v1/negocio/web/logo?slug=` (sin token; el slug resuelve enlaces `ficha_negocio`
-**o** `carta`).
+La lectura pública canónica es `GET /v1/negocio/web?slug=` y
+`GET /v1/negocio/web/logo?slug=` (sin token; el slug resuelve enlaces `web`,
+el alias histórico `ficha_negocio` o `carta`).
+La carta JSON sigue en `GET /v1/negocio/carta?slug=` (sin token, solo lectura,
+agrupada por categoría, con precio, `destino` y `descripcion` opcional).
+`GET /v1/negocio/ficha` se retiró.
 
 ## Qué no hacer
 

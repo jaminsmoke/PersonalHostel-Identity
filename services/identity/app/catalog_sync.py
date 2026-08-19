@@ -39,6 +39,7 @@ def product_snapshot(product: ProductoCatalogo) -> dict:
         "nombre": product.nombre,
         "data_origin": product.data_origin.value,
         "categoria": product.categoria,
+        "descripcion": product.descripcion,
         "destino": product.destino.value,
         "precio_centimos": product.precio_centimos,
         "moneda": product.moneda,
@@ -140,6 +141,8 @@ def _same_request(operation: OperacionSync, payload: OperacionSyncRequest) -> bo
 def _set_product_fields(product: ProductoCatalogo, payload: ProductoPayload) -> None:
     product.nombre = payload.nombre.strip()
     product.categoria = payload.categoria.strip()
+    texto = (payload.descripcion or "").strip()
+    product.descripcion = texto or None
     product.destino = ProductoDestino(payload.destino)
     product.precio_centimos = payload.precio_centimos
     product.moneda = payload.moneda

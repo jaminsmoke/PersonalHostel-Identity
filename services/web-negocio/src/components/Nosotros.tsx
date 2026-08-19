@@ -1,17 +1,19 @@
 import { absUrl } from "../config";
-import type { WebNegocio } from "../types";
+import { useWeb } from "../web-context";
 
-export function Nosotros({ web }: { web: WebNegocio }) {
-  const perfil = web.perfil!;
+export function Nosotros() {
+  const web = useWeb();
+  const perfil = web.perfil;
+  if (!perfil) return null;
   const imagen = absUrl(web.hero?.url);
 
   return (
-    <section id="nosotros" className="py-section-gap px-margin-mobile md:px-gutter max-w-page mx-auto scroll-mt-20">
+    <section className="py-section-gap px-margin-mobile md:px-gutter max-w-page mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-section-gap items-center">
         {imagen && (
-          <div className="order-2 md:order-1 relative aspect-[4/5] rounded-xl overflow-hidden">
+          <div className="order-2 md:order-1 relative aspect-[4/5] rounded overflow-hidden">
             <img
-              className="object-cover w-full h-full border border-outline-variant rounded-xl"
+              className="object-cover w-full h-full border border-outline-variant rounded"
               src={imagen}
               alt={web.nombre}
               loading="lazy"

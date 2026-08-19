@@ -1,11 +1,15 @@
+import { Link, useParams } from "react-router-dom";
 import { absUrl } from "../config";
-import type { WebNegocio } from "../types";
+import { rutaNegocio, useWeb } from "../web-context";
 
-export function Hero({ web }: { web: WebNegocio }) {
+export function Hero() {
+  const web = useWeb();
+  const { slug } = useParams<{ slug: string }>();
   const heroUrl = absUrl(web.hero?.url);
   const abierto = web.abierto_ahora;
   const hayCarta = web.categorias.length > 0;
   const hayContacto = Boolean(web.contacto);
+  if (!slug) return null;
 
   return (
     <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20">
@@ -25,7 +29,9 @@ export function Hero({ web }: { web: WebNegocio }) {
       <div className="relative z-10 flex flex-col items-center text-center px-margin-mobile max-w-3xl mx-auto gap-stack-lg">
         {abierto && (
           <div className="inline-flex items-center gap-2 bg-surface-high/80 backdrop-blur px-4 py-2 rounded-full border border-outline-variant/40">
-            <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            <span
+              className={`w-2 h-2 rounded-full ${abierto.abierto ? "bg-success animate-pulse" : "bg-danger"}`}
+            />
             <span className="text-label-md text-on-surface uppercase tracking-widest">
               {abierto.abierto ? "Abierto ahora" : "Cerrado ahora"}
             </span>
@@ -51,20 +57,20 @@ export function Hero({ web }: { web: WebNegocio }) {
 
         <div className="flex flex-col sm:flex-row gap-stack-md mt-2 w-full sm:w-auto">
           {hayCarta && (
-            <a
-              href="#carta"
-              className="bg-primary-container text-on-primary-container text-label-md px-8 py-4 rounded-lg hover:bg-primary transition-colors text-center uppercase tracking-widest"
+            <Link
+              to={rutaNegocio(slug, "carta")}
+              className="bg-primary-container text-on-primary-container text-label-md px-8 py-4 rounded hover:bg-primary transition-colors text-center uppercase tracking-widest"
             >
               Ver carta
-            </a>
+            </Link>
           )}
           {hayContacto && (
-            <a
-              href="#contacto"
-              className="bg-surface-high text-on-surface border border-outline-variant text-label-md px-8 py-4 rounded-lg hover:bg-surface-variant transition-colors text-center uppercase tracking-widest"
+            <Link
+              to={rutaNegocio(slug, "contacto")}
+              className="bg-surface-high text-on-surface border border-outline-variant text-label-md px-8 py-4 rounded hover:bg-surface-variant transition-colors text-center uppercase tracking-widest"
             >
               Cómo llegar
-            </a>
+            </Link>
           )}
         </div>
       </div>

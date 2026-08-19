@@ -1,15 +1,13 @@
 import { absUrl } from "../config";
-import type { WebNegocio } from "../types";
+import { useWeb } from "../web-context";
 
-export function Galeria({ web }: { web: WebNegocio }) {
+export function Galeria() {
+  const web = useWeb();
   return (
-    <section
-      id="galeria"
-      className="py-section-gap px-margin-mobile md:px-gutter max-w-page mx-auto scroll-mt-20"
-    >
-      <h2 className="text-label-md text-primary-fixed-dim uppercase tracking-widest mb-stack-md">
+    <section className="flex-grow pt-[120px] pb-section-gap px-margin-mobile md:px-gutter max-w-page mx-auto w-full">
+      <h1 className="font-display text-headline-lg-mobile md:text-display-lg text-on-surface mb-stack-lg">
         Galería
-      </h2>
+      </h1>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {web.galeria.map((img) => (
           <a
