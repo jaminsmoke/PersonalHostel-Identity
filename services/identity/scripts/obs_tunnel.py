@@ -19,12 +19,12 @@ Detente con Ctrl+C. Si un puerto local ya está ocupado, se omite ese túnel.
 """
 
 import argparse
+import contextlib
 import os
 import socket
 import sys
 import threading
 import webbrowser
-from pathlib import Path
 
 import paramiko
 
@@ -87,18 +87,12 @@ def _forward(chan, sock):
             sock.sendall(data)
     except (OSError, EOFError):
         pass
-    try:
+    with contextlib.suppress(OSError):
         sock.shutdown(socket.SHUT_RDWR)
-    except OSError:
-        pass
-    try:
+    with contextlib.suppress(OSError):
         sock.close()
-    except OSError:
-        pass
-    try:
+    with contextlib.suppress(Exception):
         chan.close()
-    except Exception:
-        pass
 
 
 def forward_port(client, remote_port: str) -> bool:
