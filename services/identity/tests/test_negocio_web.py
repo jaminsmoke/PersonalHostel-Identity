@@ -296,8 +296,9 @@ def test_web_negocio_hero_y_galeria_publicos(db_ready, negocio_client):
 def test_web_negocio_privada_410_no_store_y_logo_sigue_publico(db_ready, negocio_client):
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"web-privada-{uuid.uuid4().hex[:8]}"
+    slug_carta = f"web-privada-carta-{uuid.uuid4().hex[:8]}"
     _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
-    _crear_enlace(negocio_client, headers, est_id, "carta", slug)
+    _crear_enlace(negocio_client, headers, est_id, "carta", slug_carta)
 
     off = negocio_client.patch(
         f"/v1/establecimientos/{est_id}/perfil-web",
@@ -310,6 +311,11 @@ def test_web_negocio_privada_410_no_store_y_logo_sigue_publico(db_ready, negocio
     assert web.status_code == 410
     assert web.json()["code"] == "identity.web_privada"
     assert web.headers["cache-control"] == "no-store"
+
+    web_carta = negocio_client.get("/v1/negocio/web", params={"slug": slug_carta})
+    assert web_carta.status_code == 410
+    assert web_carta.json()["code"] == "identity.web_privada"
+    assert web_carta.headers["cache-control"] == "no-store"
 
     hero = negocio_client.get("/v1/negocio/web/hero", params={"slug": slug})
     assert hero.status_code == 410
