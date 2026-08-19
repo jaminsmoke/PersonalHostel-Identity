@@ -55,6 +55,7 @@ def _establecimiento_por_carta_slug(db: Session, slug: str) -> Establecimiento:
 @router.get(
     "/carta",
     response_model=CartaPublicaResponse,
+    response_model_exclude_unset=True,
     responses={
         status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
         status.HTTP_410_GONE: {"model": ErrorResponse},

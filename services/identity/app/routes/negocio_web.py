@@ -313,6 +313,7 @@ def _categorias(db: Session, establecimiento: Establecimiento) -> list[dict]:
 @router.get(
     "/web",
     response_model=WebNegocioPublica,
+    response_model_exclude_unset=True,
     responses={
         status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
         status.HTTP_410_GONE: {"model": ErrorResponse},
