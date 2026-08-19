@@ -195,6 +195,12 @@ class Camarero(CamareroBase):
         default=VisibleOtrosEstablecimientos.nunca.value,
         server_default=VisibleOtrosEstablecimientos.nunca.value,
     )
+    aparecer_web_negocio: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -448,6 +454,12 @@ class Establecimiento(NegocioBase):
     horarios: Mapped[list[HorarioEstablecimiento]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
+    perfil: Mapped[PerfilEstablecimiento | None] = relationship(
+        back_populates="establecimiento", cascade="all, delete-orphan"
+    )
+    imagenes: Mapped[list[ImagenEstablecimiento]] = relationship(
+        back_populates="establecimiento", cascade="all, delete-orphan"
+    )
 
     @property
     def tipo_efectivo(self) -> str | None:
@@ -469,6 +481,111 @@ class Establecimiento(NegocioBase):
         if not self.logo_efectivo_clave:
             return None
         return f"/v1/establecimientos/{self.id}/logo"
+
+
+class PerfilEstablecimiento(NegocioBase):
+    """Perfil público de la web del establecimiento (1:1 con ``establecimientos``).
+
+    Campos de marketing y configuración de la superficie pública (plantilla,
+    rebranding y visibilidad). No toca el modelo operativo del catálogo/layout:
+    vive en su propia tabla para no interferir con ``sync_revision``.
+    """
+
+    __tablename__ = "perfiles_establecimiento"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    eslogan: Mapped[str | None] = mapped_column(String(140))
+    descripcion: Mapped[str | None] = mapped_column(Text)
+    direccion: Mapped[str | None] = mapped_column(String(255))
+    ciudad: Mapped[str | None] = mapped_column(String(100))
+    telefono: Mapped[str | None] = mapped_column(String(32))
+    email_contacto: Mapped[str | None] = mapped_column(String(320))
+    web: Mapped[str | None] = mapped_column(String(255))
+    redes: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
+    )
+    tz: Mapped[str] = mapped_column(
+        String(64), nullable=False, default="Europe/Madrid", server_default="Europe/Madrid"
+    )
+    hero_clave: Mapped[str | None] = mapped_column(String(255))
+    hero_mimetype: Mapped[str | None] = mapped_column(String(64))
+    hero_size: Mapped[int | None] = mapped_column(Integer)
+    hero_actualizada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    plantilla: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="estate_hospitality",
+        server_default="estate_hospitality",
+    )
+    color_primario: Mapped[str | None] = mapped_column(String(20))
+    web_publica: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    mostrar_equipo: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    data_origin: Mapped[DataOrigin] = mapped_column(
+        Enum(DataOrigin, name="data_origin"),
+        nullable=False,
+        default=DataOrigin.real,
+        server_default=DataOrigin.real.value,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    establecimiento: Mapped[Establecimiento] = relationship(back_populates="perfil")
+
+
+class ImagenEstablecimiento(NegocioBase):
+    """Imagen de la galería del establecimiento (branding de su web).
+
+    Almacenada en el mismo storage de fotos (``app.storage``) con una clave por
+    imagen; ``uso`` distingue la galería (el hero vive en ``perfiles_establecimiento``).
+    """
+
+    __tablename__ = "imagenes_establecimiento"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    clave: Mapped[str] = mapped_column(String(255), nullable=False)
+    mimetype: Mapped[str] = mapped_column(String(64), nullable=False)
+    size: Mapped[int] = mapped_column(Integer, nullable=False)
+    uso: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="galeria", server_default="galeria"
+    )
+    orden: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    data_origin: Mapped[DataOrigin] = mapped_column(
+        Enum(DataOrigin, name="data_origin"),
+        nullable=False,
+        default=DataOrigin.real,
+        server_default=DataOrigin.real.value,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    establecimiento: Mapped[Establecimiento] = relationship(back_populates="imagenes")
 
 
 class ProductoCatalogo(NegocioBase):

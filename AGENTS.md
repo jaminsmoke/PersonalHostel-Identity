@@ -100,11 +100,12 @@ PersonalHosteleriaServer/
 │   ├── app/                  # main, auth, models, schemas, routes, storage, images
 │   ├── scripts/              # export_openapi.py
 │   └── tests/
-├── services/web-negocio/     # web pública de negocios (nginx + SPA vanilla, :8083)
-│   ├── Dockerfile
+├── services/web-negocio/     # web pública de negocios (React + Vite + Tailwind, nginx, :8083)
+│   ├── Dockerfile            # multi-stage: node build → nginx estático
 │   ├── nginx.conf
 │   ├── 20-web-negocio.sh     # genera config.js en runtime (NEGOCIO_API_URL)
-│   └── static/               # index.html, style.css, app.js
+│   ├── package.json          # Vite/React/Tailwind; build = tsc --noEmit && vite build
+│   └── src/                  # App, componentes, tipos y estilos (@fontsource, sin CDNs)
 ├── services/web-camareros/   # web del profesional: ficha, login e invitaciones (nginx + SPA vanilla, :8084)
 │   ├── Dockerfile
 │   ├── nginx.conf
@@ -196,6 +197,23 @@ no hay logo local, hereda el corporativo. `GET/PATCH /v1/auth/negocio/me` edita
 la organización; `PATCH /v1/establecimientos/{id}` y
 `POST/GET/DELETE .../{id}/logo` editan el local. No volver a colocar tipo/branding
 operativo únicamente en la cuenta: una organización puede tener locales distintos.
+
+La web pública de negocios es **`web-negocio`**
+(`web.negocio.siberia.solutions/negocios/<slug>`, **React + Vite + Tailwind
+compilado** en `services/web-negocio`, puerto dev `:8083`): renderiza la ficha
+como credencial y la carta como sección con una plantilla por `tipo_efectivo` y
+el rebranding del logo/colores del local, con una sola llamada
+`GET /v1/negocio/web?slug=` (ficha + carta) al servicio de negocio
+(`NEGOCIO_API_URL`, runtime en `config.js`) sin token. El contrato público
+incluye `perfil`, `contacto`, `hero`, `galeria`, `horario`, `abierto_ahora` y
+`equipo` (matriz AND: el local muestra el equipo solo si `mostrar_equipo` y el
+camarero `aparecer_web_negocio`); con `web_publica=false` toda la superficie
+responde `410 identity.web_privada` (`Cache-Control: no-store`). El logo efectivo
+del local es público por diseño y el precio de la carta siempre visible.
+**Compatibilidad**: los dominios históricos `ficha.siberia.solutions` y
+`carta.siberia.solutions` responden 301 a sus superficies canónicas (`/negocio`
+y `/carta` → `web.negocio`; `/ficha?qr=` → `web.camareros`), con plazo de
+convivencia 6 meses o hasta confirmar que no hay QR impresos.
 
 Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones (con invitación por magic-link sin JWT); el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar. Identity solo guarda un **espejo de respaldo** del layout de Bar (`PUT/GET /v1/establecimientos/{id}/layout`, tabla `layouts_establecimiento`) para restaurar el mapa en un dispositivo nuevo; no lo interpreta ni lo sirve a Commander.
 

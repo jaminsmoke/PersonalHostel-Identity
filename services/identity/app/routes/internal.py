@@ -59,6 +59,19 @@ def internal_perfil(camarero_id: uuid.UUID) -> dict:
     return perfil
 
 
+@camareros_internal_router.get("/{camarero_id}/publico")
+def internal_perfil_publico(camarero_id: uuid.UUID) -> dict:
+    """Campos públicos del camarero para la web del negocio (sin PII)."""
+    perfil = DirectCamarerosInternal().perfil_publico(camarero_id)
+    if perfil is None:
+        raise ApiError(
+            status_code=status.HTTP_404_NOT_FOUND,
+            code=CAMARERO_NOT_FOUND,
+            detail="Camarero no encontrado",
+        )
+    return perfil
+
+
 @camareros_internal_router.post("/qr/verify")
 def internal_verificar_qr(payload: QrVerifyRequest) -> dict:
     camarero_id = DirectCamarerosInternal().verificar_qr(payload.qr)

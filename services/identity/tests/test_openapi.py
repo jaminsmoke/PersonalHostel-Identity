@@ -16,6 +16,7 @@ CAMAREROS_RUTAS = [
     "/v1/camareros/me/establecimientos",
     "/v1/camareros/me/invitaciones",
     "/v1/camareros/me/invitaciones/{invitacion_id}/aceptar",
+    "/v1/camareros/me/pagina-publica",
     "/v1/keys/qr",
 ]
 
@@ -46,7 +47,15 @@ NEGOCIO_RUTAS = [
     "/v1/establecimientos/{establecimiento_id}/sync/conflictos/{conflicto_id}/resolver",
     "/v1/establecimientos/{establecimiento_id}/notificaciones",
     "/v1/establecimientos/{establecimiento_id}/notificaciones/{notificacion_id}/leer",
+    "/v1/establecimientos/{establecimiento_id}/perfil-web",
+    "/v1/establecimientos/{establecimiento_id}/hero",
+    "/v1/establecimientos/{establecimiento_id}/galeria",
+    "/v1/establecimientos/{establecimiento_id}/galeria/{imagen_id}",
     "/v1/invitaciones/{token}/aceptar",
+    "/v1/negocio/web",
+    "/v1/negocio/web/logo",
+    "/v1/negocio/web/hero",
+    "/v1/negocio/web/galeria/{imagen_id}",
 ]
 
 

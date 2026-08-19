@@ -1,6 +1,60 @@
 {
   "components": {
     "schemas": {
+      "AbiertoAhora": {
+        "description": "Estado actual del local respecto a su horario (en el huso del local).",
+        "properties": {
+          "abierto": {
+            "title": "Abierto",
+            "type": "boolean"
+          },
+          "proximo_cambio": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proximo Cambio"
+          }
+        },
+        "required": [
+          "abierto"
+        ],
+        "title": "AbiertoAhora",
+        "type": "object"
+      },
+      "Body_anadir_galeria_v1_establecimientos__establecimiento_id__galeria_post": {
+        "properties": {
+          "imagen": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Imagen",
+            "type": "string"
+          }
+        },
+        "required": [
+          "imagen"
+        ],
+        "title": "Body_anadir_galeria_v1_establecimientos__establecimiento_id__galeria_post",
+        "type": "object"
+      },
+      "Body_subir_hero_v1_establecimientos__establecimiento_id__hero_post": {
+        "properties": {
+          "hero": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Hero",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hero"
+        ],
+        "title": "Body_subir_hero_v1_establecimientos__establecimiento_id__hero_post",
+        "type": "object"
+      },
       "Body_subir_logo_establecimiento_v1_establecimientos__establecimiento_id__logo_post": {
         "properties": {
           "logo": {
@@ -449,6 +503,51 @@
         "title": "ConflictoSyncResponse",
         "type": "object"
       },
+      "ContactoNegocioPublico": {
+        "description": "Bloque de contacto de la web pública del local.",
+        "properties": {
+          "email_contacto": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Contacto"
+          },
+          "redes": {
+            "additionalProperties": true,
+            "title": "Redes",
+            "type": "object"
+          },
+          "telefono": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefono"
+          },
+          "web": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Web"
+          }
+        },
+        "title": "ContactoNegocioPublico",
+        "type": "object"
+      },
       "CuentaNegocioPerfil": {
         "properties": {
           "camarero_vinculado_id": {
@@ -843,6 +942,20 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "HeroNegocioPublico": {
+        "description": "Imagen de portada de la web pública del local.",
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "HeroNegocioPublico",
+        "type": "object"
+      },
       "HorarioDia": {
         "description": "Un día de la semana (0=lunes … 6=domingo). ``cerrado`` sin turnos.",
         "properties": {
@@ -925,6 +1038,73 @@
           "dias"
         ],
         "title": "HorarioUpdateRequest",
+        "type": "object"
+      },
+      "ImagenEstablecimientoResponse": {
+        "description": "Imagen de la galería del establecimiento.",
+        "properties": {
+          "creada_en": {
+            "format": "date-time",
+            "title": "Creada En",
+            "type": "string"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mimetype": {
+            "title": "Mimetype",
+            "type": "string"
+          },
+          "orden": {
+            "title": "Orden",
+            "type": "integer"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "establecimiento_id",
+          "url",
+          "mimetype",
+          "size",
+          "orden",
+          "creada_en"
+        ],
+        "title": "ImagenEstablecimientoResponse",
+        "type": "object"
+      },
+      "ImagenGaleriaPublica": {
+        "description": "Imagen de la galería de la web pública del local.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "url"
+        ],
+        "title": "ImagenGaleriaPublica",
         "type": "object"
       },
       "InvitacionAcceptResponse": {
@@ -1241,6 +1421,58 @@
         "title": "MembresiaResponse",
         "type": "object"
       },
+      "MiembroEquipoPublico": {
+        "description": "Miembro del equipo visible en la web pública (matriz AND).",
+        "properties": {
+          "apellidos": {
+            "title": "Apellidos",
+            "type": "string"
+          },
+          "camarero_id": {
+            "format": "uuid",
+            "title": "Camarero Id",
+            "type": "string"
+          },
+          "foto_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foto Url"
+          },
+          "nick": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nick"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "rol": {
+            "title": "Rol",
+            "type": "string"
+          }
+        },
+        "required": [
+          "camarero_id",
+          "nombre",
+          "apellidos",
+          "rol"
+        ],
+        "title": "MiembroEquipoPublico",
+        "type": "object"
+      },
       "NegocioFichaPublica": {
         "description": "Ficha pública del establecimiento identificado por el enlace.",
         "properties": {
@@ -1518,6 +1750,358 @@
           "server_received_at"
         ],
         "title": "OperacionSyncResponse",
+        "type": "object"
+      },
+      "PerfilEstablecimientoResponse": {
+        "description": "Perfil público del establecimiento (gestión con la cuenta de negocio).",
+        "properties": {
+          "ciudad": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciudad"
+          },
+          "color_primario": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color Primario"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direccion"
+          },
+          "email_contacto": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Contacto"
+          },
+          "eslogan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eslogan"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "hero_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hero Url"
+          },
+          "mostrar_equipo": {
+            "default": false,
+            "title": "Mostrar Equipo",
+            "type": "boolean"
+          },
+          "plantilla": {
+            "default": "estate_hospitality",
+            "title": "Plantilla",
+            "type": "string"
+          },
+          "redes": {
+            "additionalProperties": true,
+            "title": "Redes",
+            "type": "object"
+          },
+          "telefono": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefono"
+          },
+          "tz": {
+            "default": "Europe/Madrid",
+            "title": "Tz",
+            "type": "string"
+          },
+          "web": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Web"
+          },
+          "web_publica": {
+            "default": true,
+            "title": "Web Publica",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "establecimiento_id"
+        ],
+        "title": "PerfilEstablecimientoResponse",
+        "type": "object"
+      },
+      "PerfilEstablecimientoUpdateRequest": {
+        "description": "Campos editables del perfil público del establecimiento (PATCH parcial).",
+        "properties": {
+          "ciudad": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciudad"
+          },
+          "color_primario": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color Primario"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direccion"
+          },
+          "email_contacto": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Contacto"
+          },
+          "eslogan": {
+            "anyOf": [
+              {
+                "maxLength": 140,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eslogan"
+          },
+          "mostrar_equipo": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mostrar Equipo"
+          },
+          "plantilla": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plantilla"
+          },
+          "redes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redes"
+          },
+          "telefono": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefono"
+          },
+          "tz": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tz"
+          },
+          "web": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Web"
+          },
+          "web_publica": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Web Publica"
+          }
+        },
+        "title": "PerfilEstablecimientoUpdateRequest",
+        "type": "object"
+      },
+      "PerfilNegocioPublico": {
+        "description": "Bloque «quién somos» de la web pública del local.",
+        "properties": {
+          "ciudad": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciudad"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direccion"
+          },
+          "eslogan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eslogan"
+          }
+        },
+        "title": "PerfilNegocioPublico",
         "type": "object"
       },
       "ProductoCartaPublica": {
@@ -1995,6 +2579,16 @@
       "WebNegocioPublica": {
         "description": "Datos de la web pública del establecimiento (ficha + carta).",
         "properties": {
+          "abierto_ahora": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AbiertoAhora"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "categorias": {
             "items": {
               "$ref": "#/components/schemas/CategoriaCartaPublica"
@@ -2002,10 +2596,55 @@
             "title": "Categorias",
             "type": "array"
           },
+          "color_primario": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color Primario"
+          },
+          "contacto": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContactoNegocioPublico"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "equipo": {
+            "items": {
+              "$ref": "#/components/schemas/MiembroEquipoPublico"
+            },
+            "title": "Equipo",
+            "type": "array"
+          },
           "establecimiento_id": {
             "format": "uuid",
             "title": "Establecimiento Id",
             "type": "string"
+          },
+          "galeria": {
+            "items": {
+              "$ref": "#/components/schemas/ImagenGaleriaPublica"
+            },
+            "title": "Galeria",
+            "type": "array"
+          },
+          "hero": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HeroNegocioPublico"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "horario": {
             "anyOf": [
@@ -2038,6 +2677,21 @@
           },
           "organizacion_nombre": {
             "title": "Organizacion Nombre",
+            "type": "string"
+          },
+          "perfil": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PerfilNegocioPublico"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "plantilla": {
+            "default": "estate_hospitality",
+            "title": "Plantilla",
             "type": "string"
           },
           "tipo_establecimiento": {
@@ -3664,6 +4318,586 @@
         ]
       }
     },
+    "/v1/establecimientos/{establecimiento_id}/galeria": {
+      "get": {
+        "operationId": "listar_galeria_v1_establecimientos__establecimiento_id__galeria_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ImagenEstablecimientoResponse"
+                  },
+                  "title": "Response Listar Galeria V1 Establecimientos  Establecimiento Id  Galeria Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar Galeria",
+        "tags": [
+          "perfil web"
+        ]
+      },
+      "post": {
+        "operationId": "anadir_galeria_v1_establecimientos__establecimiento_id__galeria_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_anadir_galeria_v1_establecimientos__establecimiento_id__galeria_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImagenEstablecimientoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Anadir Galeria",
+        "tags": [
+          "perfil web"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/galeria/{imagen_id}": {
+      "delete": {
+        "operationId": "borrar_galeria_imagen_v1_establecimientos__establecimiento_id__galeria__imagen_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "imagen_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Imagen Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImagenEstablecimientoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Borrar Galeria Imagen",
+        "tags": [
+          "perfil web"
+        ]
+      },
+      "get": {
+        "operationId": "obtener_galeria_imagen_v1_establecimientos__establecimiento_id__galeria__imagen_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "imagen_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Imagen Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Imagen de galería (WebP)."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Galeria Imagen",
+        "tags": [
+          "perfil web"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/hero": {
+      "delete": {
+        "operationId": "borrar_hero_v1_establecimientos__establecimiento_id__hero_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilEstablecimientoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Borrar Hero",
+        "tags": [
+          "perfil web"
+        ]
+      },
+      "get": {
+        "operationId": "obtener_hero_v1_establecimientos__establecimiento_id__hero_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Imagen de portada (WebP)."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Hero",
+        "tags": [
+          "perfil web"
+        ]
+      },
+      "post": {
+        "operationId": "subir_hero_v1_establecimientos__establecimiento_id__hero_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_subir_hero_v1_establecimientos__establecimiento_id__hero_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilEstablecimientoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Subir Hero",
+        "tags": [
+          "perfil web"
+        ]
+      }
+    },
     "/v1/establecimientos/{establecimiento_id}/horario": {
       "get": {
         "operationId": "obtener_horario_v1_establecimientos__establecimiento_id__horario_get",
@@ -5059,6 +6293,170 @@
         ]
       }
     },
+    "/v1/establecimientos/{establecimiento_id}/perfil-web": {
+      "get": {
+        "operationId": "obtener_perfil_web_v1_establecimientos__establecimiento_id__perfil_web_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilEstablecimientoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Perfil Web",
+        "tags": [
+          "perfil web"
+        ]
+      },
+      "patch": {
+        "operationId": "actualizar_perfil_web_v1_establecimientos__establecimiento_id__perfil_web_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerfilEstablecimientoUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilEstablecimientoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Actualizar Perfil Web",
+        "tags": [
+          "perfil web"
+        ]
+      }
+    },
     "/v1/establecimientos/{establecimiento_id}/sync/cambios": {
       "get": {
         "operationId": "obtener_cambios_v1_establecimientos__establecimiento_id__sync_cambios_get",
@@ -5946,6 +7344,138 @@
           }
         },
         "summary": "Web Negocio",
+        "tags": [
+          "negocio público"
+        ]
+      }
+    },
+    "/v1/negocio/web/galeria/{imagen_id}": {
+      "get": {
+        "operationId": "web_negocio_galeria_v1_negocio_web_galeria__imagen_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "imagen_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Imagen Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Web Negocio Galeria",
+        "tags": [
+          "negocio público"
+        ]
+      }
+    },
+    "/v1/negocio/web/hero": {
+      "get": {
+        "operationId": "web_negocio_hero_v1_negocio_web_hero_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Web Negocio Hero",
         "tags": [
           "negocio público"
         ]
