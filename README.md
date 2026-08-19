@@ -125,6 +125,12 @@ bash services/identity/scripts/obs_up.sh up grafana
 
 - Piezas: **Prometheus** (métricas + reglas de alerta), **Grafana** (dashboards), **Loki + Promtail** (logs de contenedores), **node_exporter** (host), **postgres_exporter** (BD) y **Alertmanager** (email).
 - Acceso: Grafana en `https://grafana.siberia.solutions` con `basic_auth` de Caddy + login propio (`127.0.0.1:3001` en el host). `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` viven en `.env`.
+- **UIs internas (admin)**: Prometheus (`:9090`), Alertmanager (`:9093`) y Grafana (`:3001`) solo escuchan en `127.0.0.1` del VPS. Para navegarlas desde tu máquina sin abrir puertos públicos, usar el lanzador de túnel SSH:
+  ```bash
+  python services/identity/scripts/obs_tunnel.py        # abre túnel + navegador
+  python services/identity/scripts/obs_tunnel.py --no-browser
+  ```
+  Lee `.env` (misma clave pinned anti-MITM que `deploy_staging.py`). Pulsa Ctrl+C para cortar.
 - Alertas: `up == 0`, 5xx, Postgres caído, CPU alta, disco bajo y backup R2 ausente/antiguo → email a `ALERTMANAGER_ROUTE_TO` (usa el SMTP de `EMAIL_*`).
 - Comprobaciones rápidas: `curl -sf 127.0.0.1:9090/-/healthy`, `127.0.0.1:9093/-/healthy`, `127.0.0.1:3001/api/health`; targets Prometheus UP; `curl -I https://grafana.siberia.solutions` → 401 sin auth.
 - Smoke sintético (no load test):

@@ -572,7 +572,10 @@ forma parte del `up` de desarrollo. En el VPS se gestiona con
 orphans con solo 2 ficheros: Docker borra la pila de obs. Grafana:
 `grafana.siberia.solutions` con `basic_auth` de Caddy. Ver
 `README.md → Observabilidad en el VPS`. Smoke sintético: `k6`
-(`services/identity/scripts/k6/smoke.js`).
+(`services/identity/scripts/k6/smoke.js`). Para navegar las UIs internas
+(Prometheus :9090, Alertmanager :9093, Grafana :3001) desde la máquina de un
+admin, usar `python services/identity/scripts/obs_tunnel.py` (túnel SSH, no
+abre puertos públicos).
 
 ## Dev tools
 
