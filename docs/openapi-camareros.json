@@ -109,6 +109,12 @@
       "CamareroPerfil": {
         "description": "Perfil público del camarero para la sesión.",
         "properties": {
+          "aparecer_web_negocio": {
+            "default": false,
+            "description": "Opt-in para aparecer en la web pública de los establecimientos donde trabaja (matriz AND con el `mostrar_equipo` del local).",
+            "title": "Aparecer Web Negocio",
+            "type": "boolean"
+          },
           "apellidos": {
             "examples": [
               "García"
@@ -660,6 +666,21 @@
           "estado"
         ],
         "title": "MembresiaResponse",
+        "type": "object"
+      },
+      "PaginaPublicaUpdateRequest": {
+        "description": "Preferencia del camarero sobre aparecer en la web pública del negocio.",
+        "properties": {
+          "aparecer_web_negocio": {
+            "description": "true: el camarero puede aparecer en la página pública de los establecimientos donde es miembro activo.",
+            "title": "Aparecer Web Negocio",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "aparecer_web_negocio"
+        ],
+        "title": "PaginaPublicaUpdateRequest",
         "type": "object"
       },
       "PerfilUpdateRequest": {
@@ -1524,6 +1545,52 @@
           }
         },
         "summary": "Internal Perfil",
+        "tags": [
+          "internal"
+        ]
+      }
+    },
+    "/internal/camareros/{camarero_id}/publico": {
+      "get": {
+        "description": "Campos públicos del camarero para la web del negocio (sin PII).",
+        "operationId": "internal_perfil_publico_internal_camareros__camarero_id__publico_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "camarero_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Camarero Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Internal Perfil Publico Internal Camareros  Camarero Id  Publico Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Internal Perfil Publico",
         "tags": [
           "internal"
         ]
@@ -2579,6 +2646,63 @@
           }
         ],
         "summary": "Iniciar Jornada",
+        "tags": [
+          "camareros"
+        ]
+      }
+    },
+    "/v1/camareros/me/pagina-publica": {
+      "put": {
+        "description": "Opt-in del camarero para aparecer en la web pública de los\nestablecimientos donde trabaja (matriz AND con `mostrar_equipo`).",
+        "operationId": "actualizar_pagina_publica_v1_camareros_me_pagina_publica_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaginaPublicaUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CamareroPerfil"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Actualizar Pagina Publica",
         "tags": [
           "camareros"
         ]

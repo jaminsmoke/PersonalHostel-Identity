@@ -199,3 +199,242 @@ def test_web_negocio_revocada_410(db_ready, negocio_client):
     resp = negocio_client.get("/v1/negocio/web", params={"slug": slug})
     assert resp.status_code == 410
     assert resp.json()["code"] == "identity.enlace_revocado"
+
+
+def test_web_negocio_incluye_perfil_contacto_y_rebranding(db_ready, negocio_client):
+    headers, est_id = _crear_negocio_establecimiento(negocio_client)
+    slug = f"web-perfil-{uuid.uuid4().hex[:8]}"
+    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+
+    patch = negocio_client.patch(
+        f"/v1/establecimientos/{est_id}/perfil-web",
+        headers=headers,
+        json={
+            "eslogan": "Cocina de mercado",
+            "descripcion": "Restaurante de barrio.",
+            "direccion": "Calle Mayor 3",
+            "ciudad": "Madrid",
+            "telefono": "+34910000000",
+            "email_contacto": "cocina@local.example",
+            "web": "https://local.example",
+            "redes": {"tiktok": "https://tiktok.com/@local"},
+            "color_primario": "#2A6B4F",
+        },
+    )
+    assert patch.status_code == 200, patch.text
+
+    resp = negocio_client.get("/v1/negocio/web", params={"slug": slug})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["plantilla"] == "estate_hospitality"
+    assert body["color_primario"] == "#2A6B4F"
+    assert body["perfil"] == {
+        "eslogan": "Cocina de mercado",
+        "descripcion": "Restaurante de barrio.",
+        "direccion": "Calle Mayor 3",
+        "ciudad": "Madrid",
+    }
+    assert body["contacto"] == {
+        "telefono": "+34910000000",
+        "email_contacto": "cocina@local.example",
+        "web": "https://local.example",
+        "redes": {"tiktok": "https://tiktok.com/@local"},
+    }
+    assert "email" not in body
+    assert body["equipo"] == []
+
+
+def test_web_negocio_hero_y_galeria_publicos(db_ready, negocio_client):
+    from io import BytesIO
+
+    from PIL import Image
+
+    headers, est_id = _crear_negocio_establecimiento(negocio_client)
+    slug = f"web-imagenes-{uuid.uuid4().hex[:8]}"
+    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+
+    def png(color, size=(1200, 800)):
+        image = Image.new("RGB", size, color)
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        return buffer.getvalue()
+
+    hero = negocio_client.post(
+        f"/v1/establecimientos/{est_id}/hero",
+        headers=headers,
+        files={"hero": ("hero.png", png((30, 100, 200)), "image/png")},
+    )
+    assert hero.status_code == 200
+    galeria = negocio_client.post(
+        f"/v1/establecimientos/{est_id}/galeria",
+        headers=headers,
+        files={"imagen": ("g1.png", png((200, 100, 30)), "image/png")},
+    )
+    assert galeria.status_code == 200
+
+    body = negocio_client.get("/v1/negocio/web", params={"slug": slug}).json()
+    assert body["hero"] == {"url": f"/v1/negocio/web/hero?slug={slug}"}
+    assert body["galeria"] == [
+        {
+            "id": galeria.json()["id"],
+            "url": f"/v1/negocio/web/galeria/{galeria.json()['id']}?slug={slug}",
+        }
+    ]
+
+    hero_img = negocio_client.get("/v1/negocio/web/hero", params={"slug": slug})
+    assert hero_img.status_code == 200
+    assert hero_img.headers["content-type"] == "image/webp"
+    assert Image.open(BytesIO(hero_img.content)).format == "WEBP"
+
+    galeria_img = negocio_client.get(
+        "/v1/negocio/web/galeria/" + galeria.json()["id"], params={"slug": slug}
+    )
+    assert galeria_img.status_code == 200
+    assert galeria_img.headers["content-type"] == "image/webp"
+
+
+def test_web_negocio_privada_410_no_store_y_logo_sigue_publico(db_ready, negocio_client):
+    headers, est_id = _crear_negocio_establecimiento(negocio_client)
+    slug = f"web-privada-{uuid.uuid4().hex[:8]}"
+    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+    _crear_enlace(negocio_client, headers, est_id, "carta", slug)
+
+    off = negocio_client.patch(
+        f"/v1/establecimientos/{est_id}/perfil-web",
+        headers=headers,
+        json={"web_publica": False},
+    )
+    assert off.status_code == 200
+
+    web = negocio_client.get("/v1/negocio/web", params={"slug": slug})
+    assert web.status_code == 410
+    assert web.json()["code"] == "identity.web_privada"
+    assert web.headers["cache-control"] == "no-store"
+
+    hero = negocio_client.get("/v1/negocio/web/hero", params={"slug": slug})
+    assert hero.status_code == 410
+    assert hero.headers["cache-control"] == "no-store"
+
+    from io import BytesIO
+
+    from PIL import Image
+
+    img = Image.new("RGB", (100, 100), (90, 160, 220))
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    negocio_client.post(
+        "/v1/auth/negocio/me/logo",
+        headers=headers,
+        files={"logo": ("logo.png", buf.getvalue(), "image/png")},
+    )
+
+    logo = negocio_client.get("/v1/negocio/web/logo", params={"slug": slug})
+    assert logo.status_code == 200
+    assert logo.headers["content-type"] == "image/webp"
+
+
+def test_web_negocio_abierto_ahora_con_horario(db_ready, negocio_client):
+    headers, est_id = _crear_negocio_establecimiento(negocio_client)
+    slug = f"web-abierto-{uuid.uuid4().hex[:8]}"
+    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+
+    patch = negocio_client.patch(
+        f"/v1/establecimientos/{est_id}/horario",
+        headers=headers,
+        json={
+            "dias": [
+                {"dia_semana": 0, "turnos": [{"abre": "00:00", "cierra": "23:59"}]},
+                {"dia_semana": 1, "turnos": [{"abre": "00:00", "cierra": "23:59"}]},
+                {"dia_semana": 2, "turnos": [{"abre": "00:00", "cierra": "23:59"}]},
+                {"dia_semana": 3, "turnos": [{"abre": "00:00", "cierra": "23:59"}]},
+                {"dia_semana": 4, "turnos": [{"abre": "00:00", "cierra": "23:59"}]},
+                {"dia_semana": 5, "turnos": [{"abre": "00:00", "cierra": "23:59"}]},
+                {"dia_semana": 6, "turnos": [{"abre": "00:00", "cierra": "23:59"}]},
+            ]
+        },
+    )
+    assert patch.status_code == 200, patch.text
+
+    resp = negocio_client.get("/v1/negocio/web", params={"slug": slug})
+    assert resp.status_code == 200
+    abierto = resp.json()["abierto_ahora"]
+    assert abierto["abierto"] is True
+    assert abierto["proximo_cambio"] is not None
+
+
+def test_web_negocio_equipo_matriz_and(db_ready, camarero_client, negocio_client):
+    from app.models import Membresia, MembresiaEstado, MembresiaRol
+
+    email = _email("equipo")
+    camarero = camarero_client.post(
+        "/v1/camareros/registro",
+        json={
+            "nombre": "Luis",
+            "apellidos": "Pérez",
+            "email": email,
+            "password": "pass-12345678",
+        },
+    )
+    assert camarero.status_code == 201
+    camarero_id = camarero.json()["id"]
+    login = camarero_client.post(
+        "/v1/auth/login",
+        json={"email": email, "password": "pass-12345678"},
+    )
+    assert login.status_code == 200
+
+    headers, est_id = _crear_negocio_establecimiento(negocio_client)
+    slug = f"web-equipo-{uuid.uuid4().hex[:8]}"
+    _crear_enlace(negocio_client, headers, est_id, "ficha_negocio", slug)
+
+    with NegocioSessionLocal() as session:
+        session.add(
+            Membresia(
+                establecimiento_id=uuid.UUID(est_id),
+                camarero_id=uuid.UUID(camarero_id),
+                rol=MembresiaRol.staff,
+                estado=MembresiaEstado.activa,
+            )
+        )
+        session.commit()
+
+    patch = negocio_client.patch(
+        f"/v1/establecimientos/{est_id}/perfil-web",
+        headers=headers,
+        json={"mostrar_equipo": True},
+    )
+    assert patch.status_code == 200
+
+    # El camarero no ha hecho opt-in: no aparece.
+    body = negocio_client.get("/v1/negocio/web", params={"slug": slug}).json()
+    assert body["equipo"] == []
+
+    # Opt-in del camarero → aparece (matriz AND completa).
+    opt_in = camarero_client.put(
+        "/v1/camareros/me/pagina-publica",
+        headers={"Authorization": f"Bearer {login.json()['token']}"},
+        json={"aparecer_web_negocio": True},
+    )
+    assert opt_in.status_code == 200
+
+    body = negocio_client.get("/v1/negocio/web", params={"slug": slug}).json()
+    assert body["equipo"] == [
+        {
+            "camarero_id": camarero_id,
+            "nombre": "Luis",
+            "apellidos": "Pérez",
+            "nick": None,
+            "foto_url": None,
+            "rol": "staff",
+        }
+    ]
+
+    # Si el local apaga mostrar_equipo, desaparece aunque el camarero haya optado.
+    off = negocio_client.patch(
+        f"/v1/establecimientos/{est_id}/perfil-web",
+        headers=headers,
+        json={"mostrar_equipo": False},
+    )
+    assert off.status_code == 200
+    body = negocio_client.get("/v1/negocio/web", params={"slug": slug}).json()
+    assert body["equipo"] == []

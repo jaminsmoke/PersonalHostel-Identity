@@ -347,21 +347,32 @@ Compatibilidad con los dominios históricos: `ficha.siberia.solutions` responde
 
 ### Web pública de negocios (`web-negocio`)
 
-`web-negocio` (SPA vanilla, nginx, puerto dev `:8083`) es la web pública del
-establecimiento en `web.negocio.siberia.solutions/negocios/<slug>`. Renderiza la
-ficha como credencial (logo, nombre, tipo y organización) y la carta como
-sección (`?seccion=carta` para saltar a ella), con una **plantilla por tipo**
-(`bar`, `restaurante`/`cafeteria`, `pub`/`copas`) y el rebranding del logo y
-colores del local. Todo se sirve con una sola llamada al servicio de negocio
-(`NEGOCIO_API_URL`):
+`web-negocio` (React + Vite + Tailwind compilado, nginx, puerto dev `:8083`) es la
+web pública del establecimiento en `web.negocio.siberia.solutions/negocios/<slug>`.
+Renderiza la ficha como credencial (logo, nombre, tipo y organización), la carta
+como sección (`?seccion=carta` para saltar a ella) y el resto de secciones
+configurables (perfil, contacto, hero, galería, horario, equipo) con una
+**plantilla por tipo** (`bar`, `restaurante`/`cafeteria`, `pub`/`copas`) y el
+rebranding del logo y colores del local. Todo se sirve con una sola llamada al
+servicio de negocio (`NEGOCIO_API_URL`, variable runtime inyectada por
+`20-web-negocio.sh`):
 
 - `GET /v1/negocio/web?slug=<enlace>` → datos públicos agregados **sin token**:
   `establecimiento_id`, `nombre`, `tipo_establecimiento`, `logo_url`,
-  `organizacion_nombre` y `categorias` (carta con `precio_centimos` + `moneda`).
-  El slug resuelve tanto un enlace `ficha_negocio` como uno `carta`; inexistente
-  → `404`, revocado → `410`. Cache pública `max-age=300`.
+  `organizacion_nombre`, `plantilla`, `color_primario`, `perfil`, `contacto`,
+  `hero`, `galeria`, `abierto_ahora`, `horario`, `equipo` y `categorias` (carta
+  con `precio_centimos` + `moneda`). El slug resuelve tanto un enlace
+  `ficha_negocio` como uno `carta`; inexistente → `404`, revocado → `410`.
+  Cache pública `max-age=300`.
 - `GET /v1/negocio/web/logo?slug=<enlace>` → logo efectivo (WebP) público con
   cache `max-age=86400` + `ETag`, resoluble por cualquier slug del local.
+- `GET /v1/negocio/web/hero?slug=<enlace>` y
+  `GET /v1/negocio/web/galeria/{imagen_id}?slug=<enlace>` → hero y galería
+  públicas (WebP) con cache `max-age=300`; `410 identity.web_privada` si la web
+  está apagada.
+- Si el establecimiento tiene `web_publica=false`, toda la superficie responde
+  `410 identity.web_privada` con `Cache-Control: no-store`; el logo del local es
+  branding público por diseño y se sirve siempre.
 
 Ficha y carta llaman al servicio de negocio (`NEGOCIO_API_URL`); el origen web se
 autoriza por CORS (`IDENTITY_WEB_ORIGIN`).

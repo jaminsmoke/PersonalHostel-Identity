@@ -56,6 +56,21 @@ class CamareroPerfil(BaseModel):
         default=VisibleOtrosEstablecimientos.nunca,
         description="Preferencia de aparecer en el directorio de otros establecimientos.",
     )
+    aparecer_web_negocio: bool = Field(
+        default=False,
+        description="Opt-in para aparecer en la web pública de los establecimientos "
+        "donde trabaja (matriz AND con el `mostrar_equipo` del local).",
+    )
+
+
+class PaginaPublicaUpdateRequest(BaseModel):
+    """Preferencia del camarero sobre aparecer en la web pública del negocio."""
+
+    aparecer_web_negocio: bool = Field(
+        ...,
+        description="true: el camarero puede aparecer en la página pública de los "
+        "establecimientos donde es miembro activo.",
+    )
 
 
 class VisibilidadEstablecimientosUpdateRequest(BaseModel):
@@ -671,6 +686,55 @@ class HorarioResponse(BaseModel):
     updated_at: datetime | None = None
 
 
+class PerfilNegocioPublico(BaseModel):
+    """Bloque «quién somos» de la web pública del local."""
+
+    eslogan: str | None = None
+    descripcion: str | None = None
+    direccion: str | None = None
+    ciudad: str | None = None
+
+
+class ContactoNegocioPublico(BaseModel):
+    """Bloque de contacto de la web pública del local."""
+
+    telefono: str | None = None
+    email_contacto: str | None = None
+    web: str | None = None
+    redes: dict = Field(default_factory=dict)
+
+
+class HeroNegocioPublico(BaseModel):
+    """Imagen de portada de la web pública del local."""
+
+    url: str
+
+
+class ImagenGaleriaPublica(BaseModel):
+    """Imagen de la galería de la web pública del local."""
+
+    id: uuid.UUID
+    url: str
+
+
+class AbiertoAhora(BaseModel):
+    """Estado actual del local respecto a su horario (en el huso del local)."""
+
+    abierto: bool
+    proximo_cambio: datetime | None = None
+
+
+class MiembroEquipoPublico(BaseModel):
+    """Miembro del equipo visible en la web pública (matriz AND)."""
+
+    camarero_id: uuid.UUID
+    nombre: str
+    apellidos: str
+    nick: str | None = None
+    foto_url: str | None = None
+    rol: str
+
+
 class WebNegocioPublica(BaseModel):
     """Datos de la web pública del establecimiento (ficha + carta)."""
 
@@ -679,8 +743,72 @@ class WebNegocioPublica(BaseModel):
     tipo_establecimiento: str | None = None
     logo_url: str | None = None
     organizacion_nombre: str
-    categorias: list[CategoriaCartaPublica] = Field(default_factory=list)
+    plantilla: str = "estate_hospitality"
+    color_primario: str | None = None
+    perfil: PerfilNegocioPublico | None = None
+    contacto: ContactoNegocioPublico | None = None
+    hero: HeroNegocioPublico | None = None
+    galeria: list[ImagenGaleriaPublica] = Field(default_factory=list)
+    abierto_ahora: AbiertoAhora | None = None
     horario: list[HorarioDia] | None = None
+    equipo: list[MiembroEquipoPublico] = Field(default_factory=list)
+    categorias: list[CategoriaCartaPublica] = Field(default_factory=list)
+
+
+class PerfilEstablecimientoUpdateRequest(BaseModel):
+    """Campos editables del perfil público del establecimiento (PATCH parcial)."""
+
+    eslogan: str | None = Field(default=None, max_length=140)
+    descripcion: str | None = None
+    direccion: str | None = Field(default=None, max_length=255)
+    ciudad: str | None = Field(default=None, max_length=100)
+    telefono: str | None = Field(default=None, max_length=32)
+    email_contacto: EmailStr | None = None
+    web: str | None = Field(default=None, max_length=255)
+    redes: dict[str, str] | None = None
+    tz: str | None = Field(default=None, max_length=64)
+    plantilla: str | None = Field(default=None, max_length=50)
+    color_primario: str | None = Field(default=None, max_length=20)
+    web_publica: bool | None = None
+    mostrar_equipo: bool | None = None
+
+    @model_validator(mode="after")
+    def _algo_cambia(self) -> PerfilEstablecimientoUpdateRequest:
+        if not self.model_fields_set:
+            raise ValueError("Se requiere al menos un campo para actualizar")
+        return self
+
+
+class PerfilEstablecimientoResponse(BaseModel):
+    """Perfil público del establecimiento (gestión con la cuenta de negocio)."""
+
+    establecimiento_id: uuid.UUID
+    eslogan: str | None = None
+    descripcion: str | None = None
+    direccion: str | None = None
+    ciudad: str | None = None
+    telefono: str | None = None
+    email_contacto: str | None = None
+    web: str | None = None
+    redes: dict = Field(default_factory=dict)
+    tz: str = "Europe/Madrid"
+    plantilla: str = "estate_hospitality"
+    color_primario: str | None = None
+    web_publica: bool = True
+    mostrar_equipo: bool = False
+    hero_url: str | None = None
+
+
+class ImagenEstablecimientoResponse(BaseModel):
+    """Imagen de la galería del establecimiento."""
+
+    id: uuid.UUID
+    establecimiento_id: uuid.UUID
+    url: str
+    mimetype: str
+    size: int
+    orden: int
+    creada_en: datetime
 
 
 class JornadaIniciarRequest(BaseModel):

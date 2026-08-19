@@ -58,6 +58,23 @@ def _perfil_dict(c: Camarero) -> dict:
         "nick": c.nick,
         "data_origin": c.data_origin.value,
         "visible_otros_establecimientos": c.visible_otros_establecimientos,
+        "aparecer_web_negocio": c.aparecer_web_negocio,
+    }
+
+
+def _perfil_publico_dict(c: Camarero) -> dict:
+    """Campos públicos del camarero para la web del negocio (sin email ni PII).
+
+    La ficha ajena en la página pública respeta la visibilidad por campo del
+    camarero y su opt-in ``aparecer_web_negocio`` (matriz AND con el local).
+    """
+    return {
+        "camarero_id": str(c.id),
+        "nombre": c.nombre,
+        "apellidos": c.apellidos,
+        "nick": c.nick if c.campo_visible("nick") else None,
+        "foto_publica": bool(c.campo_visible("foto") and c.foto_clave),
+        "aparecer_web_negocio": c.aparecer_web_negocio,
     }
 
 
@@ -96,6 +113,13 @@ class CamarerosInternal(Protocol):
 
     def perfil(self, camarero_id: uuid.UUID) -> dict | None:
         """Perfil del camarero por id, o ``None`` si no existe."""
+
+    def perfil_publico(self, camarero_id: uuid.UUID) -> dict | None:
+        """Campos públicos del camarero para la web del negocio, o ``None``.
+
+        Sin email ni datos privados; respeta la visibilidad por campo y el
+        opt-in ``aparecer_web_negocio`` del camarero.
+        """
 
     def verificar_qr(self, qr: str) -> uuid.UUID:
         """Devuelve ``camarero_id`` si el QR es válido y su credencial activa.
@@ -146,6 +170,11 @@ class DirectCamarerosInternal:
         with CamareroSessionLocal() as db:
             c = db.get(Camarero, camarero_id)
         return _perfil_dict(c) if c else None
+
+    def perfil_publico(self, camarero_id: uuid.UUID) -> dict | None:
+        with CamareroSessionLocal() as db:
+            c = db.get(Camarero, camarero_id)
+        return _perfil_publico_dict(c) if c else None
 
     def verificar_qr(self, qr: str) -> uuid.UUID:
         with CamareroSessionLocal() as db:
@@ -287,6 +316,14 @@ class HttpCamarerosInternal:
 
     def perfil(self, camarero_id: uuid.UUID) -> dict | None:
         response = self._request("GET", f"/internal/camareros/{camarero_id}")
+        if response.status_code == status.HTTP_404_NOT_FOUND:
+            return None
+        if response.status_code != 200:
+            _raise_from_response(response, CAMARERO_NOT_FOUND)
+        return response.json()
+
+    def perfil_publico(self, camarero_id: uuid.UUID) -> dict | None:
+        response = self._request("GET", f"/internal/camareros/{camarero_id}/publico")
         if response.status_code == status.HTTP_404_NOT_FOUND:
             return None
         if response.status_code != 200:

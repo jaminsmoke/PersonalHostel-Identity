@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  /* Paleta Estate Hospitality (High-Contrast Minimalist, dark). */
+  --color-background: #121414;
+  --color-surface: #1e2020;
+  --color-surface-low: #1a1c1c;
+  --color-surface-lowest: #0c0f0f;
+  --color-surface-high: #282a2b;
+  --color-surface-highest: #333535;
+  --color-surface-variant: #333535;
+  --color-on-surface: #e2e2e2;
+  --color-on-surface-variant: #d4c5ab;
+  --color-inverse-surface: #e2e2e2;
+  --color-primary: #ffe2ab;
+  --color-primary-container: #ffbf00;
+  --color-on-primary-container: #6d5000;
+  --color-primary-fixed-dim: #fbbc00;
+  --color-on-background: #e2e2e2;
+  --color-outline: #9c8f78;
+  --color-outline-variant: #504532;
+  --color-success: #6fd08c;
+  --color-danger: #ffb4ab;
+
+  --font-display: "Playfair Display", serif;
+  --font-body: "Inter", sans-serif;
+
+  --container-page: 1200px;
+
+  --spacing-gutter: 24px;
+  --spacing-margin-mobile: 20px;
+  --spacing-section-gap: 120px;
+  --spacing-stack-sm: 8px;
+  --spacing-stack-md: 16px;
+  --spacing-stack-lg: 32px;
+
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+
+  --text-display-lg: 64px;
+  --text-display-lg--line-height: 72px;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 700;
+  --text-headline-lg: 48px;
+  --text-headline-lg--line-height: 56px;
+  --text-headline-lg--font-weight: 600;
+  --text-headline-lg-mobile: 36px;
+  --text-headline-lg-mobile--line-height: 44px;
+  --text-headline-lg-mobile--font-weight: 600;
+  --text-headline-md: 32px;
+  --text-headline-md--line-height: 40px;
+  --text-headline-md--font-weight: 600;
+  --text-headline-sm: 24px;
+  --text-headline-sm--line-height: 32px;
+  --text-headline-sm--font-weight: 500;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--font-weight: 400;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--font-weight: 400;
+  --text-label-md: 14px;
+  --text-label-md--line-height: 20px;
+  --text-label-md--letter-spacing: 0.05em;
+  --text-label-md--font-weight: 600;
+}
+
+:root {
+  /* Rebranding por local (color_primario del perfil). */
+  --brand: #fbbc00;
+  color-scheme: dark;
+  background-color: var(--color-background);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-on-surface);
+  background-color: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+::selection {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+}

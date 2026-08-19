@@ -18,4 +18,6 @@ build/
 .claude/
 skills-lock.json
 tools/kanban-cli/node_modules/
+services/web-negocio/node_modules/
+services/web-negocio/dist/
 data/

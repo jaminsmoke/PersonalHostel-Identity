@@ -45,6 +45,7 @@ from app.schemas import (
     InvitacionAcceptResponse,
     InvitacionCamareroResponse,
     InvitacionRechazarResponse,
+    PaginaPublicaUpdateRequest,
     PerfilUpdateRequest,
     QrResponse,
     RegistroRequest,
@@ -222,6 +223,25 @@ def actualizar_visibilidad_establecimientos(
     establecimientos (siempre / solo cuando está libre / nunca).
     """
     camarero.visible_otros_establecimientos = payload.visible.value
+    db.commit()
+    db.refresh(camarero)
+    return camarero
+
+
+@router.put(
+    "/me/pagina-publica",
+    response_model=CamareroPerfil,
+    responses={status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED},
+)
+def actualizar_pagina_publica(
+    payload: PaginaPublicaUpdateRequest,
+    camarero: Camarero = Depends(get_current_camarero),
+    db: Session = Depends(get_camarero_db),
+) -> Camarero:
+    """Opt-in del camarero para aparecer en la web pública de los
+    establecimientos donde trabaja (matriz AND con `mostrar_equipo`).
+    """
+    camarero.aparecer_web_negocio = payload.aparecer_web_negocio
     db.commit()
     db.refresh(camarero)
     return camarero
