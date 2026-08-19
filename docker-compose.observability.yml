@@ -84,7 +84,7 @@ services:
           memory: 256M
 
   alloy:
-    image: grafana/alloy:1.18.0
+    image: grafana/alloy:v1.18.1
     restart: unless-stopped
     # Fase A (transitoria): Alloy arranca con la config YAML de Promtail en
     # modo compatibilidad (--config.format=promtail). La fase B migra a .river.
