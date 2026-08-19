@@ -2,8 +2,8 @@ server:
   http_listen_port: 9080
   grpc_listen_port: 0
 
-positions:
-  filename: /positions/positions.yaml
+# En modo transitorio (--config.format=promtail) Alloy ignora `positions`:
+# guarda su checkpoint en --storage.path (volumen alloy-data), no en este fichero.
 
 clients:
   - url: http://loki:3100/loki/api/v1/push

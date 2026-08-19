@@ -9,7 +9,7 @@
 # Nunca hagas `compose down` sin este tercer -f: Docker borra la pila.
 #
 # Piezas: Prometheus (métricas + reglas), Alertmanager (email), Grafana
-# (dashboards), Loki + Promtail (logs de contenedores), node_exporter (host) y
+# (dashboards), Loki + Alloy (logs de contenedores), node_exporter (host) y
 # postgres_exporter (BD). Todo bind a 127.0.0.1; solo Grafana se expone por
 # Caddy (con basic_auth). Las APIs no exponen /metrics por Caddy: Prometheus
 # las raspa por la red interna de Docker.
@@ -83,14 +83,16 @@ services:
         limits:
           memory: 256M
 
-  promtail:
-    image: grafana/promtail:3.6.8
+  alloy:
+    image: grafana/alloy:1.18.0
     restart: unless-stopped
-    command: -config.file=/etc/promtail/promtail.yml
+    # Fase A (transitoria): Alloy arranca con la config YAML de Promtail en
+    # modo compatibilidad (--config.format=promtail). La fase B migra a .river.
+    command: run /etc/alloy/promtail.yml --config.format=promtail --storage.path=/var/lib/alloy/data
     volumes:
-      - ./services/observability/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - ./services/observability/alloy/promtail.yml:/etc/alloy/promtail.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - promtail-positions:/positions
+      - alloy-data:/var/lib/alloy/data
     depends_on:
       - loki
     deploy:
@@ -134,4 +136,4 @@ volumes:
   prometheus-data:
   grafana-data:
   loki-data:
-  promtail-positions:
+  alloy-data:

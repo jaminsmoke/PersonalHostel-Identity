@@ -30,7 +30,7 @@ OBS_SERVICES=(
   alertmanager
   grafana
   loki
-  promtail
+  alloy
   node-exporter
   postgres-exporter
 )
