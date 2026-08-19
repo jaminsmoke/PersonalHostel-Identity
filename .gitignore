@@ -13,6 +13,7 @@ build/
 .vscode/
 *.log
 .kanbanrc.json
+.freebuff/
 .agents/
 .claude/
 skills-lock.json
