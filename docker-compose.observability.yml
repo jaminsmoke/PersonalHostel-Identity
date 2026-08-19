@@ -1,9 +1,12 @@
 # Stack de observabilidad (SOLO staging/producción). Se apila encima de los
-# otros dos ficheros:
+# otros dos ficheros. Preferir el wrapper (anti-orphan):
+#   bash services/identity/scripts/obs_up.sh up
+# Equivalente:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-#     -f docker-compose.observability.yml up -d --build
+#     -f docker-compose.observability.yml up -d
 #
 # No forma parte del `docker compose up --build` de desarrollo.
+# Nunca hagas `compose down` sin este tercer -f: Docker borra la pila.
 #
 # Piezas: Prometheus (métricas + reglas), Alertmanager (email), Grafana
 # (dashboards), Loki + Promtail (logs de contenedores), node_exporter (host) y

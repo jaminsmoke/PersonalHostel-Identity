@@ -101,17 +101,32 @@ migrar y termina comprobando health/meta de los dos servicios.
 
 ### Observabilidad en el VPS (staging/producción)
 
-Las APIs exponen `/metrics` (formato Prometheus, no público: Prometheus lo raspa por la red interna) y un access log JSON por request. El stack de observabilidad se levanta **solo** en el VPS, apilando un tercer fichero:
+Las APIs exponen `/metrics` (formato Prometheus, no público: Prometheus lo raspa por la red interna) y un access log JSON por request. El stack de observabilidad se levanta **solo** en el VPS, apilando un tercer fichero. El deploy (`deploy_staging.py` sin `--validate-only`) lo restaura al final con el wrapper; `validate-only` **no** lo toca.
 
 ```bash
-# En el VPS (/opt/identity)
+# En el VPS (/opt/identity) — preferir el wrapper (anti-orphan)
+bash services/identity/scripts/obs_up.sh up
+
+# Equivalente explícito
 docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-  -f docker-compose.observability.yml up -d
+  -f docker-compose.observability.yml up -d \
+  prometheus alertmanager grafana loki promtail \
+  node-exporter postgres-exporter
+
+# Restore servicio a servicio (si se reintrodujo tras un borrado)
+bash services/identity/scripts/obs_up.sh up prometheus
+bash services/identity/scripts/obs_up.sh up node-exporter postgres-exporter
+bash services/identity/scripts/obs_up.sh up alertmanager
+bash services/identity/scripts/obs_up.sh up loki promtail
+bash services/identity/scripts/obs_up.sh up grafana
 ```
 
+**Anti-orphan:** no ejecutes `docker compose down` ni limpies “orphans” con solo `docker-compose.yml` + `docker-compose.prod.yml`. Sin el tercer `-f`, Docker marca la pila de obs como huérfana y un down la borra (los volúmenes `prometheus-data` / `grafana-data` / `loki-data` se conservan si no pasas `-v`). Usa siempre `obs_up.sh` o los tres `-f`.
+
 - Piezas: **Prometheus** (métricas + reglas de alerta), **Grafana** (dashboards), **Loki + Promtail** (logs de contenedores), **node_exporter** (host), **postgres_exporter** (BD) y **Alertmanager** (email).
-- Acceso: Grafana en `https://grafana.siberia.solutions` con `basic_auth` de Caddy + login propio. `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` viven en `.env`.
+- Acceso: Grafana en `https://grafana.siberia.solutions` con `basic_auth` de Caddy + login propio (`127.0.0.1:3001` en el host). `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` viven en `.env`.
 - Alertas: `up == 0`, 5xx, Postgres caído, CPU alta, disco bajo y backup R2 ausente/antiguo → email a `ALERTMANAGER_ROUTE_TO` (usa el SMTP de `EMAIL_*`).
+- Comprobaciones rápidas: `curl -sf 127.0.0.1:9090/-/healthy`, `127.0.0.1:9093/-/healthy`, `127.0.0.1:3001/api/health`; targets Prometheus UP; `curl -I https://grafana.siberia.solutions` → 401 sin auth.
 - Smoke sintético (no load test):
   ```bash
   CAMAREROS_API_URL=https://camareros.siberia.solutions \

@@ -565,9 +565,13 @@ por `__pycache__` root: la guarda `PYTHONDONTWRITEBYTECODE` está completa
 Las APIs exponen `/metrics` (Prometheus, solo red interna) y un access log JSON.
 El stack de observabilidad vive en `docker-compose.observability.yml` (Prometheus,
 Grafana, Loki, Promtail, node_exporter, postgres_exporter y Alertmanager) y **no**
-forma parte del `up` de desarrollo. Se levanta en el VPS apilando el tercer fichero;
-Grafana se expone en `grafana.siberia.solutions` con `basic_auth` de Caddy. Ver
-`README.md → Observabilidad en el VPS`. El smoke sintético es `k6`
+forma parte del `up` de desarrollo. En el VPS se gestiona con
+`bash services/identity/scripts/obs_up.sh` (apila siempre los 3 compose). El deploy
+(`deploy_staging.py` sin `--validate-only`) invoca `obs_up.sh up` tras el core;
+`validate-only` no toca observabilidad. **Nunca** hagas `compose down`/limpieza de
+orphans con solo 2 ficheros: Docker borra la pila de obs. Grafana:
+`grafana.siberia.solutions` con `basic_auth` de Caddy. Ver
+`README.md → Observabilidad en el VPS`. Smoke sintético: `k6`
 (`services/identity/scripts/k6/smoke.js`).
 
 ## Dev tools
