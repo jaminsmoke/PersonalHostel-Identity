@@ -10,9 +10,7 @@ def test_tunnels_mapping_known_services():
 
 
 def test_default_ports_cubren_las_tres_uis():
-    assert obs_tunnel.TUNNELS.keys() == set(
-        ["9090", "9093", "3001"]
-    )
+    assert obs_tunnel.TUNNELS.keys() == set(["9090", "9093", "3001"])
     assert "9090" in obs_tunnel.TUNNELS
     assert "9093" in obs_tunnel.TUNNELS
     assert "3001" in obs_tunnel.TUNNELS

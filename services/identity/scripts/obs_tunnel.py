@@ -85,7 +85,7 @@ def _forward(chan, sock):
             if not data:
                 break
             sock.sendall(data)
-    except (OSError, EOFError):
+    except OSError, EOFError:
         pass
     with contextlib.suppress(OSError):
         sock.shutdown(socket.SHUT_RDWR)
@@ -135,11 +135,11 @@ def forward_port(client, remote_port: str) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--no-browser", action="store_true", help="No abrir el navegador.")
     parser.add_argument(
-        "--no-browser", action="store_true", help="No abrir el navegador."
-    )
-    parser.add_argument(
-        "--ports", nargs="*", default=["9090", "9093", "3001"],
+        "--ports",
+        nargs="*",
+        default=["9090", "9093", "3001"],
         help="Puertos a reenviar (default: 9090 9093 3001).",
     )
     args = parser.parse_args()
