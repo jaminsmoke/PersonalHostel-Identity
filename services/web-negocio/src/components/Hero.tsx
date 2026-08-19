@@ -7,7 +7,6 @@ export function Hero() {
   const { slug } = useParams<{ slug: string }>();
   const heroUrl = absUrl(web.hero?.url);
   const abierto = web.abierto_ahora;
-  const hayCarta = web.categorias.length > 0;
   const hayContacto = Boolean(web.contacto);
   if (!slug) return null;
 
@@ -56,14 +55,12 @@ export function Hero() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-stack-md mt-2 w-full sm:w-auto">
-          {hayCarta && (
-            <Link
-              to={rutaNegocio(slug, "carta")}
-              className="bg-primary-container text-on-primary-container text-label-md px-8 py-4 rounded hover:bg-primary transition-colors text-center uppercase tracking-widest"
-            >
-              Ver carta
-            </Link>
-          )}
+          <Link
+            to={rutaNegocio(slug, "carta")}
+            className="bg-primary-container text-on-primary-container text-label-md px-8 py-4 rounded hover:bg-primary transition-colors text-center uppercase tracking-widest"
+          >
+            Ver carta
+          </Link>
           {hayContacto && (
             <Link
               to={rutaNegocio(slug, "contacto")}

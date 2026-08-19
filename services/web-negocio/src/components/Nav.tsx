@@ -10,12 +10,12 @@ export function Nav() {
 
   const enlaces: Array<{ to: string; etiqueta: string }> = [
     { to: rutaNegocio(slug), etiqueta: "Inicio" },
+    { to: rutaNegocio(slug, "horario"), etiqueta: "Horario" },
+    { to: rutaNegocio(slug, "carta"), etiqueta: "Carta" },
   ];
-  if (web.horario?.length) enlaces.push({ to: rutaNegocio(slug, "horario"), etiqueta: "Horario" });
-  if (web.categorias.length) enlaces.push({ to: rutaNegocio(slug, "carta"), etiqueta: "Carta" });
   if (web.equipo.length) enlaces.push({ to: rutaNegocio(slug, "equipo"), etiqueta: "Equipo" });
   if (web.galeria.length) enlaces.push({ to: rutaNegocio(slug, "galeria"), etiqueta: "Galería" });
-  if (web.contacto) enlaces.push({ to: rutaNegocio(slug, "contacto"), etiqueta: "Contacto" });
+  enlaces.push({ to: rutaNegocio(slug, "contacto"), etiqueta: "Contacto" });
 
   const ctaHref = web.contacto?.telefono
     ? `tel:${web.contacto.telefono}`

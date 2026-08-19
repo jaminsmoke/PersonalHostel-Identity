@@ -72,7 +72,7 @@ def test_crear_enlace_con_slug_explicito(db_ready, negocio_client):
     resp = negocio_client.post(
         f"/v1/establecimientos/{est_id}/enlaces",
         headers=headers,
-        json={"tipo": "ficha_negocio", "slug": "mi-ficha"},
+        json={"tipo": "web", "slug": "mi-ficha"},
     )
     assert resp.status_code == 201
     assert resp.json()["slug"] == "mi-ficha"
@@ -94,7 +94,7 @@ def test_crear_enlace_slug_duplicado_409(db_ready, negocio_client):
     second = negocio_client.post(
         f"/v1/establecimientos/{est_id}/enlaces",
         headers=headers,
-        json={"tipo": "ficha_negocio", "slug": "duplicado"},
+        json={"tipo": "web", "slug": "duplicado"},
     )
     assert second.status_code == 409
     assert second.json()["code"] == "identity.enlace_duplicado"
@@ -113,6 +113,19 @@ def test_crear_enlace_tipo_invalido_422(db_ready, negocio_client):
     assert resp.status_code == 422
 
 
+def test_crear_enlace_ficha_negocio_ya_no_es_alias_422(db_ready, negocio_client):
+    _, token = _crear_negocio(negocio_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    est_id = _crear_establecimiento(negocio_client, token)
+
+    resp = negocio_client.post(
+        f"/v1/establecimientos/{est_id}/enlaces",
+        headers=headers,
+        json={"tipo": "ficha_negocio"},
+    )
+    assert resp.status_code == 422
+
+
 def test_listar_enlaces(db_ready, negocio_client):
     _, token = _crear_negocio(negocio_client)
     headers = {"Authorization": f"Bearer {token}"}
@@ -121,7 +134,7 @@ def test_listar_enlaces(db_ready, negocio_client):
     negocio_client.post(
         f"/v1/establecimientos/{est_id}/enlaces",
         headers=headers,
-        json={"tipo": "ficha_negocio"},
+        json={"tipo": "web"},
     )
     negocio_client.post(
         f"/v1/establecimientos/{est_id}/enlaces",
@@ -208,12 +221,12 @@ def test_crear_enlace_es_idempotente_y_devuelve_url_publica(db_ready, negocio_cl
     first = negocio_client.post(
         f"/v1/establecimientos/{est_id}/enlaces",
         headers=headers,
-        json={"tipo": "ficha_negocio"},
+        json={"tipo": "web"},
     )
     second = negocio_client.post(
         f"/v1/establecimientos/{est_id}/enlaces",
         headers=headers,
-        json={"tipo": "ficha_negocio"},
+        json={"tipo": "web"},
     )
     assert first.status_code == 201
     assert first.json()["tipo"] == "web"
@@ -226,7 +239,7 @@ def test_crear_enlace_es_idempotente_y_devuelve_url_publica(db_ready, negocio_cl
     conflict = negocio_client.post(
         f"/v1/establecimientos/{est_id}/enlaces",
         headers=headers,
-        json={"tipo": "ficha_negocio", "slug": f"otro-{uuid.uuid4().hex[:8]}"},
+        json={"tipo": "web", "slug": f"otro-{uuid.uuid4().hex[:8]}"},
     )
     assert conflict.status_code == 409
     assert conflict.json()["code"] == "identity.enlace_activo_existente"

@@ -368,8 +368,8 @@ variable runtime inyectada por `20-web-negocio.sh`):
   `organizacion_nombre`, `plantilla`, `color_primario`, `perfil`, `contacto`,
   `hero`, `galeria`, `abierto_ahora`, `horario`, `equipo` y `categorias` (carta
   con `precio_centimos`, `moneda`, `destino` y `descripcion` opcional). El slug
-  resuelve un enlace `web` (o el alias `ficha_negocio`) **o** `carta`;
-  inexistente → `404`, revocado → `410`. Cache pública `max-age=300`.
+  resuelve un enlace `web` o `carta` (slugs históricos `ficha_negocio` siguen
+  sirviendo en GET); inexistente → `404`, revocado → `410`. Cache pública `max-age=300`.
   `GET /v1/negocio/ficha` se retiró.
 - `GET /v1/negocio/web/logo?slug=<enlace>` → logo efectivo (WebP) público con
   cache `max-age=86400` + `ETag`, resoluble por cualquier slug del local.
@@ -444,10 +444,10 @@ Rutas principales:
   resuelve en servidor y nunca se expone).
 - `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT (magic-link desde el email): token one-time + TTL 72h.
 - `PUT/GET /v1/establecimientos/{id}/layout` → **copia de respaldo del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la cuenta de negocio dueña.
-- `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar|rotar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`web | carta`; `ficha_negocio` es alias deprecado que se persiste como `web`) y `slug` opcional. Solo puede existir uno activo por tipo; crear es idempotente y rotar revoca el anterior. La respuesta incluye `url_publica`, construida con `WEB_NEGOCIO_URL_BASE` (`…/negocios/<slug>`, carta en `…/negocios/<slug>/carta`) para que Bar no hardcodee dominios.
+- `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar|rotar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`web | carta`) y `slug` opcional. `ficha_negocio` ya no se acepta en POST (422). Solo puede existir uno activo por tipo; crear es idempotente y rotar revoca el anterior. La respuesta incluye `url_publica`, construida con `WEB_NEGOCIO_URL_BASE` (`…/negocios/<slug>`, carta en `…/negocios/<slug>/carta`) para que Bar no hardcodee dominios.
 - `GET /v1/enlaces/{slug}` → resolución pública **sin token**: devuelve `{ tipo, establecimiento_id }` con cache pública (`max-age=300`). Slug inexistente → `404`, revocado → `410`.
 - `GET /v1/negocio/carta?slug=<enlace>` → carta pública **sin token**: productos disponibles agrupados por categoría, con `precio_centimos`, `moneda`, `destino` y `descripcion` opcional. Solo lectura; no expone `revision`. Enlace que no sea `carta` o inexistente → `404`, revocado → `410`.
-- `GET /v1/negocio/web?slug=<enlace>` → datos agregados de la web pública **sin token** (perfil, carta y el resto de secciones en una llamada). El slug resuelve enlaces `web` (o el alias `ficha_negocio`) **o** `carta`. Inexistente → `404`, revocado → `410`; cache `max-age=300`. `GET /v1/negocio/ficha` se retiró.
+- `GET /v1/negocio/web?slug=<enlace>` → datos agregados de la web pública **sin token** (perfil, carta y el resto de secciones en una llamada). El slug resuelve enlaces `web` o `carta` (y residuales `ficha_negocio`). Inexistente → `404`, revocado → `410`; cache `max-age=300`. `GET /v1/negocio/ficha` se retiró.
 - `GET /v1/negocio/web/logo?slug=<enlace>` → logo efectivo público (WebP) por cualquier slug del local, cache `max-age=86400` + `ETag`.
 
 El QR `phid1` no incorpora establecimientos. Las salas, el mapa y la lista blanca siguen siendo responsabilidad de Personal Bar.

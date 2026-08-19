@@ -260,8 +260,9 @@ resuelven por `slug` opaco y se revocan con un toggle. La tabla `enlaces_publico
 vive en la BD de negocio. `POST/GET /v1/establecimientos/{id}/enlaces` (cuenta
 titular) crean/listan; `POST .../enlaces/{enlace_id}/revocar` revoca;
 `POST .../enlaces/{enlace_id}/rotar` lo sustituye; hay como máximo uno activo
-por establecimiento/tipo. El tipo canónico de la web del local es `web`;
-`ficha_negocio` se acepta en POST como alias y **se persiste como `web`**.
+por establecimiento/tipo. El tipo canónico de la web del local es `web`
+(`carta` para la carta JSON). `POST` ya no acepta `ficha_negocio` (422).
+GET `/v1/negocio/web` sigue resolviendo slugs históricos de ese tipo.
 Las respuestas incluyen `url_publica` a partir de `WEB_NEGOCIO_URL_BASE`
 (`…/negocios/<slug>`, carta en `…/negocios/<slug>/carta`), nunca dominios
 hardcodeados en Bar.

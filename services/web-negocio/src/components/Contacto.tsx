@@ -17,6 +17,11 @@ export function Contacto() {
           <p className="text-body-lg text-on-surface-variant max-w-2xl">{web.perfil.descripcion}</p>
         )}
       </header>
+      {!c && !hayDireccion ? (
+        <p className="text-body-lg text-on-surface-variant">
+          Aún no hemos publicado cómo llegar. Llámanos o pásate por el local.
+        </p>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
         <div className="md:col-span-8 bg-surface-high rounded-xl overflow-hidden border border-outline-variant/20 relative min-h-[400px] grid place-items-center">
           <div className="absolute inset-0 bg-gradient-to-br from-surface-high to-surface-lowest" />
@@ -93,6 +98,7 @@ export function Contacto() {
           )}
         </div>
       </div>
+      )}
     </section>
   );
 }

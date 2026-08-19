@@ -74,6 +74,12 @@ export function Carta() {
           Selección de temporada, agrupada como en el local.
         </p>
       </div>
+      {web.categorias.length === 0 ? (
+        <p className="text-center text-body-lg text-on-surface-variant max-w-xl mx-auto">
+          Aún no hemos publicado la carta. Vuelve en un rato.
+        </p>
+      ) : (
+        <>
       {ambos && (
         <div className="flex justify-center border-b border-outline-variant/30 mb-stack-lg">
           <button
@@ -101,6 +107,8 @@ export function Carta() {
         </div>
       )}
       <ListaCategorias categorias={categorias} />
+        </>
+      )}
     </section>
   );
 }

@@ -22,7 +22,7 @@ def test_ficha_http_ya_no_existe(db_ready, negocio_client):
     assert logo.status_code == 404
 
 
-def test_alias_ficha_negocio_crea_web_y_sirve_por_web(db_ready, negocio_client):
+def test_post_ficha_negocio_ya_no_es_alias(db_ready, negocio_client):
     email = f"ficha-alias-{uuid.uuid4()}@example.com"
     assert (
         negocio_client.post(
@@ -49,8 +49,14 @@ def test_alias_ficha_negocio_crea_web_y_sirve_por_web(db_ready, negocio_client):
         headers=headers,
         json={"tipo": "ficha_negocio", "slug": slug},
     )
-    assert enlace.status_code == 201
-    assert enlace.json()["tipo"] == "web"
-    web = negocio_client.get("/v1/negocio/web", params={"slug": slug})
-    assert web.status_code == 200
-    assert web.json()["establecimiento_id"] == est_id
+    assert enlace.status_code == 422
+    web = negocio_client.post(
+        f"/v1/establecimientos/{est_id}/enlaces",
+        headers=headers,
+        json={"tipo": "web", "slug": slug},
+    )
+    assert web.status_code == 201
+    assert web.json()["tipo"] == "web"
+    public = negocio_client.get("/v1/negocio/web", params={"slug": slug})
+    assert public.status_code == 200
+    assert public.json()["establecimiento_id"] == est_id

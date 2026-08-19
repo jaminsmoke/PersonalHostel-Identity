@@ -1,7 +1,7 @@
 """Web pública del negocio por enlace (sitio completo en una llamada).
 
-Sin token: el ``slug`` de un enlace público (``web`` o ``carta``; alias
-deprecado ``ficha_negocio``) es la llave. La SPA en
+Sin token: el ``slug`` de un enlace público (``web`` o ``carta``; residual
+``ficha_negocio``) es la llave. La SPA en
 ``web.negocio.siberia.solutions/negocios/{slug}`` (y rutas hijas ``/carta``,
 ``/horario``, …) pinta toda la superficie con esta respuesta.
 
