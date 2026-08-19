@@ -1,0 +1,25 @@
+loki.process "containers" {
+	forward_to = [loki.write.default.receiver]
+
+	stage.docker { }
+}
+
+loki.source.file "containers" {
+	targets = [{
+		__address__ = "localhost",
+		__path__    = "/var/lib/docker/containers/*/*-json.log",
+		job         = "containers",
+	}]
+	forward_to = [loki.process.containers.receiver]
+
+	file_match {
+		enabled = true
+	}
+}
+
+loki.write "default" {
+	endpoint {
+		url = "http://loki:3100/loki/api/v1/push"
+	}
+	external_labels = {}
+}

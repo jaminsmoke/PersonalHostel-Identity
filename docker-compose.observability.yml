@@ -86,11 +86,13 @@ services:
   alloy:
     image: grafana/alloy:v1.18.1
     restart: unless-stopped
-    # Fase A (transitoria): Alloy arranca con la config YAML de Promtail en
-    # modo compatibilidad (--config.format=promtail). La fase B migra a .river.
-    command: run /etc/alloy/promtail.yml --config.format=promtail --storage.path=/var/lib/alloy/data
+    # Fase B: config nativa .river (generada con `alloy convert -f=promtail`).
+    # El checkpoint vive en el volumen alloy-data (--storage.path); el id del
+    # componente loki.source.file.containers es el mismo que en la fase A, así
+    # que se continúa desde la misma posición sin reenvíos.
+    command: run /etc/alloy/config.river --storage.path=/var/lib/alloy/data
     volumes:
-      - ./services/observability/alloy/promtail.yml:/etc/alloy/promtail.yml:ro
+      - ./services/observability/alloy/config.river:/etc/alloy/config.river:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - alloy-data:/var/lib/alloy/data
     depends_on:
