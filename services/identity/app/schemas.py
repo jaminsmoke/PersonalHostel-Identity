@@ -599,6 +599,8 @@ class EnlacePublicoResolucion(BaseModel):
 class ProductoCartaPublica(BaseModel):
     """Producto visible en la carta pública (sin revisión ni procedencia)."""
 
+    model_config = ConfigDict(exclude_none=True)
+
     nombre: str
     precio_centimos: int
     moneda: str
