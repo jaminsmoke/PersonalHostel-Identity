@@ -564,7 +564,7 @@ por `__pycache__` root: la guarda `PYTHONDONTWRITEBYTECODE` está completa
 
 Las APIs exponen `/metrics` (Prometheus, solo red interna) y un access log JSON.
 El stack de observabilidad vive en `docker-compose.observability.yml` (Prometheus,
-Grafana, Loki, Promtail, node_exporter, postgres_exporter y Alertmanager) y **no**
+Grafana, Loki, Alloy, node_exporter, postgres_exporter y Alertmanager) y **no**
 forma parte del `up` de desarrollo. En el VPS se gestiona con
 `bash services/identity/scripts/obs_up.sh` (apila siempre los 3 compose). El deploy
 (`deploy_staging.py` sin `--validate-only`) invoca `obs_up.sh up` tras el core;

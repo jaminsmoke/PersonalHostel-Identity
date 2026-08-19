@@ -110,20 +110,20 @@ bash services/identity/scripts/obs_up.sh up
 # Equivalente explícito
 docker compose -f docker-compose.yml -f docker-compose.prod.yml \
   -f docker-compose.observability.yml up -d \
-  prometheus alertmanager grafana loki promtail \
+  prometheus alertmanager grafana loki alloy \
   node-exporter postgres-exporter
 
 # Restore servicio a servicio (si se reintrodujo tras un borrado)
 bash services/identity/scripts/obs_up.sh up prometheus
 bash services/identity/scripts/obs_up.sh up node-exporter postgres-exporter
 bash services/identity/scripts/obs_up.sh up alertmanager
-bash services/identity/scripts/obs_up.sh up loki promtail
+bash services/identity/scripts/obs_up.sh up loki alloy
 bash services/identity/scripts/obs_up.sh up grafana
 ```
 
 **Anti-orphan:** no ejecutes `docker compose down` ni limpies “orphans” con solo `docker-compose.yml` + `docker-compose.prod.yml`. Sin el tercer `-f`, Docker marca la pila de obs como huérfana y un down la borra (los volúmenes `prometheus-data` / `grafana-data` / `loki-data` se conservan si no pasas `-v`). Usa siempre `obs_up.sh` o los tres `-f`.
 
-- Piezas: **Prometheus** (métricas + reglas de alerta), **Grafana** (dashboards), **Loki + Promtail** (logs de contenedores), **node_exporter** (host), **postgres_exporter** (BD) y **Alertmanager** (email).
+- Piezas: **Prometheus** (métricas + reglas de alerta), **Grafana** (dashboards), **Loki + Alloy** (logs de contenedores), **node_exporter** (host), **postgres_exporter** (BD) y **Alertmanager** (email).
 - Acceso: Grafana en `https://grafana.siberia.solutions` con `basic_auth` de Caddy + login propio (`127.0.0.1:3001` en el host). `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` viven en `.env`.
 - **UIs internas (admin)**: Prometheus (`:9090`), Alertmanager (`:9093`) y Grafana (`:3001`) solo escuchan en `127.0.0.1` del VPS. Para navegarlas desde tu máquina sin abrir puertos públicos, usar el lanzador de túnel SSH:
   ```bash
