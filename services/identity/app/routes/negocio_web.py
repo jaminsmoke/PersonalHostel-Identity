@@ -10,10 +10,12 @@ Si el establecimiento tiene ``web_publica=false``, toda la superficie responde
 es branding público por diseño y se sirve siempre.
 """
 
+import hashlib
+import json
 import uuid
 from datetime import UTC, datetime, time, timedelta
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -320,8 +322,15 @@ def _categorias(db: Session, establecimiento: Establecimiento) -> list[dict]:
         status.HTTP_410_GONE: {"model": ErrorResponse},
     },
 )
+def _etag(body: dict) -> str:
+    """ETag estable: SHA-256 del JSON canónico del body."""
+    raw = json.dumps(body, sort_keys=True, separators=(",", ":"), default=str)
+    return '"' + hashlib.sha256(raw.encode()).hexdigest()[:32] + '"'
+
+
 def web_negocio(
     slug: str,
+    request: Request,
     response: Response,
     db: Session = Depends(get_negocio_db),
 ) -> dict | JSONResponse:
@@ -329,7 +338,6 @@ def web_negocio(
     if _web_privada(db, establecimiento):
         return _respuesta_privada("La web de este establecimiento es privada")
     perfil = get_perfil(db, establecimiento)
-    response.headers["Cache-Control"] = "public, max-age=300"
     perfil_seccion = {
         "eslogan": perfil.eslogan,
         "descripcion": perfil.descripcion,
@@ -350,7 +358,7 @@ def web_negocio(
     ):
         contacto_seccion = None
     hero_url = _hero_url(slug, perfil)
-    return {
+    body = {
         "establecimiento_id": establecimiento.id,
         "nombre": establecimiento.nombre,
         "tipo_establecimiento": establecimiento.tipo_efectivo,
@@ -368,6 +376,13 @@ def web_negocio(
         "categorias": _categorias(db, establecimiento),
         "fondos": resolver_todos(perfil, slug=slug),
     }
+    etag = _etag(body)
+    response.headers["Cache-Control"] = "public, max-age=0, must-revalidate"
+    response.headers["ETag"] = etag
+    if_none_match = request.headers.get("if-none-match")
+    if if_none_match and if_none_match.strip() == etag:
+        return Response(status_code=status.HTTP_304_NOT_MODIFIED)
+    return body
 
 
 @router.get(
