@@ -67,12 +67,11 @@ jobs:
           python-version: "3.14"
 
       - name: Resolve family SHAs
-        id: shas
         run: |
-          BAR_SHA="$(git -C .family/bar rev-parse HEAD)"
-          COMMANDER_SHA="$(git -C .family/commander rev-parse HEAD)"
-          echo "bar=$BAR_SHA" >> "$GITHUB_OUTPUT"
-          echo "commander=$COMMANDER_SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "BAR_SHA=$(git -C .family/bar rev-parse HEAD)"
+            echo "COMMANDER_SHA=$(git -C .family/commander rev-parse HEAD)"
+          } >> "$GITHUB_ENV"
 
       - name: Self-test contract checker
         run: python services/identity/scripts/check_family_contracts.py --selftest
@@ -87,11 +86,11 @@ jobs:
           --commander-src .family/commander/app/src/main/java/com/jaminsmoke/personalcomander/data/sesion/IdentityCliente.kt
           --web-src services/web-camareros/static/app.js
           --web-src services/web-negocio/src
-          --identity-sha "${{ github.sha }}"
-          --bar-sha "${{ steps.shas.outputs.bar }}"
-          --commander-sha "${{ steps.shas.outputs.commander }}"
-          --bar-ref "${{ env.BAR_REF }}"
-          --commander-ref "${{ env.COMMANDER_REF }}"
+          --identity-sha "$GITHUB_SHA"
+          --bar-sha "$BAR_SHA"
+          --commander-sha "$COMMANDER_SHA"
+          --bar-ref "$BAR_REF"
+          --commander-ref "$COMMANDER_REF"
           --manifest-out family-manifest.json
 
       - name: Upload family manifest
