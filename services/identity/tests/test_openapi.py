@@ -49,11 +49,15 @@ NEGOCIO_RUTAS = [
     "/v1/establecimientos/{establecimiento_id}/hero",
     "/v1/establecimientos/{establecimiento_id}/galeria",
     "/v1/establecimientos/{establecimiento_id}/galeria/{imagen_id}",
+    "/v1/establecimientos/{establecimiento_id}/fondos",
+    "/v1/establecimientos/{establecimiento_id}/fondos/catalogo",
+    "/v1/establecimientos/{establecimiento_id}/fondos/{slot}",
     "/v1/invitaciones/{token}/aceptar",
     "/v1/negocio/web",
     "/v1/negocio/web/logo",
     "/v1/negocio/web/hero",
     "/v1/negocio/web/galeria/{imagen_id}",
+    "/v1/negocio/web/fondo/{slot}",
 ]
 
 

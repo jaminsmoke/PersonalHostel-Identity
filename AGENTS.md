@@ -209,8 +209,10 @@ stubs self-hosted en `/stubs/`. No se inventa copy ni datos del establecimiento.
 (`NEGOCIO_API_URL`, runtime en `config.js`) sin token. El contrato público
 incluye `perfil`, `contacto`, `hero`, `galeria`, `horario`, `abierto_ahora`,
 `equipo` (matriz AND: el local muestra el equipo solo si `mostrar_equipo` y el
-camarero `aparecer_web_negocio`) y `categorias` con `destino` y `descripcion`
-opcional. Con `web_publica=false` toda la superficie responde
+camarero `aparecer_web_negocio`), `categorias` con `destino` y `descripcion`
+opcional, y `fondos` por sección (`inicio|horario|carta|equipo|contacto`:
+catálogo Estate o upload). La galería es álbum, no un slot de fondo. Bar pinta
+el picker; Identity guarda. Con `web_publica=false` toda la superficie responde
 `410 identity.web_privada` (`Cache-Control: no-store`). El logo efectivo
 del local es público por diseño y el precio de la carta siempre visible.
 `GET /v1/negocio/ficha` se retiró: la lectura pública canónica es `/v1/negocio/web`.
@@ -273,7 +275,10 @@ con cache pública de TTL corto. La web que renderiza esas rutas vive en
 `services/web-negocio` (`web.negocio.siberia.solutions`).
 La lectura pública canónica es `GET /v1/negocio/web?slug=` y
 `GET /v1/negocio/web/logo?slug=` (sin token; el slug resuelve enlaces `web`,
-el alias histórico `ficha_negocio` o `carta`).
+el alias histórico `ficha_negocio` o `carta`). `GET /v1/negocio/web` incluye
+`fondos` resueltos; un upload se sirve en `GET /v1/negocio/web/fondo/{slot}?slug=`.
+La cuenta titular gestiona con `GET/PUT /v1/establecimientos/{id}/fondos` y
+`POST/DELETE …/fondos/{slot}`.
 La carta JSON sigue en `GET /v1/negocio/carta?slug=` (sin token, solo lectura,
 agrupada por categoría, con precio, `destino` y `descripcion` opcional).
 `GET /v1/negocio/ficha` se retiró.

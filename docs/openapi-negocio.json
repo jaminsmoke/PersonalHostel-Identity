@@ -41,6 +41,20 @@
         "title": "Body_anadir_galeria_v1_establecimientos__establecimiento_id__galeria_post",
         "type": "object"
       },
+      "Body_subir_fondo_v1_establecimientos__establecimiento_id__fondos__slot__post": {
+        "properties": {
+          "imagen": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Imagen",
+            "type": "string"
+          }
+        },
+        "required": [
+          "imagen"
+        ],
+        "title": "Body_subir_fondo_v1_establecimientos__establecimiento_id__fondos__slot__post",
+        "type": "object"
+      },
       "Body_subir_hero_v1_establecimientos__establecimiento_id__hero_post": {
         "properties": {
           "hero": {
@@ -325,6 +339,30 @@
           "categorias"
         ],
         "title": "CartaPublicaResponse",
+        "type": "object"
+      },
+      "CatalogoFondoItem": {
+        "description": "Miniatura de un fondo Estate por sección.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "seccion": {
+            "title": "Seccion",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "seccion",
+          "url"
+        ],
+        "title": "CatalogoFondoItem",
         "type": "object"
       },
       "CatalogoResponse": {
@@ -927,6 +965,183 @@
           }
         },
         "title": "EstablecimientoUpdateRequest",
+        "type": "object"
+      },
+      "FondoAsignado": {
+        "description": "Slot de fondo resuelto (gestión o público).",
+        "properties": {
+          "fuente": {
+            "enum": [
+              "catalogo",
+              "upload",
+              "hero"
+            ],
+            "title": "Fuente",
+            "type": "string"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fuente",
+          "url"
+        ],
+        "title": "FondoAsignado",
+        "type": "object"
+      },
+      "FondoPublico": {
+        "description": "Slot de fondo en la web pública.",
+        "properties": {
+          "fuente": {
+            "enum": [
+              "catalogo",
+              "upload",
+              "hero"
+            ],
+            "title": "Fuente",
+            "type": "string"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fuente",
+          "url"
+        ],
+        "title": "FondoPublico",
+        "type": "object"
+      },
+      "FondoSlotCatalogo": {
+        "description": "Asignación de un fondo de catálogo a un slot.",
+        "properties": {
+          "fuente": {
+            "const": "catalogo",
+            "title": "Fuente",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fuente",
+          "id"
+        ],
+        "title": "FondoSlotCatalogo",
+        "type": "object"
+      },
+      "FondosAsignadosResponse": {
+        "description": "Asignación actual de fondos por sección.",
+        "properties": {
+          "carta": {
+            "$ref": "#/components/schemas/FondoAsignado"
+          },
+          "contacto": {
+            "$ref": "#/components/schemas/FondoAsignado"
+          },
+          "equipo": {
+            "$ref": "#/components/schemas/FondoAsignado"
+          },
+          "horario": {
+            "$ref": "#/components/schemas/FondoAsignado"
+          },
+          "inicio": {
+            "$ref": "#/components/schemas/FondoAsignado"
+          }
+        },
+        "required": [
+          "inicio",
+          "horario",
+          "carta",
+          "equipo",
+          "contacto"
+        ],
+        "title": "FondosAsignadosResponse",
+        "type": "object"
+      },
+      "FondosUpdateRequest": {
+        "additionalProperties": false,
+        "description": "PUT parcial: catálogo o ``null`` para volver al default.",
+        "properties": {
+          "carta": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FondoSlotCatalogo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contacto": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FondoSlotCatalogo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "equipo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FondoSlotCatalogo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "horario": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FondoSlotCatalogo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inicio": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FondoSlotCatalogo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "FondosUpdateRequest",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -2622,6 +2837,13 @@
             "title": "Establecimiento Id",
             "type": "string"
           },
+          "fondos": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FondoPublico"
+            },
+            "title": "Fondos",
+            "type": "object"
+          },
           "galeria": {
             "items": {
               "$ref": "#/components/schemas/ImagenGaleriaPublica"
@@ -4308,6 +4530,518 @@
         "summary": "Rotar Enlace",
         "tags": [
           "enlaces públicos"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/fondos": {
+      "get": {
+        "operationId": "obtener_fondos_v1_establecimientos__establecimiento_id__fondos_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FondosAsignadosResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Fondos",
+        "tags": [
+          "fondos web"
+        ]
+      },
+      "put": {
+        "operationId": "actualizar_fondos_v1_establecimientos__establecimiento_id__fondos_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FondosUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FondosAsignadosResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Actualizar Fondos",
+        "tags": [
+          "fondos web"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/fondos/catalogo": {
+      "get": {
+        "operationId": "listar_catalogo_fondos_v1_establecimientos__establecimiento_id__fondos_catalogo_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogoFondoItem"
+                  },
+                  "title": "Response Listar Catalogo Fondos V1 Establecimientos  Establecimiento Id  Fondos Catalogo Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar Catalogo Fondos",
+        "tags": [
+          "fondos web"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/fondos/{slot}": {
+      "delete": {
+        "operationId": "borrar_fondo_v1_establecimientos__establecimiento_id__fondos__slot__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "slot",
+            "required": true,
+            "schema": {
+              "title": "Slot",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FondosAsignadosResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Borrar Fondo",
+        "tags": [
+          "fondos web"
+        ]
+      },
+      "get": {
+        "operationId": "obtener_fondo_upload_v1_establecimientos__establecimiento_id__fondos__slot__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "slot",
+            "required": true,
+            "schema": {
+              "title": "Slot",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Fondo propio del slot (WebP)."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Obtener Fondo Upload",
+        "tags": [
+          "fondos web"
+        ]
+      },
+      "post": {
+        "operationId": "subir_fondo_v1_establecimientos__establecimiento_id__fondos__slot__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "slot",
+            "required": true,
+            "schema": {
+              "title": "Slot",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_subir_fondo_v1_establecimientos__establecimiento_id__fondos__slot__post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FondosAsignadosResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Subir Fondo",
+        "tags": [
+          "fondos web"
         ]
       }
     },
@@ -7214,6 +7948,76 @@
           }
         },
         "summary": "Web Negocio",
+        "tags": [
+          "negocio público"
+        ]
+      }
+    },
+    "/v1/negocio/web/fondo/{slot}": {
+      "get": {
+        "operationId": "web_negocio_fondo_v1_negocio_web_fondo__slot__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slot",
+            "required": true,
+            "schema": {
+              "title": "Slot",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/webp": {}
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Web Negocio Fondo",
         "tags": [
           "negocio público"
         ]

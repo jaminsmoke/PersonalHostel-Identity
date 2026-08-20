@@ -1,5 +1,6 @@
 import { STUBS, mediaUrl } from "../media";
 import { useWeb } from "../web-context";
+import { FondoPagina } from "./FondoPagina";
 import { SlotTexto } from "./SlotTexto";
 import type { MiembroEquipo } from "../types";
 
@@ -45,7 +46,9 @@ export function Equipo() {
   const hayEquipo = web.equipo.length > 0;
 
   return (
-    <section className="flex-grow pt-32 pb-section-gap px-gutter max-w-page mx-auto w-full">
+    <section className="relative flex-grow min-h-[calc(100vh-5rem)] pt-32 pb-section-gap">
+      <FondoPagina slot="equipo" />
+      <div className="relative z-10 px-gutter max-w-page mx-auto w-full">
       <section className="mb-section-gap max-w-3xl">
         <h1 className="font-display text-headline-lg-mobile md:text-display-lg text-on-surface mb-stack-lg">
           El equipo
@@ -60,6 +63,7 @@ export function Equipo() {
         {hayEquipo
           ? web.equipo.map((m) => <CardMiembro key={m.camarero_id} m={m} />)
           : [0, 1, 2].map((i) => <CardHueco key={i} />)}
+      </div>
       </div>
     </section>
   );

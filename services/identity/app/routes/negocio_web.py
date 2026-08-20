@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_negocio_db
 from app.errors import ENLACE_NOT_FOUND, ENLACE_REVOCADO, FOTO_INEXISTENTE, WEB_PRIVADA, ApiError
+from app.fondos import exigir_seccion, exigir_upload_publico, resolver_todos
 from app.internal import get_camareros_internal
 from app.models import (
     CuentaNegocio,
@@ -223,7 +224,7 @@ def _equipo_publico(
 def _galeria_publica(db: Session, slug: str, establecimiento: Establecimiento) -> list[dict]:
     imagenes = (
         db.query(ImagenEstablecimiento)
-        .filter_by(establecimiento_id=establecimiento.id)
+        .filter_by(establecimiento_id=establecimiento.id, uso="galeria")
         .order_by(ImagenEstablecimiento.orden, ImagenEstablecimiento.created_at)
         .all()
     )
@@ -365,6 +366,7 @@ def web_negocio(
         "horario": _horario_publico(db, establecimiento),
         "equipo": _equipo_publico(db, establecimiento, perfil),
         "categorias": _categorias(db, establecimiento),
+        "fondos": resolver_todos(perfil, slug=slug),
     }
 
 
@@ -427,7 +429,7 @@ def web_negocio_galeria(
         return _respuesta_privada("La web de este establecimiento es privada")
     imagen = (
         db.query(ImagenEstablecimiento)
-        .filter_by(id=imagen_id, establecimiento_id=establecimiento.id)
+        .filter_by(id=imagen_id, establecimiento_id=establecimiento.id, uso="galeria")
         .one_or_none()
     )
     if imagen is None:
@@ -436,4 +438,27 @@ def web_negocio_galeria(
             code=ENLACE_NOT_FOUND,
             detail="La imagen no existe",
         )
+    return _servir_publico(imagen.clave, imagen.mimetype)
+
+
+@router.get(
+    "/web/fondo/{slot}",
+    responses={
+        status.HTTP_200_OK: {"content": {"image/webp": {}}},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_410_GONE: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse},
+    },
+)
+def web_negocio_fondo(
+    slot: str,
+    slug: str,
+    db: Session = Depends(get_negocio_db),
+) -> Response:
+    establecimiento = _establecimiento_por_slug(db, slug)
+    if _web_privada(db, establecimiento):
+        return _respuesta_privada("La web de este establecimiento es privada")
+    exigir_seccion(slot)
+    perfil = get_perfil(db, establecimiento)
+    imagen = exigir_upload_publico(db, perfil, slot)
     return _servir_publico(imagen.clave, imagen.mimetype)

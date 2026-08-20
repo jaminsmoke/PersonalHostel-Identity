@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
@@ -730,6 +730,14 @@ class MiembroEquipoPublico(BaseModel):
     rol: str
 
 
+class FondoPublico(BaseModel):
+    """Slot de fondo en la web pública."""
+
+    fuente: Literal["catalogo", "upload", "hero"]
+    id: str | None = None
+    url: str
+
+
 class WebNegocioPublica(BaseModel):
     """Datos de la web pública del establecimiento (ficha + carta)."""
 
@@ -748,6 +756,7 @@ class WebNegocioPublica(BaseModel):
     horario: list[HorarioDia] | None = None
     equipo: list[MiembroEquipoPublico] = Field(default_factory=list)
     categorias: list[CategoriaCartaPublica] = Field(default_factory=list)
+    fondos: dict[str, FondoPublico] = Field(default_factory=dict)
 
 
 class PerfilEstablecimientoUpdateRequest(BaseModel):
@@ -804,6 +813,57 @@ class ImagenEstablecimientoResponse(BaseModel):
     size: int
     orden: int
     creada_en: datetime
+
+
+class CatalogoFondoItem(BaseModel):
+    """Miniatura de un fondo Estate por sección."""
+
+    id: str
+    seccion: str
+    url: str
+
+
+class FondoAsignado(BaseModel):
+    """Slot de fondo resuelto (gestión o público)."""
+
+    fuente: Literal["catalogo", "upload", "hero"]
+    id: str | None = None
+    url: str
+
+
+class FondoSlotCatalogo(BaseModel):
+    """Asignación de un fondo de catálogo a un slot."""
+
+    fuente: Literal["catalogo"]
+    id: str
+
+
+class FondosUpdateRequest(BaseModel):
+    """PUT parcial: catálogo o ``null`` para volver al default."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    inicio: FondoSlotCatalogo | None = None
+    horario: FondoSlotCatalogo | None = None
+    carta: FondoSlotCatalogo | None = None
+    equipo: FondoSlotCatalogo | None = None
+    contacto: FondoSlotCatalogo | None = None
+
+    @model_validator(mode="after")
+    def _algo_cambia(self) -> FondosUpdateRequest:
+        if not self.model_fields_set:
+            raise ValueError("Se requiere al menos una sección para actualizar")
+        return self
+
+
+class FondosAsignadosResponse(BaseModel):
+    """Asignación actual de fondos por sección."""
+
+    inicio: FondoAsignado
+    horario: FondoAsignado
+    carta: FondoAsignado
+    equipo: FondoAsignado
+    contacto: FondoAsignado
 
 
 class JornadaIniciarRequest(BaseModel):

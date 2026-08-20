@@ -17,6 +17,7 @@ from app.routes.establecimientos import (
 from app.routes.establecimientos import (
     router as establecimientos_router,
 )
+from app.routes.fondos import router as fondos_router
 from app.routes.horario import router as horario_router
 from app.routes.internal import negocio_internal_router
 from app.routes.negocio_auth import router as negocio_auth_router
@@ -75,6 +76,7 @@ app.include_router(invitations_router)
 app.include_router(oficio_negocio_router)
 app.include_router(horario_router)
 app.include_router(perfil_web_router)
+app.include_router(fondos_router)
 app.include_router(negocio_internal_router)
 
 
