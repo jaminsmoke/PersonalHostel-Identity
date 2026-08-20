@@ -7893,20 +7893,34 @@
     },
     "/v1/negocio/web": {
       "get": {
-        "description": "ETag estable: SHA-256 del JSON canónico del body.",
-        "operationId": "_etag_v1_negocio_web_get",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "title": "Body",
-                "type": "object"
-              }
+        "operationId": "web_negocio_v1_negocio_web_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
             }
           },
-          "required": true
-        },
+          {
+            "in": "header",
+            "name": "if_none_match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If None Match"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -7949,7 +7963,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": " Etag",
+        "summary": "Web Negocio",
         "tags": [
           "negocio público"
         ]
