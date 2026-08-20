@@ -10,6 +10,11 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Frescura de la web pública**: `GET /v1/negocio/web` emite `ETag` (SHA-256
+  del JSON canónico) y `Cache-Control: public, max-age=0, must-revalidate`.
+  La SPA refetch (polling ~60 s y `visibilitychange`) con `If-None-Match`.
+  ([#147](https://github.com/jaminsmoke/PersonalHostel-Server/issues/147), API)
+
 - **Fondos por sección en la web pública**: cada página (`inicio`, `horario`,
   `carta`, `equipo`, `contacto`) tiene su propio plano de ambiente — catálogo
   Estate o foto subida. Identity guarda (`GET/PUT …/fondos`, `POST/DELETE
@@ -63,6 +68,13 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
   ([#110](https://github.com/jaminsmoke/PersonalHostel-Server/issues/110), API)
 
 ### Corregido
+
+- **`If-None-Match` no enlazaba en `GET /v1/negocio/web`**: FastAPI declaraba
+  el header con `convert_underscores=False`, así que el refetch de la SPA
+  nunca recibía `304` (siempre `200` + body). Ahora el parámetro usa
+  `alias="If-None-Match"`, el `304` reenvía `ETag` y `Cache-Control`, y hay
+  tests de coincidencia y mismatch.
+  ([#149](https://github.com/jaminsmoke/PersonalHostel-Server/issues/149), API)
 
 - **Validación aislada en VPS** desbloqueada: `ruff format --check` fallaba por
   `__pycache__` con permisos de root en el checkout del VPS (bind mount de
