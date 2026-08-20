@@ -589,6 +589,22 @@ def selftest() -> int:
             print("SELFTEST FAIL: debía detectar layout ausente para Bar", file=sys.stderr)
             return 1
 
+        # Template Kotlin ${...}: si falta la ruta en OpenAPI -> ROJO.
+        # Confirma que fondos/${slot} se normaliza a fondos/* (no a fondos/$*)
+        # y que la ruta normalizada se valida contra OpenAPI.
+        broken3 = dict(negocio)
+        broken3["paths"] = dict(negocio["paths"])
+        del broken3["paths"]["/v1/establecimientos/{establecimiento_id}/fondos/{slot}"]
+        neg.write_text(json.dumps(broken3), encoding="utf-8")
+        fallos3 = comprobar(cam, neg, [bar], [commander], [web]).fallos
+        if not any("Bar" in f and "fondos" in f for f in fallos3):
+            print(
+                "SELFTEST FAIL: debía detectar fondos/${slot} sin ruta en OpenAPI"
+                " (no produce $* residual)",
+                file=sys.stderr,
+            )
+            return 1
+
         print("SELFTEST OK")
         return 0
 
