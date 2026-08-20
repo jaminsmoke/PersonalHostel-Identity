@@ -7,7 +7,8 @@
   </head>
   <body>
     <div id="root"></div>
-    <script src="/config.js"></script>
+    <!-- Runtime: nginx escribe /config.js al arrancar. Vite no debe empaquetarlo. -->
+    <script src="/config.js" vite-ignore></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
