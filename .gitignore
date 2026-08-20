@@ -13,6 +13,7 @@ build/
 .vscode/
 *.log
 .kanbanrc.json
+.architectureschema/
 .freebuff/
 stitch_personal_hostel_business_web/
 .agents/
