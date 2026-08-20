@@ -53,7 +53,7 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.test}
 
   grafana:
-    image: grafana/grafana:12.1.0
+    image: grafana/grafana:13.1.4
     restart: unless-stopped
     ports:
       # 3001 en el host porque 3000 lo usa la landing siberia.solutions.
