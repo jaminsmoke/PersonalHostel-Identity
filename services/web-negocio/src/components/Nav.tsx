@@ -1,6 +1,16 @@
 import { NavLink, useParams } from "react-router-dom";
 import { useState } from "react";
+import { IconoCerrar, IconoMenu } from "../icons";
 import { rutaNegocio, useWeb } from "../web-context";
+
+const ENLACES: Array<{ pagina?: string; etiqueta: string }> = [
+  { etiqueta: "Inicio" },
+  { pagina: "horario", etiqueta: "Horario" },
+  { pagina: "carta", etiqueta: "Carta" },
+  { pagina: "equipo", etiqueta: "Equipo" },
+  { pagina: "galeria", etiqueta: "Galería" },
+  { pagina: "contacto", etiqueta: "Contacto" },
+];
 
 export function Nav() {
   const web = useWeb();
@@ -8,20 +18,11 @@ export function Nav() {
   const [abierto, setAbierto] = useState(false);
   if (!slug) return null;
 
-  const enlaces: Array<{ to: string; etiqueta: string }> = [
-    { to: rutaNegocio(slug), etiqueta: "Inicio" },
-    { to: rutaNegocio(slug, "horario"), etiqueta: "Horario" },
-    { to: rutaNegocio(slug, "carta"), etiqueta: "Carta" },
-  ];
-  if (web.equipo.length) enlaces.push({ to: rutaNegocio(slug, "equipo"), etiqueta: "Equipo" });
-  if (web.galeria.length) enlaces.push({ to: rutaNegocio(slug, "galeria"), etiqueta: "Galería" });
-  enlaces.push({ to: rutaNegocio(slug, "contacto"), etiqueta: "Contacto" });
-
   const ctaHref = web.contacto?.telefono
     ? `tel:${web.contacto.telefono}`
     : web.contacto?.email_contacto
       ? `mailto:${web.contacto.email_contacto}`
-      : null;
+      : rutaNegocio(slug, "contacto");
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive
@@ -39,35 +40,34 @@ export function Nav() {
           {web.nombre}
         </NavLink>
         <div className="hidden md:flex gap-gutter items-center text-label-md uppercase tracking-widest">
-          {enlaces.map((s) => (
-            <NavLink key={s.to} to={s.to} end className={linkClass}>
+          {ENLACES.map((s) => (
+            <NavLink key={s.etiqueta} to={rutaNegocio(slug, s.pagina)} end className={linkClass}>
               {s.etiqueta}
             </NavLink>
           ))}
-          {ctaHref && (
-            <a
-              href={ctaHref}
-              className="bg-primary-container text-on-primary-container px-6 py-2 rounded hover:opacity-80 transition-opacity"
-            >
-              Reservar
-            </a>
-          )}
+          <a
+            href={ctaHref}
+            className="bg-primary-container text-on-primary-container px-6 py-2 rounded hover:opacity-80 transition-opacity"
+          >
+            Reservar
+          </a>
         </div>
         <button
           type="button"
-          className="md:hidden text-primary text-label-md uppercase tracking-widest"
+          className="md:hidden text-primary p-2 -mr-2"
           onClick={() => setAbierto((v) => !v)}
           aria-expanded={abierto}
+          aria-label={abierto ? "Cerrar menú" : "Abrir menú"}
         >
-          Menú
+          {abierto ? <IconoCerrar className="w-7 h-7" /> : <IconoMenu className="w-7 h-7" />}
         </button>
       </div>
       {abierto && (
         <div className="md:hidden border-t border-outline-variant/40 bg-surface px-margin-mobile py-stack-md flex flex-col gap-stack-md text-label-md uppercase tracking-widest">
-          {enlaces.map((s) => (
+          {ENLACES.map((s) => (
             <NavLink
-              key={s.to}
-              to={s.to}
+              key={s.etiqueta}
+              to={rutaNegocio(slug, s.pagina)}
               end
               className={linkClass}
               onClick={() => setAbierto(false)}
@@ -75,11 +75,9 @@ export function Nav() {
               {s.etiqueta}
             </NavLink>
           ))}
-          {ctaHref && (
-            <a href={ctaHref} className="text-primary-container">
-              Reservar
-            </a>
-          )}
+          <a href={ctaHref} className="text-primary-container" onClick={() => setAbierto(false)}>
+            Reservar
+          </a>
         </div>
       )}
     </nav>
