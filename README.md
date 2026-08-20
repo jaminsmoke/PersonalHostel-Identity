@@ -368,8 +368,9 @@ direcciones inventados. Un mapa OSM real queda fuera de este entregable.
 QR de Bar no pinte un bundle hashed anterior; `/assets/` sigue `immutable`.
 
 Los query/hash legacy (`?seccion=carta`, `#carta`) redirigen a la ruta nueva.
-Todo se sirve con una sola llamada al servicio de negocio (`NEGOCIO_API_URL`,
-variable runtime inyectada por `20-web-negocio.sh`):
+La SPA carga `GET /v1/negocio/web` y refetch (polling ~60 s y
+`visibilitychange`) con `If-None-Match` contra el servicio de negocio
+(`NEGOCIO_API_URL`, variable runtime inyectada por `20-web-negocio.sh`):
 
 - `GET /v1/negocio/web?slug=<enlace>` → datos públicos agregados **sin token**:
   `establecimiento_id`, `nombre`, `tipo_establecimiento`, `logo_url`,
@@ -378,8 +379,9 @@ variable runtime inyectada por `20-web-negocio.sh`):
   con `precio_centimos`, `moneda`, `destino` y `descripcion` opcional) y
   `fondos` (por slot: `fuente` `catalogo|upload|hero`, `id` de catálogo y `url`).
   El slug resuelve un enlace `web` o `carta` (slugs históricos `ficha_negocio`
-  siguen sirviendo en GET); inexistente → `404`, revocado → `410`. Cache pública
-  `max-age=300`. `GET /v1/negocio/ficha` se retiró.
+  siguen sirviendo en GET); inexistente → `404`, revocado → `410`.
+  `Cache-Control: public, max-age=0, must-revalidate` y `ETag`; si el cliente
+  reenvía el mismo ETag → `304`. `GET /v1/negocio/ficha` se retiró.
 - `GET /v1/negocio/web/logo?slug=<enlace>` → logo efectivo (WebP) público con
   cache `max-age=86400` + `ETag`, resoluble por cualquier slug del local.
 - `GET /v1/negocio/web/hero?slug=<enlace>` y

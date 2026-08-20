@@ -47,6 +47,7 @@ from app.storage import get_foto_storage
 
 router = APIRouter(prefix="/v1/negocio", tags=["negocio público"])
 
+_CACHE_FRESCO = "public, max-age=0, must-revalidate"
 _TIPOS_WEB = (
     EnlaceTipo.web.value,
     EnlaceTipo.carta.value,
@@ -319,11 +320,37 @@ def _etag(body: dict) -> str:
     return '"' + hashlib.sha256(raw.encode()).hexdigest()[:32] + '"'
 
 
+def _etag_matches(if_none_match: str | None, etag: str) -> bool:
+    """True si If-None-Match coincide con el ETag actual (RFC 9110)."""
+    if not if_none_match:
+        return False
+    raw = if_none_match.strip()
+    if not raw:
+        return False
+    if raw == "*":
+        return True
+    current = etag.strip()
+    if current.upper().startswith("W/"):
+        current = current[2:].strip()
+    for part in raw.split(","):
+        tag = part.strip()
+        if not tag:
+            continue
+        if tag == "*":
+            return True
+        if tag.upper().startswith("W/"):
+            tag = tag[2:].strip()
+        if tag == current:
+            return True
+    return False
+
+
 @router.get(
     "/web",
     response_model=WebNegocioPublica,
     response_model_exclude_unset=True,
     responses={
+        status.HTTP_304_NOT_MODIFIED: {"description": "Sin cambios (ETag coincide)"},
         status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
         status.HTTP_410_GONE: {"model": ErrorResponse},
     },
@@ -332,8 +359,8 @@ def web_negocio(
     slug: str,
     response: Response,
     db: Session = Depends(get_negocio_db),
-    if_none_match: str | None = Header(default=None, convert_underscores=False),
-) -> dict | JSONResponse:
+    if_none_match: str | None = Header(default=None, alias="If-None-Match"),
+) -> dict | JSONResponse | Response:
     establecimiento = _establecimiento_por_slug(db, slug)
     if _web_privada(db, establecimiento):
         return _respuesta_privada("La web de este establecimiento es privada")
@@ -377,10 +404,13 @@ def web_negocio(
         "fondos": resolver_todos(perfil, slug=slug),
     }
     etag = _etag(body)
-    response.headers["Cache-Control"] = "public, max-age=0, must-revalidate"
+    response.headers["Cache-Control"] = _CACHE_FRESCO
     response.headers["ETag"] = etag
-    if if_none_match and if_none_match.strip() == etag:
-        return Response(status_code=status.HTTP_304_NOT_MODIFIED)
+    if _etag_matches(if_none_match, etag):
+        return Response(
+            status_code=status.HTTP_304_NOT_MODIFIED,
+            headers={"ETag": etag, "Cache-Control": _CACHE_FRESCO},
+        )
     return body
 
 

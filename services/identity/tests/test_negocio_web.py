@@ -127,6 +127,36 @@ def test_web_negocio_resuelve_slug_de_ficha_y_devuelve_ficha_mas_carta(db_ready,
     assert "etag" in resp.headers
 
 
+def test_web_negocio_etag_304_si_if_none_match_coincide(db_ready, negocio_client):
+    headers, est_id = _crear_negocio_establecimiento(negocio_client)
+    slug = f"web-etag-{uuid.uuid4().hex[:8]}"
+    _crear_enlace(negocio_client, headers, est_id, "web", slug)
+
+    primero = negocio_client.get("/v1/negocio/web", params={"slug": slug})
+    assert primero.status_code == 200
+    etag = primero.headers["etag"]
+    assert etag.startswith('"') and etag.endswith('"')
+
+    igual = negocio_client.get(
+        "/v1/negocio/web",
+        params={"slug": slug},
+        headers={"If-None-Match": etag},
+    )
+    assert igual.status_code == 304
+    assert igual.content == b""
+    assert igual.headers["etag"] == etag
+    assert igual.headers["cache-control"] == "public, max-age=0, must-revalidate"
+
+    distinto = negocio_client.get(
+        "/v1/negocio/web",
+        params={"slug": slug},
+        headers={"If-None-Match": '"no-es-este"'},
+    )
+    assert distinto.status_code == 200
+    assert distinto.json()["establecimiento_id"] == est_id
+    assert distinto.headers["etag"] == etag
+
+
 def test_web_negocio_incluye_horario_configurado(db_ready, negocio_client):
     headers, est_id = _crear_negocio_establecimiento(negocio_client)
     slug = f"web-horario-{uuid.uuid4().hex[:8]}"
