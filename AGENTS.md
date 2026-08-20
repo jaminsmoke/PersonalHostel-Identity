@@ -144,8 +144,8 @@ públicos Bar y Commander (solo fuentes; no ejecuta su código), barre `app.js` 
 `services/web-negocio/src`, y publica en el summary las operaciones usadas por
 cada cliente y las rutas públicas sin consumidor (aviso, no rojo). Falla si un
 cliente llama un path ausente **o** un verbo que ese path no declara. La
-normalización canónica es `normalize() → *` (cualquier `{param}` o `$var` de
-segmento; el query y el sufijo `$q` no son segmento). Bar debe copiar esa
+normalización canónica es `normalize() → *` (cualquier `{param}`, `$var` o
+`${var}` de segmento; el query y el sufijo `$q` no son segmento). Bar debe copiar esa
 regla en su checker para el falso positivo `$imagenId`
 (`PVTI_lAHOBM87Yc4BgQqazg3Tpcs`). `workflow_dispatch` admite `bar_ref` y
 `commander_ref` (default `main` en PR/push) para validar una combinación

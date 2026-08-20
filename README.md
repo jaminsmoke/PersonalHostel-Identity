@@ -546,7 +546,7 @@ ejecuciones obsoletas de la misma rama y usa permisos de solo lectura:
   summary con las operaciones usadas, las públicas sin consumidor (aviso, no
   rojo) y los SHAs de la combinación. El job falla si un cliente llama un
   path ausente o un verbo no declarado. La normalización canónica es
-  `normalize() → *`. Artifact `family-manifest` (14 días). Reproducción local
+  `normalize() → *` (`{param}`, `$var`, `${var}`). Artifact `family-manifest` (14 días). Reproducción local
   opcional:
 
   ```bash

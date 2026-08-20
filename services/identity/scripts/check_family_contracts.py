@@ -37,7 +37,7 @@ from pathlib import Path
 RUTA_RE = re.compile(r'"((?:/v1/|/internal/|/health)[^"]*)"')
 TEMPLATE_PATH_RE = re.compile(r"`[^`]*?((?:/v1/|/internal/|/health)[^`?\s]*)")
 
-PARAM_RE = re.compile(r"\{[^}]+\}|\$[A-Za-z_][A-Za-z0-9_]*")
+PARAM_RE = re.compile(r"\$\{[^}]+\}|\{[^}]+\}|\$[A-Za-z_][A-Za-z0-9_]*")
 QUERY_SUFFIX_VAR_RE = re.compile(r"(?<!/)\$[A-Za-z_][A-Za-z0-9_]*$")
 
 HTTP_METHODS = frozenset({"get", "put", "post", "delete", "patch", "options", "head", "trace"})
@@ -424,6 +424,11 @@ def _fixtures_ok() -> tuple[dict, dict, str, str, str]:
                 "get": {},
                 "delete": {},
             },
+            "/v1/establecimientos/{establecimiento_id}/fondos/{slot}": {
+                "get": {},
+                "post": {},
+                "delete": {},
+            },
             "/v1/negocio/carta": {"get": {}},
             "/v1/negocio/web": {"get": {}},
             "/v1/invitaciones/{token}/aceptar": {"post": {}},
@@ -451,6 +456,8 @@ def _fixtures_ok() -> tuple[dict, dict, str, str, str]:
             baseUrl, "GET", "/v1/establecimientos/$id/galeria/$imagenId", token,
         )
         IdentityHttp.request(baseUrl, "DELETE", "/v1/establecimientos/$id/galeria/$imagenId", ...)
+        IdentityHttp.uploadMultipart(baseUrl, "/v1/establecimientos/$id/fondos/${slot}", ...)
+        IdentityHttp.request(baseUrl, "DELETE", "/v1/establecimientos/$id/fondos/${slot}", ...)
     """
     commander = """
         object Rutas {
@@ -526,6 +533,12 @@ def selftest() -> int:
         if not any("/v1/establecimientos/*/galeria/*" in line for line in md.splitlines()):
             print(
                 "SELFTEST FAIL: debía normalizar $id/galeria/$imagenId a */galeria/*",
+                file=sys.stderr,
+            )
+            return 1
+        if not any("/v1/establecimientos/*/fondos/*" in line for line in md.splitlines()):
+            print(
+                "SELFTEST FAIL: debía normalizar fondos/${slot} a */fondos/* (no */fondos/$*)",
                 file=sys.stderr,
             )
             return 1
