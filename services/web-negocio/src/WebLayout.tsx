@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { Navigate, Outlet, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { cargarWeb, ErrorPublico } from "./api";
@@ -6,6 +6,7 @@ import type { WebNegocio } from "./types";
 import { Nav } from "./components/Nav";
 import { Footer } from "./components/Footer";
 import { WebContext } from "./web-context";
+import { useRefetch } from "./use-refetch";
 
 type EstadoCarga =
   | { fase: "cargando" }
@@ -28,12 +29,16 @@ export function WebLayout() {
   const [searchParams] = useSearchParams();
   const [estado, setEstado] = useState<EstadoCarga>({ fase: "cargando" });
 
+  const actualizarWeb = useCallback((web: WebNegocio) => {
+    setEstado({ fase: "ok", web });
+    document.title = `${web.nombre} — Personal Hostel`;
+  }, []);
+
   useEffect(() => {
     if (!slug) return;
     cargarWeb(slug)
-      .then((web) => {
-        setEstado({ fase: "ok", web });
-        document.title = `${web.nombre} — Personal Hostel`;
+      .then((resultado) => {
+        if (resultado) actualizarWeb(resultado.web);
       })
       .catch((error: unknown) => {
         if (error instanceof ErrorPublico) {
@@ -47,7 +52,10 @@ export function WebLayout() {
           setEstado({ fase: "error", status: 0, code: "", detalle: "Sin conexión" });
         }
       });
-  }, [slug]);
+  }, [slug, actualizarWeb]);
+
+  // Refetch al volver a la pestaña + polling cada 60s (ETag/304)
+  useRefetch(slug || "", 60_000, actualizarWeb);
 
   const seccion = searchParams.get("seccion");
   const hash = location.hash.replace(/^#/, "");

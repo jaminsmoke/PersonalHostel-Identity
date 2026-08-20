@@ -11,14 +11,29 @@ export class ErrorPublico extends Error {
   }
 }
 
-export async function cargarWeb(slug: string): Promise<WebNegocio> {
+export interface ResultadoWeb {
+  web: WebNegocio;
+  etag: string;
+}
+
+/**
+ * Carga la web del negocio. Si se pasa [etag], envía If-None-Match;
+ * si el servidor responde 304, devuelve null (sin cambios).
+ */
+export async function cargarWeb(
+  slug: string,
+  etag?: string,
+): Promise<ResultadoWeb | null> {
   const url = `${API_BASE}/v1/negocio/web?slug=${encodeURIComponent(slug)}`;
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (etag) headers["If-None-Match"] = etag;
+  const res = await fetch(url, { headers });
+  if (res.status === 304) return null;
   const body: Partial<ErrorWeb> & Partial<WebNegocio> = await res
     .json()
     .catch(() => ({}));
   if (!res.ok) {
     throw new ErrorPublico(res.status, body.code || "", body.detail || "Error");
   }
-  return body as WebNegocio;
+  return { web: body as WebNegocio, etag: res.headers.get("etag") || "" };
 }

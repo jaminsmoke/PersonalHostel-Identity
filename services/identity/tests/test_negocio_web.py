@@ -123,7 +123,8 @@ def test_web_negocio_resuelve_slug_de_ficha_y_devuelve_ficha_mas_carta(db_ready,
     ]
     assert "email" not in body
     assert body["horario"] is None
-    assert resp.headers["cache-control"] == "public, max-age=300"
+    assert resp.headers["cache-control"] == "public, max-age=0, must-revalidate"
+    assert "etag" in resp.headers
 
 
 def test_web_negocio_incluye_horario_configurado(db_ready, negocio_client):

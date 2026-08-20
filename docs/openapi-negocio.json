@@ -7903,6 +7903,22 @@
               "title": "Slug",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "if_none_match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If None Match"
+            }
           }
         ],
         "responses": {

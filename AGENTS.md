@@ -397,17 +397,20 @@ Con la decisión ya tomada y acordada en la fase anterior, detallar **mucho más
 #### 4. Ejecutando — Implementar el plan
 
 - Al entrar: convertir draft → issue, añadir labels (1 Tipo + 1 Área). **Aquí empieza el código.**
+- **Crear rama `feature/...`** desde `main` antes de tocar código. Todos los commits van en esta rama, nunca directamente en `main`.
 - Implementar siguiendo el plan detallado de Roadmap.
 - Si algo difiere del plan original, **documentarlo** en el body (sección `Implementación`) explicando el porqué del cambio.
-- Hacer commits locales con mensajes descriptivos.
+- Hacer commits locales con mensajes descriptivos en la rama feature.
 
 #### 5. Verificando — Tests y comprobaciones exhaustivas
 
 **No es solo ejecutar la validación remota.** Es verificar que el cambio funciona, no rompe nada y cumple estándares de calidad.
 
+**`--validate-only` es solo validación: NO despliega nada en producción.** Ejecuta Docker sobre las BD `_test` del VPS, corre la suite, verifica migraciones y calidad. El deploy real se hace en Changelog (paso 7) tras merge a `main`.
+
 **Checklist obligatorio** (siempre ejecutar TODO lo aplicable):
 
-1. **Validación aislada en VPS**: `python services/identity/scripts/deploy_staging.py --ref <rama> --validate-only`; usa Docker y solo las BD `_test`, sin recrear las APIs activas
+1. **Validación aislada en VPS**: `python services/identity/scripts/deploy_staging.py --ref <rama> --validate-only`; usa Docker y solo las BD `_test`, sin recrear las APIs activas. **Esto es validación, no deploy.**
 2. **Health en staging desplegado**: `GET /health` → `{"ok": true}`; `GET /v1/meta` → `status: schema` coherente
 3. **Tests en VPS**: el runner remoto debe pasar completo y la cobertura de ramas no puede bajar del 82%. Crear tests para rutas nuevas (registro, login, QR, revocar)
 4. **Contrato**: las rutas nuevas responden JSON documentado; errores de cara a apps en español
@@ -438,7 +441,10 @@ No aplica `./gradlew` (eso es Bar/Commander).
 4. Setear `Completado` (fecha) y `Completado exacto` (ISO-8601).
 5. Añadir ✅ al título del issue.
 6. Cerrar el issue (`gh issue close -r completed`).
-7. **Push** a la rama de trabajo (normalmente `main`).
+7. **Crear PR** de la rama `feature/...` → `main`, mergear (con `--admin` si hay branch protection).
+8. **Deploy real**: `python services/identity/scripts/deploy_staging.py --ref main` (sin `--validate-only`). Este es el único momento en que se despliega a producción.
+9. Verificar `GET /health` y `GET /v1/meta` en staging tras el deploy.
+10. **Push** de la rama `main` actualizada.
 
 ### CLI (all commands from this folder: PersonalHosteleriaServer)
 
@@ -472,20 +478,27 @@ $KANBAN set-field <itemId> --field "Status" --option "Debate"
 $KANBAN convert-draft <itemId>
 gh issue edit <N> --repo jaminsmoke/PersonalHostel-Server --add-label "tipo:feature,area:api"
 
-# Verificando
-python services/identity/scripts/deploy_staging.py --ref <rama> --validate-only
-# Tras validar, desplegar la referencia y comprobar los dominios HTTPS de staging.
-python services/identity/scripts/deploy_staging.py --ref <rama>
+# Ejecutando: crear rama feature ANTES de commitear
+git checkout -b feature/<nombre-del-cambio>
+# ... implementar y commitear en la rama feature ...
 
-# Changelog: commit con SHA referenciable, cerrar, push
+# Verificando: --validate-only es SOLO validación (NO deploy)
+python services/identity/scripts/deploy_staging.py --ref <rama> --validate-only
+# El deploy real se hace en Changelog, no aquí.
+
+# Changelog: PR + merge + deploy real
 git add <files> && git commit -m "..."
 $KANBAN body <itemId> --append "Commit" --content "SHA: \`$(git rev-parse --short HEAD)\`"
 $KANBAN set-field <itemId> --field "Status" --option "Changelog"
 $KANBAN set-field <itemId> --field "Completado" --date "YYYY-MM-DD"
 $KANBAN set-field <itemId> --field "Completado exacto" --text "YYYY-MM-DDTHH:MM:SSZ"
+gh pr create --repo jaminsmoke/PersonalHostel-Server --base main --head feature/<nombre> --title "..." --body "..."
+gh pr merge <PR> --repo jaminsmoke/PersonalHostel-Server --merge --admin
 gh issue edit <N> --repo jaminsmoke/PersonalHostel-Server --title "✅ ..."
 gh issue close <N> --repo jaminsmoke/PersonalHostel-Server -r completed
-git push
+# Deploy real (único momento en que se despliega)
+python services/identity/scripts/deploy_staging.py --ref main
+git checkout main && git pull
 
 # Delete (IRREVERSIBLE, requires --yes)
 $KANBAN delete <itemId> --yes
