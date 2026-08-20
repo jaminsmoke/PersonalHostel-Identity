@@ -35,90 +35,117 @@
     {
       "tool": "trivy",
       "ids": [
+        "CVE-2026-53612",
+        "CVE-2026-53613",
+        "CVE-2026-53614",
         "CVE-2026-53615"
       ],
       "component": "/security/identity-runtime.tar (debian 13.6):bsdutils",
-      "reason": "CVE nuevo en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
+      "reason": "CVEs nuevos (53612–53615) en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
       "owner": "jaminsmoke",
       "expires": "2026-08-31"
     },
     {
       "tool": "trivy",
       "ids": [
+        "CVE-2026-53612",
+        "CVE-2026-53613",
+        "CVE-2026-53614",
         "CVE-2026-53615"
       ],
       "component": "/security/identity-runtime.tar (debian 13.6):libblkid1",
-      "reason": "CVE nuevo en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
+      "reason": "CVEs nuevos (53612–53615) en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
       "owner": "jaminsmoke",
       "expires": "2026-08-31"
     },
     {
       "tool": "trivy",
       "ids": [
+        "CVE-2026-53612",
+        "CVE-2026-53613",
+        "CVE-2026-53614",
         "CVE-2026-53615"
       ],
       "component": "/security/identity-runtime.tar (debian 13.6):liblastlog2-2",
-      "reason": "CVE nuevo en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
+      "reason": "CVEs nuevos (53612–53615) en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
       "owner": "jaminsmoke",
       "expires": "2026-08-31"
     },
     {
       "tool": "trivy",
       "ids": [
+        "CVE-2026-53612",
+        "CVE-2026-53613",
+        "CVE-2026-53614",
         "CVE-2026-53615"
       ],
       "component": "/security/identity-runtime.tar (debian 13.6):libmount1",
-      "reason": "CVE nuevo en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
+      "reason": "CVEs nuevos (53612–53615) en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
       "owner": "jaminsmoke",
       "expires": "2026-08-31"
     },
     {
       "tool": "trivy",
       "ids": [
+        "CVE-2026-53612",
+        "CVE-2026-53613",
+        "CVE-2026-53614",
         "CVE-2026-53615"
       ],
       "component": "/security/identity-runtime.tar (debian 13.6):libsmartcols1",
-      "reason": "CVE nuevo en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
+      "reason": "CVEs nuevos (53612–53615) en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
       "owner": "jaminsmoke",
       "expires": "2026-08-31"
     },
     {
       "tool": "trivy",
       "ids": [
+        "CVE-2026-53612",
+        "CVE-2026-53613",
+        "CVE-2026-53614",
         "CVE-2026-53615"
       ],
       "component": "/security/identity-runtime.tar (debian 13.6):libuuid1",
-      "reason": "CVE nuevo en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
+      "reason": "CVEs nuevos (53612–53615) en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
       "owner": "jaminsmoke",
       "expires": "2026-08-31"
     },
     {
       "tool": "trivy",
       "ids": [
+        "CVE-2026-53612",
+        "CVE-2026-53613",
+        "CVE-2026-53614",
         "CVE-2026-53615"
       ],
       "component": "/security/identity-runtime.tar (debian 13.6):login",
-      "reason": "CVE nuevo en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
+      "reason": "CVEs nuevos (53612–53615) en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
       "owner": "jaminsmoke",
       "expires": "2026-08-31"
     },
     {
       "tool": "trivy",
       "ids": [
+        "CVE-2026-53612",
+        "CVE-2026-53613",
+        "CVE-2026-53614",
         "CVE-2026-53615"
       ],
       "component": "/security/identity-runtime.tar (debian 13.6):mount",
-      "reason": "CVE nuevo en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
+      "reason": "CVEs nuevos (53612–53615) en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
       "owner": "jaminsmoke",
       "expires": "2026-08-31"
     },
     {
       "tool": "trivy",
       "ids": [
+        "CVE-2026-53612",
+        "CVE-2026-53613",
+        "CVE-2026-53614",
         "CVE-2026-53615"
       ],
       "component": "/security/identity-runtime.tar (debian 13.6):util-linux",
-      "reason": "CVE nuevo en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
+      "reason": "CVEs nuevos (53612–53615) en util-linux de la imagen base python:3.14-slim (Debian 13.6). El digest oficial actual no incluye aún la reconstrucción con el fix (util-linux 2.41.5-0+deb13u1); excepción caducable hasta que exista digest corregido. Revisar al renovar el digest de la imagen base.",
       "owner": "jaminsmoke",
       "expires": "2026-08-31"
     }

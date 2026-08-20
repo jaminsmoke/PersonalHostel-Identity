@@ -356,8 +356,13 @@ del slug. Páginas reales (no un one-pager con hashes):
 - `/negocios/<slug>/horario`
 - `/negocios/<slug>/carta` — tabs Cocina/Barra si hay ambos destinos
 - `/negocios/<slug>/equipo`
-- `/negocios/<slug>/contacto` — mapa placeholder
-- `/negocios/<slug>/galeria` — solo si hay fotos
+- `/negocios/<slug>/contacto` — mapa de plantilla (stub) + datos reales si existen
+- `/negocios/<slug>/galeria`
+
+Nav y páginas están **siempre** visibles. El shell Estate (fondos, glass, iconos,
+siluetas) se sirve desde `/stubs/` cuando el local no ha subido hero, fotos de
+equipo o galería. Los stubs no sustituyen datos: no hay platos, horarios, bios
+ni direcciones inventados. Un mapa OSM real queda fuera de este entregable.
 
 Los query/hash legacy (`?seccion=carta`, `#carta`) redirigen a la ruta nueva.
 Todo se sirve con una sola llamada al servicio de negocio (`NEGOCIO_API_URL`,

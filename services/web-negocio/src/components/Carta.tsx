@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useWeb } from "../web-context";
 import type { CategoriaCarta, ProductoPublico } from "../types";
+import { SlotTexto } from "./SlotTexto";
 
 function formatoPrecio(centimos: number, moneda: string): string {
   const simbolo = moneda === "EUR" ? "€" : moneda;
@@ -20,25 +21,46 @@ function ListaCategorias({ categorias }: { categorias: CategoriaCarta[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-gutter gap-y-stack-lg">
       {categorias.map((cat) => (
-        <section
-          key={cat.nombre}
-          className="bg-surface/60 backdrop-blur-xl p-6 md:p-8 rounded-lg border border-outline-variant/20"
-        >
+        <section key={cat.nombre} className="glass-panel p-6 md:p-8">
           <h2 className="font-display text-headline-md text-primary mb-stack-md border-b border-outline-variant/20 pb-4">
             {cat.nombre}
           </h2>
           <ul className="space-y-6">
             {cat.productos.map((p: ProductoPublico) => (
-              <li key={p.nombre} className="flex justify-between items-baseline gap-4">
+              <li key={p.nombre} className="flex justify-between items-baseline gap-4 group">
                 <div className="flex-grow pr-4">
-                  <h3 className="font-display text-body-lg text-on-surface">{p.nombre}</h3>
-                  {p.descripcion && (
+                  <h3 className="font-display text-body-lg text-on-surface group-hover:text-primary transition-colors">
+                    {p.nombre}
+                  </h3>
+                  {p.descripcion ? (
                     <p className="text-label-md text-on-surface-variant mt-1">{p.descripcion}</p>
-                  )}
+                  ) : null}
                 </div>
                 <div className="text-label-md text-primary whitespace-nowrap tabular-nums">
                   {formatoPrecio(p.precio_centimos, p.moneda)}
                 </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function MarcoVacio() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-gutter gap-y-stack-lg">
+      {[0, 1].map((col) => (
+        <section key={col} className="glass-panel p-6 md:p-8">
+          <div className="h-8 w-40 bg-outline-variant/30 rounded mb-stack-md border-b border-outline-variant/20 pb-4" />
+          <ul className="space-y-6">
+            {[0, 1, 2, 3].map((i) => (
+              <li key={i} className="flex justify-between items-baseline gap-4">
+                <SlotTexto lineas={i % 2 === 0 ? 2 : 1} className="flex-grow pr-8" />
+                <span className="text-label-md text-outline tabular-nums" aria-hidden>
+                  —
+                </span>
               </li>
             ))}
           </ul>
@@ -63,6 +85,7 @@ export function Carta() {
       : destinos.barra
         ? agruparPorDestino(web.categorias, "barra")
         : web.categorias;
+  const vacia = web.categorias.length === 0;
 
   return (
     <section className="flex-grow pt-[120px] pb-section-gap px-margin-mobile md:px-gutter max-w-page mx-auto w-full">
@@ -70,43 +93,45 @@ export function Carta() {
         <h1 className="font-display text-headline-lg-mobile md:text-display-lg text-on-surface mb-stack-sm">
           La carta
         </h1>
-        <p className="text-body-lg text-on-surface-variant max-w-2xl mx-auto">
-          Selección de temporada, agrupada como en el local.
-        </p>
+        {vacia ? (
+          <p className="text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+            Aún no hemos publicado la carta.
+          </p>
+        ) : (
+          <p className="text-body-lg text-on-surface-variant max-w-2xl mx-auto">{web.nombre}</p>
+        )}
       </div>
-      {web.categorias.length === 0 ? (
-        <p className="text-center text-body-lg text-on-surface-variant max-w-xl mx-auto">
-          Aún no hemos publicado la carta. Vuelve en un rato.
-        </p>
+      {vacia ? (
+        <MarcoVacio />
       ) : (
         <>
-      {ambos && (
-        <div className="flex justify-center border-b border-outline-variant/30 mb-stack-lg">
-          <button
-            type="button"
-            onClick={() => setTab("cocina")}
-            className={`px-8 py-4 text-label-md uppercase tracking-widest ${
-              tab === "cocina"
-                ? "text-primary border-b-2 border-primary"
-                : "text-on-surface-variant hover:text-primary"
-            }`}
-          >
-            Cocina
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("barra")}
-            className={`px-8 py-4 text-label-md uppercase tracking-widest ${
-              tab === "barra"
-                ? "text-primary border-b-2 border-primary"
-                : "text-on-surface-variant hover:text-primary"
-            }`}
-          >
-            Barra
-          </button>
-        </div>
-      )}
-      <ListaCategorias categorias={categorias} />
+          {ambos && (
+            <div className="flex justify-center border-b border-outline-variant/30 mb-stack-lg">
+              <button
+                type="button"
+                onClick={() => setTab("cocina")}
+                className={`px-8 py-4 text-label-md uppercase tracking-widest ${
+                  tab === "cocina"
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-on-surface-variant hover:text-primary"
+                }`}
+              >
+                Cocina
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab("barra")}
+                className={`px-8 py-4 text-label-md uppercase tracking-widest ${
+                  tab === "barra"
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-on-surface-variant hover:text-primary"
+                }`}
+              >
+                Barra
+              </button>
+            </div>
+          )}
+          <ListaCategorias categorias={categorias} />
         </>
       )}
     </section>

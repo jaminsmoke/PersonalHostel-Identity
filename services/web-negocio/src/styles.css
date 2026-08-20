@@ -93,3 +93,42 @@ a {
   background: var(--color-primary-container);
   color: var(--color-on-primary-container);
 }
+
+.glass-panel {
+  background: color-mix(in srgb, var(--color-surface) 62%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid color-mix(in srgb, var(--color-outline-variant) 22%, transparent);
+  border-radius: 0.5rem;
+}
+
+.slot-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.slot-texto__linea {
+  display: block;
+  height: 0.65rem;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-outline-variant) 35%, transparent);
+}
+
+.tile-stub {
+  background:
+    linear-gradient(145deg, rgb(40 42 43 / 0.9), rgb(12 15 15 / 0.95)),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 31px,
+      rgb(80 69 50 / 0.18) 32px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 31px,
+      rgb(80 69 50 / 0.18) 32px
+    );
+  background-color: var(--color-surface-high);
+}
