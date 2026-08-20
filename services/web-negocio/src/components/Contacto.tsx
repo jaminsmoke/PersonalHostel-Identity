@@ -1,6 +1,7 @@
 import { STUBS } from "../media";
 import { IconoCorreo, IconoDirecciones, IconoPin, IconoTelefono, IconoWeb } from "../icons";
 import { useWeb } from "../web-context";
+import { FondoPagina } from "./FondoPagina";
 
 export function Contacto() {
   const web = useWeb();
@@ -12,7 +13,9 @@ export function Contacto() {
     : null;
 
   return (
-    <section className="flex-grow pt-[120px] pb-section-gap px-gutter max-w-page mx-auto w-full">
+    <section className="relative flex-grow min-h-[calc(100vh-5rem)] pt-[120px] pb-section-gap">
+      <FondoPagina slot="contacto" />
+      <div className="relative z-10 px-gutter max-w-page mx-auto w-full">
       <header className="mb-section-gap text-center md:text-left">
         <h1 className="font-display text-headline-lg-mobile md:text-display-lg text-primary mb-stack-md">
           Dónde estamos
@@ -139,6 +142,7 @@ export function Contacto() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </section>
   );

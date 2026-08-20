@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useWeb } from "../web-context";
 import type { CategoriaCarta, ProductoPublico } from "../types";
+import { FondoPagina } from "./FondoPagina";
 import { SlotTexto } from "./SlotTexto";
 
 function formatoPrecio(centimos: number, moneda: string): string {
@@ -88,7 +89,9 @@ export function Carta() {
   const vacia = web.categorias.length === 0;
 
   return (
-    <section className="flex-grow pt-[120px] pb-section-gap px-margin-mobile md:px-gutter max-w-page mx-auto w-full">
+    <section className="relative flex-grow min-h-[calc(100vh-5rem)] pt-[120px] pb-section-gap">
+      <FondoPagina slot="carta" />
+      <div className="relative z-10 px-margin-mobile md:px-gutter max-w-page mx-auto w-full">
       <div className="text-center mb-stack-lg md:mb-section-gap">
         <h1 className="font-display text-headline-lg-mobile md:text-display-lg text-on-surface mb-stack-sm">
           La carta
@@ -134,6 +137,7 @@ export function Carta() {
           <ListaCategorias categorias={categorias} />
         </>
       )}
+      </div>
     </section>
   );
 }

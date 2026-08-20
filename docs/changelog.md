@@ -10,6 +10,13 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Fondos por sección en la web pública**: cada página (`inicio`, `horario`,
+  `carta`, `equipo`, `contacto`) tiene su propio plano de ambiente — catálogo
+  Estate o foto subida. Identity guarda (`GET/PUT …/fondos`, `POST/DELETE
+  …/fondos/{slot}`, migración `0012`); `GET /v1/negocio/web` expone `fondos`
+  resueltos. La galería sigue siendo álbum. El picker de UI vive en Personal
+  Bar. ([#139](https://github.com/jaminsmoke/PersonalHostel-Server/issues/139), API)
+
 - **Web pública Estate Hospitality con rutas reales**: `web-negocio` deja el
   one-pager con hashes y sirve páginas `/negocios/<slug>` (inicio, horario,
   carta, equipo, contacto, galería). La carta pública expone `destino`

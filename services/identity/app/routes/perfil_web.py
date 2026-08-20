@@ -271,7 +271,7 @@ def listar_galeria(
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     imagenes = (
         db.query(ImagenEstablecimiento)
-        .filter_by(establecimiento_id=establecimiento.id)
+        .filter_by(establecimiento_id=establecimiento.id, uso="galeria")
         .order_by(ImagenEstablecimiento.orden, ImagenEstablecimiento.created_at)
         .all()
     )
@@ -312,6 +312,7 @@ async def anadir_galeria(
         clave=clave,
         mimetype=mimetype,
         size=size,
+        uso="galeria",
         data_origin=establecimiento.data_origin,
     )
     db.add(fila)
@@ -341,7 +342,7 @@ def obtener_galeria_imagen(
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     imagen = (
         db.query(ImagenEstablecimiento)
-        .filter_by(id=imagen_id, establecimiento_id=establecimiento.id)
+        .filter_by(id=imagen_id, establecimiento_id=establecimiento.id, uso="galeria")
         .one_or_none()
     )
     if imagen is None:
@@ -371,7 +372,7 @@ def borrar_galeria_imagen(
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     imagen = (
         db.query(ImagenEstablecimiento)
-        .filter_by(id=imagen_id, establecimiento_id=establecimiento.id)
+        .filter_by(id=imagen_id, establecimiento_id=establecimiento.id, uso="galeria")
         .one_or_none()
     )
     if imagen is None:

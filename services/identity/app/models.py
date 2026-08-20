@@ -538,6 +538,9 @@ class PerfilEstablecimiento(NegocioBase):
     mostrar_equipo: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
+    fondos: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
+    )
     data_origin: Mapped[DataOrigin] = mapped_column(
         Enum(DataOrigin, name="data_origin"),
         nullable=False,
@@ -557,7 +560,8 @@ class ImagenEstablecimiento(NegocioBase):
     """Imagen de la galería del establecimiento (branding de su web).
 
     Almacenada en el mismo storage de fotos (``app.storage``) con una clave por
-    imagen; ``uso`` distingue la galería (el hero vive en ``perfiles_establecimiento``).
+    imagen; ``uso`` distingue galería (``galeria``) de fondos de sección
+    (``fondo_<slot>``). El hero clásico vive en ``perfiles_establecimiento``.
     """
 
     __tablename__ = "imagenes_establecimiento"

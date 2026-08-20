@@ -75,6 +75,13 @@ export interface WebNegocio {
   horario?: HorarioDia[] | null;
   equipo: MiembroEquipo[];
   categorias: CategoriaCarta[];
+  fondos?: Partial<Record<"inicio" | "horario" | "carta" | "equipo" | "contacto", FondoSeccion>>;
+}
+
+export interface FondoSeccion {
+  fuente: "catalogo" | "upload" | "hero";
+  id?: string | null;
+  url: string;
 }
 
 export interface ErrorWeb {

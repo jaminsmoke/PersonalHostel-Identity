@@ -359,10 +359,11 @@ del slug. Páginas reales (no un one-pager con hashes):
 - `/negocios/<slug>/contacto` — mapa de plantilla (stub) + datos reales si existen
 - `/negocios/<slug>/galeria`
 
-Nav y páginas están **siempre** visibles. El shell Estate (fondos, glass, iconos,
-siluetas) se sirve desde `/stubs/` cuando el local no ha subido hero, fotos de
-equipo o galería. Los stubs no sustituyen datos: no hay platos, horarios, bios
-ni direcciones inventados. Un mapa OSM real queda fuera de este entregable.
+Nav y páginas están **siempre** visibles. Cada sección (`inicio`, `horario`,
+`carta`, `equipo`, `contacto`) tiene su propio plano de ambiente: catálogo
+Estate en `/stubs/fondos/` o foto subida. La galería sigue siendo un álbum, no
+un fondo. Los stubs no sustituyen datos: no hay platos, horarios, bios ni
+direcciones inventados. Un mapa OSM real queda fuera de este entregable.
 `index.html` y `config.js` se sirven con `Cache-Control: no-store` para que un
 QR de Bar no pinte un bundle hashed anterior; `/assets/` sigue `immutable`.
 
@@ -373,17 +374,21 @@ variable runtime inyectada por `20-web-negocio.sh`):
 - `GET /v1/negocio/web?slug=<enlace>` → datos públicos agregados **sin token**:
   `establecimiento_id`, `nombre`, `tipo_establecimiento`, `logo_url`,
   `organizacion_nombre`, `plantilla`, `color_primario`, `perfil`, `contacto`,
-  `hero`, `galeria`, `abierto_ahora`, `horario`, `equipo` y `categorias` (carta
-  con `precio_centimos`, `moneda`, `destino` y `descripcion` opcional). El slug
-  resuelve un enlace `web` o `carta` (slugs históricos `ficha_negocio` siguen
-  sirviendo en GET); inexistente → `404`, revocado → `410`. Cache pública `max-age=300`.
-  `GET /v1/negocio/ficha` se retiró.
+  `hero`, `galeria`, `abierto_ahora`, `horario`, `equipo`, `categorias` (carta
+  con `precio_centimos`, `moneda`, `destino` y `descripcion` opcional) y
+  `fondos` (por slot: `fuente` `catalogo|upload|hero`, `id` de catálogo y `url`).
+  El slug resuelve un enlace `web` o `carta` (slugs históricos `ficha_negocio`
+  siguen sirviendo en GET); inexistente → `404`, revocado → `410`. Cache pública
+  `max-age=300`. `GET /v1/negocio/ficha` se retiró.
 - `GET /v1/negocio/web/logo?slug=<enlace>` → logo efectivo (WebP) público con
   cache `max-age=86400` + `ETag`, resoluble por cualquier slug del local.
 - `GET /v1/negocio/web/hero?slug=<enlace>` y
   `GET /v1/negocio/web/galeria/{imagen_id}?slug=<enlace>` → hero y galería
   públicas (WebP) con cache `max-age=300`; `410 identity.web_privada` si la web
   está apagada.
+- `GET /v1/negocio/web/fondo/{slot}?slug=<enlace>` → foto de fondo **subida**
+  (`inicio|horario|carta|equipo|contacto`); el catálogo se sirve como estático
+  en `web-negocio` (`/stubs/fondos/{id}.webp`).
 - Si el establecimiento tiene `web_publica=false`, toda la superficie responde
   `410 identity.web_privada` con `Cache-Control: no-store`; el logo del local es
   branding público por diseño y se sirve siempre.
@@ -452,6 +457,7 @@ Rutas principales:
 - `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT (magic-link desde el email): token one-time + TTL 72h.
 - `PUT/GET /v1/establecimientos/{id}/layout` → **copia de respaldo del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la cuenta de negocio dueña.
 - `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar|rotar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`web | carta`) y `slug` opcional. `ficha_negocio` ya no se acepta en POST (422). Solo puede existir uno activo por tipo; crear es idempotente y rotar revoca el anterior. La respuesta incluye `url_publica`, construida con `WEB_NEGOCIO_URL_BASE` (`…/negocios/<slug>`, carta en `…/negocios/<slug>/carta`) para que Bar no hardcodee dominios.
+- `GET /v1/establecimientos/{id}/fondos/catalogo` → catálogo Estate (`id`, `seccion`, `url` absoluta vía `WEB_NEGOCIO_URL_BASE`). `GET/PUT …/fondos` asigna por slot (`catalogo` o `null` para el default). `POST/GET/DELETE …/fondos/{slot}` sube, sirve o borra una foto propia. La UI del picker vive en Personal Bar.
 - `GET /v1/enlaces/{slug}` → resolución pública **sin token**: devuelve `{ tipo, establecimiento_id }` con cache pública (`max-age=300`). Slug inexistente → `404`, revocado → `410`.
 - `GET /v1/negocio/carta?slug=<enlace>` → carta pública **sin token**: productos disponibles agrupados por categoría, con `precio_centimos`, `moneda`, `destino` y `descripcion` opcional. Solo lectura; no expone `revision`. Enlace que no sea `carta` o inexistente → `404`, revocado → `410`.
 - `GET /v1/negocio/web?slug=<enlace>` → datos agregados de la web pública **sin token** (perfil, carta y el resto de secciones en una llamada). El slug resuelve enlaces `web` o `carta` (y residuales `ficha_negocio`). Inexistente → `404`, revocado → `410`; cache `max-age=300`. `GET /v1/negocio/ficha` se retiró.

@@ -1,5 +1,5 @@
 import type { HorarioDia } from "../types";
-import { STUBS, mediaUrl } from "../media";
+import { FondoPagina } from "./FondoPagina";
 import { IconoInfo } from "../icons";
 import { useWeb } from "../web-context";
 
@@ -41,19 +41,11 @@ export function Horario() {
   const web = useWeb();
   const grupos = agrupar(web.horario || []);
   const abierto = web.abierto_ahora;
-  const fondoUrl = mediaUrl(web.hero?.url, STUBS.interior);
   const publicado = Boolean(web.horario?.length);
 
   return (
     <section className="relative min-h-[calc(100vh-5rem)] pt-20">
-      <div className="absolute inset-0 z-0">
-        <div
-          className="w-full h-full bg-cover bg-center"
-          style={{ backgroundImage: `url(${fondoUrl})` }}
-          aria-hidden
-        />
-        <div className="absolute inset-0 bg-background/85" />
-      </div>
+      <FondoPagina slot="horario" />
       <div className="relative z-10 max-w-page mx-auto px-gutter py-section-gap flex flex-col items-center">
         <div className="text-center mb-stack-lg">
           <h1 className="font-display text-headline-lg-mobile md:text-display-lg text-primary mb-stack-sm">

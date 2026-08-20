@@ -1,24 +1,16 @@
 import { Link, useParams } from "react-router-dom";
-import { STUBS, mediaUrl } from "../media";
+import { FondoPagina } from "./FondoPagina";
 import { rutaNegocio, useWeb } from "../web-context";
 
 export function Hero() {
   const web = useWeb();
   const { slug } = useParams<{ slug: string }>();
-  const heroUrl = mediaUrl(web.hero?.url, STUBS.hero);
   const abierto = web.abierto_ahora;
   if (!slug) return null;
 
   return (
     <section id="inicio" className="relative min-h-screen flex items-center justify-center pt-20">
-      <div className="absolute inset-0 z-0">
-        <div
-          className="w-full h-full bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroUrl})` }}
-          aria-hidden
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/35 to-background/10" />
-      </div>
+      <FondoPagina slot="inicio" overlayClassName="bg-gradient-to-t from-background via-background/35 to-background/10" />
 
       <div className="relative z-10 flex flex-col items-center text-center px-margin-mobile max-w-3xl mx-auto gap-stack-lg">
         {abierto ? (

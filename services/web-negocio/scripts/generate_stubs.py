@@ -50,33 +50,66 @@ def _vignette(img: Image.Image, strength: float = 0.72) -> Image.Image:
     return Image.composite(img, Image.blend(img, dark, strength), mask)
 
 
-def atmosphere(size: tuple[int, int], seed: int, portrait: bool = False, luminoso: bool = False) -> Image.Image:
+def atmosphere(
+    size: tuple[int, int],
+    seed: int,
+    portrait: bool = False,
+    luminoso: bool = False,
+    paleta: str = "ambar",
+) -> Image.Image:
     rng = random.Random(seed)
     w, h = size
-    base = (32, 28, 24) if luminoso else (12, 14, 14)
-    img = Image.new("RGB", size, base)
+    bases = {
+        "ambar": (32, 28, 24) if luminoso else (12, 14, 14),
+        "ocaso": (28, 22, 26) if luminoso else (14, 12, 16),
+        "brasa": (36, 24, 18) if luminoso else (16, 12, 10),
+        "oliva": (24, 28, 22) if luminoso else (12, 16, 14),
+        "carbon": (18, 20, 22) if luminoso else (10, 12, 14),
+    }
+    img = Image.new("RGB", size, bases.get(paleta, bases["ambar"]))
 
-    lamps = [
+    lamps_ambar = [
         ((0.22, 0.38), 0.42, (255, 176, 72)),
         ((0.68, 0.28), 0.35, (255, 196, 110)),
         ((0.48, 0.72), 0.50, (180, 110, 40)),
         ((0.85, 0.62), 0.28, (255, 210, 140)),
         ((0.12, 0.78), 0.22, (120, 80, 36)),
     ]
+    lamps = {
+        "ambar": lamps_ambar,
+        "ocaso": [
+            ((0.28, 0.34), 0.46, (255, 140, 90)),
+            ((0.72, 0.30), 0.38, (200, 90, 70)),
+            ((0.50, 0.70), 0.52, (120, 50, 80)),
+            ((0.82, 0.60), 0.30, (255, 180, 140)),
+            ((0.14, 0.76), 0.24, (90, 40, 50)),
+        ],
+        "brasa": [
+            ((0.30, 0.40), 0.50, (255, 150, 50)),
+            ((0.62, 0.26), 0.36, (255, 210, 90)),
+            ((0.48, 0.74), 0.48, (160, 70, 20)),
+            ((0.84, 0.58), 0.28, (255, 190, 80)),
+            ((0.16, 0.72), 0.26, (140, 60, 20)),
+        ],
+        "oliva": [
+            ((0.24, 0.36), 0.44, (200, 190, 90)),
+            ((0.70, 0.30), 0.34, (160, 170, 80)),
+            ((0.50, 0.72), 0.50, (80, 90, 40)),
+            ((0.86, 0.62), 0.26, (220, 210, 140)),
+            ((0.12, 0.78), 0.22, (70, 80, 36)),
+        ],
+        "carbon": [
+            ((0.26, 0.40), 0.44, (180, 170, 140)),
+            ((0.68, 0.28), 0.32, (140, 150, 160)),
+            ((0.50, 0.70), 0.48, (60, 70, 80)),
+            ((0.84, 0.60), 0.26, (200, 200, 190)),
+            ((0.14, 0.76), 0.22, (50, 60, 70)),
+        ],
+    }.get(paleta, lamps_ambar)
     if luminoso:
-        lamps = [
-            ((0.30, 0.42), 0.55, (255, 198, 120)),
-            ((0.62, 0.32), 0.48, (255, 220, 170)),
-            ((0.50, 0.68), 0.58, (210, 140, 70)),
-            ((0.78, 0.58), 0.36, (255, 230, 190)),
-            ((0.18, 0.70), 0.32, (180, 110, 50)),
-        ]
+        lamps = [(p, r * 1.12, tuple(min(255, int(c * 1.08)) for c in col)) for p, r, col in lamps]
     if portrait:
-        lamps = [
-            ((0.55, 0.32), 0.48, (255, 186, 90)),
-            ((0.30, 0.58), 0.40, (160, 96, 32)),
-            ((0.72, 0.78), 0.30, (255, 214, 150)),
-        ]
+        lamps = lamps[:3]
     for (nx, ny), rel, color in lamps:
         glow = _radial(size, nx * w, ny * h, rel * max(w, h), color)
         img = _screen(img, glow)
@@ -125,8 +158,8 @@ def mapa_oscuro(size: tuple[int, int], seed: int = 7) -> Image.Image:
 
 
 def guardar(img: Image.Image, name: str, quality: int = 78) -> None:
-    ROOT.mkdir(parents=True, exist_ok=True)
     dest = ROOT / name
+    dest.parent.mkdir(parents=True, exist_ok=True)
     img.save(dest, "WEBP", quality=quality, method=6)
     print(f"{dest} {dest.stat().st_size} bytes")
 
@@ -137,6 +170,23 @@ def main() -> None:
     blurred = atmosphere((1600, 1000), seed=11, luminoso=True).filter(ImageFilter.GaussianBlur(radius=10))
     guardar(blurred, "interior.webp", quality=72)
     guardar(mapa_oscuro((1400, 900)), "mapa.webp", quality=74)
+
+    fondos = (
+        ("inicio", "ambar", True, (11, 41)),
+        ("horario", "ocaso", False, (31, 61)),
+        ("carta", "brasa", True, (17, 47)),
+        ("equipo", "oliva", False, (23, 53)),
+        ("contacto", "carbon", False, (7, 37)),
+    )
+    for seccion, paleta, luminoso, seeds in fondos:
+        guardar(
+            atmosphere((1600, 1000), seed=seeds[0], luminoso=luminoso, paleta=paleta),
+            f"fondos/estate-{seccion}-1.webp",
+        )
+        guardar(
+            atmosphere((1600, 1000), seed=seeds[1], luminoso=not luminoso, paleta=paleta),
+            f"fondos/estate-{seccion}-2.webp",
+        )
 
 
 if __name__ == "__main__":
