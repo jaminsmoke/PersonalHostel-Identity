@@ -59,4 +59,14 @@ jobs:
       - name: Install and build SPA
         run: |
           npm ci
-          npm run build
+          set -o pipefail
+          npm run build 2>&1 | tee build.log
+          if grep -F "can't be bundled without type=\"module\"" build.log; then
+            echo "::error::Vite still warns about /config.js; keep vite-ignore on the runtime script."
+            exit 1
+          fi
+          grep -Eq '<script[^>]*src="/config.js"' dist/index.html
+          if grep -E '<script[^>]*vite-ignore' dist/index.html; then
+            echo "::error::vite-ignore leaked into dist/index.html"
+            exit 1
+          fi
