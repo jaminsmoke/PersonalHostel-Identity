@@ -4,6 +4,18 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      bar_ref:
+        description: Ref de PersonalBar (branch, tag o SHA)
+        required: false
+        default: main
+        type: string
+      commander_ref:
+        description: Ref de PersonalComander (branch, tag o SHA)
+        required: false
+        default: main
+        type: string
 
 permissions:
   contents: read
@@ -17,6 +29,9 @@ jobs:
     name: family-contracts
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      BAR_REF: ${{ github.event.inputs.bar_ref || 'main' }}
+      COMMANDER_REF: ${{ github.event.inputs.commander_ref || 'main' }}
     steps:
       - name: Check out Identity
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -27,7 +42,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jaminsmoke/PersonalBar
-          ref: main
+          ref: ${{ env.BAR_REF }}
           path: .family/bar
           persist-credentials: false
           sparse-checkout: |
@@ -39,7 +54,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jaminsmoke/PersonalComander
-          ref: main
+          ref: ${{ env.COMMANDER_REF }}
           path: .family/commander
           persist-credentials: false
           sparse-checkout: |
@@ -50,6 +65,13 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.14"
+
+      - name: Resolve family SHAs
+        run: |
+          {
+            echo "BAR_SHA=$(git -C .family/bar rev-parse HEAD)"
+            echo "COMMANDER_SHA=$(git -C .family/commander rev-parse HEAD)"
+          } >> "$GITHUB_ENV"
 
       - name: Self-test contract checker
         run: python services/identity/scripts/check_family_contracts.py --selftest
@@ -63,3 +85,19 @@ jobs:
           --bar-src .family/bar/app/src/main/java/com/jaminsmoke/personalbar/lan/IdentityCamareroClient.kt
           --commander-src .family/commander/app/src/main/java/com/jaminsmoke/personalcomander/data/sesion/IdentityCliente.kt
           --web-src services/web-camareros/static/app.js
+          --web-src services/web-negocio/src
+          --identity-sha "$GITHUB_SHA"
+          --bar-sha "$BAR_SHA"
+          --commander-sha "$COMMANDER_SHA"
+          --bar-ref "$BAR_REF"
+          --commander-ref "$COMMANDER_REF"
+          --manifest-out family-manifest.json
+
+      - name: Upload family manifest
+        if: always() && hashFiles('family-manifest.json') != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: family-manifest
+          path: family-manifest.json
+          if-no-files-found: warn
+          retention-days: 14

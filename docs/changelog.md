@@ -72,6 +72,12 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Cambiado
 
+- **Family contracts compara operaciones, no solo paths**: el job cruza
+  `(método, path)` con OpenAPI, incluye `web-negocio`, admite refs candidatas
+  (`bar_ref`/`commander_ref`) y publica un manifiesto de SHAs (summary +
+  artifact 14 días). Falla si un cliente pide un path ausente o un verbo no
+  declarado. ([#141](https://github.com/jaminsmoke/PersonalHostel-Server/issues/141), Build/CI)
+
 - **Base de calidad CI** con contrato único en `pyproject.toml`, Ruff, cobertura
   de ramas mínima del 82%, runner Docker aislado y checks requeribles `quality`
   e `integration`. Las imágenes runtime ya no incluyen pytest ni los tests y CI
