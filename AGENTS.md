@@ -129,12 +129,20 @@ suprimir hallazgos directamente en el workflow. CodeQL usa default setup para
 Python y Dependabot mantiene pip, Docker, Compose y Actions.
 
 El job `family-contracts` comprueba que los clientes de la familia (Bar,
-Commander y web-camareros) no piden rutas que Identity ya no
-expone: hace sparse-checkout de los repos públicos Bar y Commander, barre
-`app.js` y publica en el summary del job una tabla de rutas usadas por cada
-cliente y las públicas sin consumidor (aviso, no rojo). Falla solo si un
-cliente llama una ruta que el OpenAPI ya no tiene. Es el espejo del check de
-familia de Commander: cada miembro cuida sus propias integraciones.
+Commander, web-camareros y web-negocio) no piden **operaciones**
+(`método + path`) que Identity ya no expone: hace sparse-checkout de los repos
+públicos Bar y Commander (solo fuentes; no ejecuta su código), barre `app.js` y
+`services/web-negocio/src`, y publica en el summary las operaciones usadas por
+cada cliente y las rutas públicas sin consumidor (aviso, no rojo). Falla si un
+cliente llama un path ausente **o** un verbo que ese path no declara. La
+normalización canónica es `normalize() → *` (cualquier `{param}` o `$var` de
+segmento; el query y el sufijo `$q` no son segmento). Bar debe copiar esa
+regla en su checker para el falso positivo `$imagenId`
+(`PVTI_lAHOBM87Yc4BgQqazg3Tpcs`). `workflow_dispatch` admite `bar_ref` y
+`commander_ref` (default `main` en PR/push) para validar una combinación
+candidata; el job escribe un manifiesto `{identity, bar, commander, refs, at}`
+en el summary y como artifact `family-manifest` (14 días). Es el espejo del
+check de familia de Commander: cada miembro cuida sus propias integraciones.
 
 El job `migrations-check` valida la reversibilidad de ambas cadenas Alembic
 (`alembic/` y `alembic_negocio/`) con el ciclo `upgrade head → downgrade base
