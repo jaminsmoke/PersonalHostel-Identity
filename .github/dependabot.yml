@@ -37,3 +37,14 @@ updates:
     groups:
       github-actions:
         patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /services/web-negocio
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    groups:
+      npm-web-negocio:
+        patterns: ["*"]
