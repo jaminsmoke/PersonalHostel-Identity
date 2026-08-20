@@ -363,6 +363,8 @@ Nav y páginas están **siempre** visibles. El shell Estate (fondos, glass, icon
 siluetas) se sirve desde `/stubs/` cuando el local no ha subido hero, fotos de
 equipo o galería. Los stubs no sustituyen datos: no hay platos, horarios, bios
 ni direcciones inventados. Un mapa OSM real queda fuera de este entregable.
+`index.html` y `config.js` se sirven con `Cache-Control: no-store` para que un
+QR de Bar no pinte un bundle hashed anterior; `/assets/` sigue `immutable`.
 
 Los query/hash legacy (`?seccion=carta`, `#carta`) redirigen a la ruta nueva.
 Todo se sirve con una sola llamada al servicio de negocio (`NEGOCIO_API_URL`,

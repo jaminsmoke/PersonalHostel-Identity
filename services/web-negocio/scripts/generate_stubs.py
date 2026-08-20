@@ -50,10 +50,11 @@ def _vignette(img: Image.Image, strength: float = 0.72) -> Image.Image:
     return Image.composite(img, Image.blend(img, dark, strength), mask)
 
 
-def atmosphere(size: tuple[int, int], seed: int, portrait: bool = False) -> Image.Image:
+def atmosphere(size: tuple[int, int], seed: int, portrait: bool = False, luminoso: bool = False) -> Image.Image:
     rng = random.Random(seed)
     w, h = size
-    img = Image.new("RGB", size, (12, 14, 14))
+    base = (32, 28, 24) if luminoso else (12, 14, 14)
+    img = Image.new("RGB", size, base)
 
     lamps = [
         ((0.22, 0.38), 0.42, (255, 176, 72)),
@@ -62,6 +63,14 @@ def atmosphere(size: tuple[int, int], seed: int, portrait: bool = False) -> Imag
         ((0.85, 0.62), 0.28, (255, 210, 140)),
         ((0.12, 0.78), 0.22, (120, 80, 36)),
     ]
+    if luminoso:
+        lamps = [
+            ((0.30, 0.42), 0.55, (255, 198, 120)),
+            ((0.62, 0.32), 0.48, (255, 220, 170)),
+            ((0.50, 0.68), 0.58, (210, 140, 70)),
+            ((0.78, 0.58), 0.36, (255, 230, 190)),
+            ((0.18, 0.70), 0.32, (180, 110, 50)),
+        ]
     if portrait:
         lamps = [
             ((0.55, 0.32), 0.48, (255, 186, 90)),
@@ -80,12 +89,14 @@ def atmosphere(size: tuple[int, int], seed: int, portrait: bool = False) -> Imag
     bar = bar.filter(ImageFilter.GaussianBlur(radius=18))
     img = _screen(img, bar)
 
-    img = img.filter(ImageFilter.GaussianBlur(radius=6))
+    img = img.filter(ImageFilter.GaussianBlur(radius=4 if luminoso else 6))
     grain = _noise(size, rng, amp=22)
     img = _screen(img, Image.merge("RGB", (grain, grain, grain)))
-    img = ImageEnhance.Color(img).enhance(0.85)
-    img = ImageEnhance.Contrast(img).enhance(1.15)
-    return _vignette(img, 0.68)
+    img = ImageEnhance.Color(img).enhance(0.95 if luminoso else 0.85)
+    img = ImageEnhance.Contrast(img).enhance(1.2 if luminoso else 1.15)
+    if luminoso:
+        img = ImageEnhance.Brightness(img).enhance(1.25)
+    return _vignette(img, 0.38 if luminoso else 0.68)
 
 
 def mapa_oscuro(size: tuple[int, int], seed: int = 7) -> Image.Image:
@@ -121,9 +132,9 @@ def guardar(img: Image.Image, name: str, quality: int = 78) -> None:
 
 
 def main() -> None:
-    guardar(atmosphere((1600, 1000), seed=11), "hero.webp")
+    guardar(atmosphere((1600, 1000), seed=11, luminoso=True), "hero.webp")
     guardar(atmosphere((1200, 1500), seed=23, portrait=True), "nosotros.webp")
-    blurred = atmosphere((1600, 1000), seed=11).filter(ImageFilter.GaussianBlur(radius=12))
+    blurred = atmosphere((1600, 1000), seed=11, luminoso=True).filter(ImageFilter.GaussianBlur(radius=10))
     guardar(blurred, "interior.webp", quality=72)
     guardar(mapa_oscuro((1400, 900)), "mapa.webp", quality=74)
 
