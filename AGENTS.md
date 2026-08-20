@@ -63,6 +63,15 @@ agentes validan mediante `deploy_staging.py --validate-only` en el VPS.
 
 Kanban de producto (Commander): ítem Detectado *Sala LAN: Personal Bar como nodo…* (`PVTI_lAHOBM87Yc4BgJWOzg2ZsaU`). Este servidor responde a la decisión: **QR permanente en base de datos de la org, no clave transitoria de dispositivo.** No reabrir ese ítem desde aquí.
 
+## Esquema local de arquitectura (no versionado)
+
+Si en este checkout existe `.architectureschema/`, es un grafo vivo **local**
+(`graph.json` + visor). Está en `.gitignore` a propósito: no se sube hasta que
+el modelo esté sólido. **Ilustra** nodos y aristas; **no sustituye** este
+archivo ni el `README.md`. Si la carpeta no está, ignórala y sigue este
+`AGENTS.md`. No commitear esa carpeta. No inventar sync de mesas/rondas ni
+tratar el SQLite de las apps como fuente de verdad.
+
 ## Modelo de identidad (acordado)
 
 1. El profesional **se registra** con nombre, apellidos, **nick** (mote visible en barra/colas), foto y otros datos. El nick lo gestiona Commander; Bar lo consume en referencias coloquiales y puede mostrar el resto de la ficha en la gestión del negocio.
