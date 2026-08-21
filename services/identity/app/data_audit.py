@@ -24,6 +24,7 @@ from app.models import (
     Invitacion,
     LayoutEstablecimiento,
     Membresia,
+    MesaCfc,
     NotificacionNegocio,
     OperacionSync,
     ProductoCatalogo,
@@ -295,6 +296,12 @@ def audit_data(
                         LayoutEstablecimiento,
                         Establecimiento,
                         LayoutEstablecimiento.establecimiento_id == Establecimiento.id,
+                    ),
+                    "mesas_cfc": _related_counts(
+                        negocio_db,
+                        MesaCfc,
+                        Establecimiento,
+                        MesaCfc.establecimiento_id == Establecimiento.id,
                     ),
                     "invitaciones": _related_counts(
                         negocio_db,

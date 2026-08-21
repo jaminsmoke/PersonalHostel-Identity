@@ -411,12 +411,12 @@ español al estilo Commander. El audio del micrófono no pasa por Identity: usa
 la Web Speech API del navegador (en Chrome suele ser el motor del sistema; iOS
 puede no tenerla — el tacto es el camino canónico).
 
-Hasta que existan los ítems de tokens e inbox, no hay literales `/v1/...` de
-CFC (family-contracts se mantendría rojo). `/m/demo` muestra un catálogo local
-de demostración; un token real muestra la cáscara y avisa de que el QR aún no
-está dado de alta. `WEB_CFC_URL_BASE` (VPS: `https://web.mesa.siberia.solutions`)
-es la base que usará el contrato de tokens para `url_publica`. CORS incluye
-`http://localhost:8085` y `https://web.mesa.siberia.solutions`.
+Hasta que exista el ítem de inbox, `web-cfc` no pide carta ni envía comandas:
+`GET /v1/cfc/mesa/{token}` solo identifica la mesa. `/m/demo` muestra un
+catálogo local de demostración. `WEB_CFC_URL_BASE` (VPS:
+`https://web.mesa.siberia.solutions`) es la base de `url_publica`
+(`…/m/<token>`). CORS incluye `http://localhost:8085` y
+`https://web.mesa.siberia.solutions`.
 
 ### Foto de perfil
 
@@ -478,6 +478,8 @@ Rutas principales:
   resuelve en servidor y nunca se expone).
 - `POST /v1/invitaciones/{token}/aceptar` → acepta con el JWT del camarero cuyo email coincide, **o** sin JWT (magic-link desde el email): token one-time + TTL 72h.
 - `PUT/GET /v1/establecimientos/{id}/layout` → **copia de respaldo opaca del layout** del mapa que Bar sube y restaura en un dispositivo nuevo. Solo la cuenta de negocio dueña. El PUT exige `salas` y `mesas`; cualquier clave adicional (p. ej. `zonas`) se guarda en `documento` JSONB y se devuelve en el GET sin validar la forma. El PUT sustituye el snapshot completo.
+- `PUT/GET /v1/establecimientos/{id}/mesas-cfc` y `POST .../mesas-cfc/{mesa_uuid}/rotar` → registro canónico de mesas públicas (cuenta titular). Bar envía el conjunto `{ mesa_uuid, etiqueta }`; Identity emite o revoca tokens. Idempotente: el mismo conjunto no rota. Cambiar etiqueta no rota. Baja = `410` inmediato; re-alta = token nuevo. `url_publica` usa `WEB_CFC_URL_BASE` (`…/m/<token>`).
+- `GET /v1/cfc/mesa/{token}` → resolución pública **sin JWT**: `{ establecimiento_id, establecimiento_nombre, mesa_uuid, etiqueta }`. Inexistente → `404 identity.mesa_token_invalido`, revocado → `410 identity.mesa_token_revocado`. `Cache-Control: no-store`. Sin carta ni pedidos.
 - `POST/GET /v1/establecimientos/{id}/enlaces` y `POST .../enlaces/{enlace_id}/revocar|rotar` → enlaces públicos del establecimiento (solo la cuenta titular): `tipo` (`web | carta`) y `slug` opcional. `ficha_negocio` ya no se acepta en POST (422). Solo puede existir uno activo por tipo; crear es idempotente y rotar revoca el anterior. La respuesta incluye `url_publica`, construida con `WEB_NEGOCIO_URL_BASE` (`…/negocios/<slug>`, carta en `…/negocios/<slug>/carta`) para que Bar no hardcodee dominios.
 - `GET /v1/establecimientos/{id}/fondos/catalogo` → catálogo Estate (`id`, `seccion`, `url` absoluta vía `WEB_NEGOCIO_URL_BASE`). `GET/PUT …/fondos` asigna por slot (`catalogo` o `null` para el default). `POST/GET/DELETE …/fondos/{slot}` sube, sirve o borra una foto propia. La UI del picker vive en Personal Bar.
 - `GET /v1/enlaces/{slug}` → resolución pública **sin token**: devuelve `{ tipo, establecimiento_id }` con cache pública (`max-age=300`). Slug inexistente → `404`, revocado → `410`.

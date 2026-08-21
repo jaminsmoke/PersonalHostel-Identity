@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Route, Routes, useParams } from "react-router-dom";
-import {
-  cargarMesa,
-  euros,
-  totalLineas,
-  type Linea,
-  type Producto,
-} from "./mesa";
+import { resolverMesa, type MesaResolveError } from "./api";
+import { euros, totalLineas, type Linea, type MesaSesion, type Producto } from "./mesa";
 import { extraerAccion, parsearComanda, parsearQuitar } from "./voz/parser";
 import { escucharUnaFrase, vozDisponible } from "./voz/reconocer";
 
@@ -37,32 +32,60 @@ function MesaShell() {
   return <MesaApp token={token.trim()} />;
 }
 
+function esErrorMesa(err: unknown): err is MesaResolveError {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "tipo" in err &&
+    (err.tipo === "invalido" || err.tipo === "revocado" || err.tipo === "red")
+  );
+}
+
 function MesaApp({ token }: { token: string }) {
-  const sesion = useMemo(() => cargarMesa(token), [token]);
+  const [sesion, setSesion] = useState<MesaSesion | null>(null);
+  const [error, setError] = useState<MesaResolveError | null>(null);
   const [pestana, setPestana] = useState<Pestana>("carta");
   const [carrito, setCarrito] = useState<Linea[]>([]);
-  const [cuenta, setCuenta] = useState<Linea[]>(sesion.cuenta);
+  const [cuenta, setCuenta] = useState<Linea[]>([]);
   const [aviso, setAviso] = useState<string | null>(null);
   const [escuchando, setEscuchando] = useState(false);
   const [previewVoz, setPreviewVoz] = useState<string | null>(null);
   const mic = vozDisponible();
 
   useEffect(() => {
+    let cancelado = false;
+    setError(null);
+    setSesion(null);
+    resolverMesa(token)
+      .then((ok) => {
+        if (cancelado) return;
+        setSesion(ok);
+        setCuenta(ok.cuenta);
+      })
+      .catch((err: unknown) => {
+        if (cancelado) return;
+        setError(esErrorMesa(err) ? err : { tipo: "red" });
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!sesion) return;
     document.title =
-      sesion.etiqueta === "Tu mesa"
-        ? "Tu mesa"
-        : `Mesa ${sesion.etiqueta}`;
-  }, [sesion.etiqueta]);
+      sesion.etiqueta === "Tu mesa" ? "Tu mesa" : `Mesa ${sesion.etiqueta}`;
+  }, [sesion]);
 
   const categorias = useMemo(() => {
     const mapa = new Map<string, Producto[]>();
-    for (const p of sesion.carta) {
+    for (const p of sesion?.carta ?? []) {
       const lista = mapa.get(p.categoria) ?? [];
       lista.push(p);
       mapa.set(p.categoria, lista);
     }
     return [...mapa.entries()];
-  }, [sesion.carta]);
+  }, [sesion]);
 
   function anadir(producto: Producto, cantidad = 1) {
     setCarrito((prev) => {
@@ -100,7 +123,7 @@ function MesaApp({ token }: { token: string }) {
   }
 
   async function pedirPorVoz() {
-    if (!mic || escuchando) return;
+    if (!sesion || !mic || escuchando) return;
     setAviso(null);
     setPreviewVoz(null);
     setEscuchando(true);
@@ -143,10 +166,10 @@ function MesaApp({ token }: { token: string }) {
   }
 
   function enviarPedido() {
-    if (carrito.length === 0) return;
+    if (!sesion || carrito.length === 0) return;
     if (sesion.modo !== "demo") {
       setAviso(
-        "Este QR aún no está conectado al servidor. Cuando existan los tokens de mesa, el pedido irá a barra.",
+        "Bar aún no recibe pedidos desde esta web. La bandeja de mesa llega en el siguiente contrato.",
       );
       return;
     }
@@ -155,6 +178,38 @@ function MesaApp({ token }: { token: string }) {
     setPestana("cuenta");
     setAviso(
       "Pedido apuntado en esta demostración. Bar no lo ha recibido: falta el contrato de bandeja.",
+    );
+  }
+
+  if (error?.tipo === "invalido") {
+    return (
+      <ErrorQr
+        titulo="Este código no es válido"
+        detalle="El QR no corresponde a ninguna mesa. Pide uno nuevo en barra."
+      />
+    );
+  }
+  if (error?.tipo === "revocado") {
+    return (
+      <ErrorQr
+        titulo="Este código ya no vale"
+        detalle="La mesa se dio de baja o se rotó el QR. Pide el código actual en barra."
+      />
+    );
+  }
+  if (error?.tipo === "red") {
+    return (
+      <ErrorQr
+        titulo="No se pudo abrir la mesa"
+        detalle="Revisa la conexión e inténtalo otra vez. Si sigue fallando, avisa en barra."
+      />
+    );
+  }
+  if (!sesion) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5">
+        <p className="text-muted">Abriendo tu mesa…</p>
+      </main>
     );
   }
 
@@ -169,14 +224,18 @@ function MesaApp({ token }: { token: string }) {
             ? "Tu mesa"
             : `Mesa ${sesion.etiqueta}`}
         </h1>
-        {sesion.modo === "pendiente_contrato" ? (
+        {sesion.modo === "demo" ? (
           <p className="mt-1 text-sm text-muted">
-            El código de esta mesa todavía no está dado de alta. La carta y la
-            cuenta llegarán cuando Identity emita el token.
+            Demostración local. El micrófono no envía audio a nuestro servidor.
+          </p>
+        ) : sesion.modo === "ok" ? (
+          <p className="mt-1 text-sm text-muted">
+            Mesa identificada. La carta y el pedido llegarán cuando Bar acepte
+            comandas desde esta web.
           </p>
         ) : (
           <p className="mt-1 text-sm text-muted">
-            Demostración local. El micrófono no envía audio a nuestro servidor.
+            El código de esta mesa todavía no está dado de alta.
           </p>
         )}
       </header>

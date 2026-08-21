@@ -1638,6 +1638,112 @@
         "title": "MembresiaResponse",
         "type": "object"
       },
+      "MesaCfcItemRequest": {
+        "description": "Una mesa del conjunto que Bar envía (UUID estable + etiqueta UX).",
+        "properties": {
+          "etiqueta": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Etiqueta",
+            "type": "string"
+          },
+          "mesa_uuid": {
+            "format": "uuid",
+            "title": "Mesa Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mesa_uuid",
+          "etiqueta"
+        ],
+        "title": "MesaCfcItemRequest",
+        "type": "object"
+      },
+      "MesaCfcPublicaResponse": {
+        "description": "Resolución pública del token de mesa (sin carta ni pedidos).",
+        "properties": {
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "establecimiento_nombre": {
+            "title": "Establecimiento Nombre",
+            "type": "string"
+          },
+          "etiqueta": {
+            "title": "Etiqueta",
+            "type": "string"
+          },
+          "mesa_uuid": {
+            "format": "uuid",
+            "title": "Mesa Uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "establecimiento_id",
+          "establecimiento_nombre",
+          "mesa_uuid",
+          "etiqueta"
+        ],
+        "title": "MesaCfcPublicaResponse",
+        "type": "object"
+      },
+      "MesaCfcResponse": {
+        "properties": {
+          "estado": {
+            "title": "Estado",
+            "type": "string"
+          },
+          "etiqueta": {
+            "title": "Etiqueta",
+            "type": "string"
+          },
+          "mesa_uuid": {
+            "format": "uuid",
+            "title": "Mesa Uuid",
+            "type": "string"
+          },
+          "url_publica": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url Publica"
+          }
+        },
+        "required": [
+          "mesa_uuid",
+          "etiqueta",
+          "estado"
+        ],
+        "title": "MesaCfcResponse",
+        "type": "object"
+      },
+      "MesasCfcSyncRequest": {
+        "description": "Conjunto completo de mesas públicas del establecimiento.",
+        "properties": {
+          "mesas": {
+            "items": {
+              "$ref": "#/components/schemas/MesaCfcItemRequest"
+            },
+            "maxItems": 500,
+            "title": "Mesas",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mesas"
+        ],
+        "title": "MesasCfcSyncRequest",
+        "type": "object"
+      },
       "MiembroEquipoPublico": {
         "description": "Miembro del equipo visible en la web pública (matriz AND).",
         "properties": {
@@ -3558,6 +3664,68 @@
         "summary": "Registrar Negocio",
         "tags": [
           "negocio"
+        ]
+      }
+    },
+    "/v1/cfc/mesa/{token}": {
+      "get": {
+        "operationId": "resolver_mesa_cfc_v1_cfc_mesa__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaCfcPublicaResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolver Mesa Cfc",
+        "tags": [
+          "cfc-publico"
         ]
       }
     },
@@ -6475,6 +6643,266 @@
         "summary": "Subir Logo Establecimiento",
         "tags": [
           "establecimientos"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/mesas-cfc": {
+      "get": {
+        "operationId": "listar_mesas_cfc_v1_establecimientos__establecimiento_id__mesas_cfc_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MesaCfcResponse"
+                  },
+                  "title": "Response Listar Mesas Cfc V1 Establecimientos  Establecimiento Id  Mesas Cfc Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar Mesas Cfc",
+        "tags": [
+          "mesas-cfc"
+        ]
+      },
+      "put": {
+        "operationId": "sincronizar_mesas_cfc_v1_establecimientos__establecimiento_id__mesas_cfc_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MesasCfcSyncRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MesaCfcResponse"
+                  },
+                  "title": "Response Sincronizar Mesas Cfc V1 Establecimientos  Establecimiento Id  Mesas Cfc Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Sincronizar Mesas Cfc",
+        "tags": [
+          "mesas-cfc"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/mesas-cfc/{mesa_uuid}/rotar": {
+      "post": {
+        "operationId": "rotar_mesa_cfc_v1_establecimientos__establecimiento_id__mesas_cfc__mesa_uuid__rotar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "mesa_uuid",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Mesa Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MesaCfcResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rotar Mesa Cfc",
+        "tags": [
+          "mesas-cfc"
         ]
       }
     },

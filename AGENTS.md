@@ -126,7 +126,7 @@ PersonalHosteleriaServer/
 │   ├── nginx.conf
 │   ├── 20-web-cfc.sh         # genera config.js en runtime (NEGOCIO_API_URL)
 │   ├── package.json          # Vite/React/Tailwind; test = vitest; build = tsc --noEmit && vite build
-│   └── src/                  # App /m/:token, parser de voz, estilos mobile-first
+│   └── src/                  # App /m/:token, api de resolve, parser de voz, estilos mobile-first
 └── tools/
     ├── README.md
     ├── kanban-cli/
@@ -252,12 +252,22 @@ La web de pedido en mesa es **`web-cfc`** (`web.mesa.siberia.solutions/m/<token>
 React + Vite + Tailwind, nginx, puerto dev `:8085`): una sola SPA; el token opaco
 discrimina la mesa (el comensal no elige B1). Mobile-first vertical, cuenta de
 mesa (no login de cliente) y parser de voz al estilo Commander. El origen entra
-en CORS (`IDENTITY_WEB_ORIGIN`); `WEB_CFC_URL_BASE` es la base que usará el ítem
-de tokens para `url_publica`. No mezclar con `web-negocio` (escaparate) ni
-`web-camareros` (JWT profesional). El contrato de resolve/pedido/cuenta aún no
-está en `/v1`; hasta entonces `/m/demo` es un catálogo local de demostración.
+en CORS (`IDENTITY_WEB_ORIGIN`). Identity emite `url_publica` con
+`WEB_CFC_URL_BASE` + `/m/{token}`. `GET /v1/cfc/mesa/{token}` (sin JWT) resuelve
+el token a `{ establecimiento_id, establecimiento_nombre, mesa_uuid, etiqueta }`
+(`404` inválido, `410` revocado, `Cache-Control: no-store`). `/m/demo` sigue
+siendo un catálogo local. Carta, pedidos y cuenta de mesa: ítem de inbox, no
+este contrato. No mezclar con `web-negocio` ni `web-camareros`.
 
 Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones (con invitación por magic-link sin JWT); el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar. Identity solo guarda un **espejo de respaldo** del layout de Bar (`PUT/GET /v1/establecimientos/{id}/layout`, tabla `layouts_establecimiento.documento` JSONB opaco) para restaurar el mapa en un dispositivo nuevo; no lo interpreta ni lo sirve a Commander. `salas` y `mesas` siguen requeridas en el PUT (convivencia); cualquier clave extra (`zonas`, futuras capas) se persiste y se devuelve tal cual.
+
+Las mesas públicas CFC **no** se extraen del layout. Bar envía el conjunto a
+`PUT /v1/establecimientos/{id}/mesas-cfc` (`mesa_uuid` + `etiqueta`); Identity
+emite el token (`secrets.token_urlsafe(32)`), lo guarda como SHA-256 + SecretBox
+y construye `url_publica`. `GET` lista las activas; `POST .../{mesa_uuid}/rotar`
+invalida el token anterior. Ausente del conjunto = revocación inmediata; re-alta
+= token nuevo. Cambiar la etiqueta no rota. Tabla `mesas_cfc`. No parsear el
+documento de layout para este fin.
 
 El **directorio de camareros** para invitar (`GET /v1/establecimientos/{id}/camareros/directorio`) devuelve un DTO **sin email** (privacidad/PII). Solo aparecen camareros que han optado por ser vistos (`siempre` o `solo_libre`); **los dueños de establecimiento nunca aparecen** (pertenecen al dominio de establecimientos, dominio de Bar — otro ítem). `libre` = sin membresía activa en ningún establecimiento (computable en BD negocio). La invitación acepta `camarero_id` (el email se resuelve en servidor) o `email` (flujo clásico).
 

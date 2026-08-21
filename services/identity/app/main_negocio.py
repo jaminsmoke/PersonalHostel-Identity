@@ -20,6 +20,8 @@ from app.routes.establecimientos import (
 from app.routes.fondos import router as fondos_router
 from app.routes.horario import router as horario_router
 from app.routes.internal import negocio_internal_router
+from app.routes.mesas_cfc import public_router as mesas_cfc_public_router
+from app.routes.mesas_cfc import router as mesas_cfc_router
 from app.routes.negocio_auth import router as negocio_auth_router
 from app.routes.negocio_carta import router as negocio_carta_router
 from app.routes.negocio_web import router as negocio_web_router
@@ -72,6 +74,8 @@ app.include_router(establecimientos_router)
 app.include_router(catalogo_router)
 app.include_router(enlaces_router)
 app.include_router(enlaces_public_router)
+app.include_router(mesas_cfc_router)
+app.include_router(mesas_cfc_public_router)
 app.include_router(invitations_router)
 app.include_router(oficio_negocio_router)
 app.include_router(horario_router)
