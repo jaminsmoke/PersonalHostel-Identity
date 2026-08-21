@@ -6,6 +6,8 @@ Carpeta local: `PersonalHosteleriaServer`
 
 No es el nodo de sala: eso es [Personal Bar](https://github.com/jaminsmoke/PersonalBar).
 
+Release actual: **[v0.2](https://github.com/jaminsmoke/PersonalHostel-Server/releases/latest)** (`0.2.0` en OpenAPI). Changelog: [`docs/changelog.md`](docs/changelog.md).
+
 Mapa de producto y **flujo kanban completo** (Detectado → Changelog, Debate, CLI): [`AGENTS.md`](AGENTS.md). Setup corto de la CLI: [`tools/README.md`](tools/README.md).
 
 ## Dos servicios, dos bases de datos
@@ -184,7 +186,7 @@ termina. Las APIs nunca heredan ese usuario: arrancan después como UID/GID 1000
 - Camareros (staging): https://camareros.siberia.solutions/docs · https://camareros.siberia.solutions/openapi.json
 - Negocio (staging): https://negocio.siberia.solutions/docs · https://negocio.siberia.solutions/openapi.json
 - Local legacy (solo experimentación): http://localhost:8080/docs · http://localhost:8082/docs
-- `info.version` = `0.2.0` en ambos.
+- `info.version` = `0.2.0` en ambos (tag GitHub **v0.2**).
 - Specs versionados en git: [`docs/openapi-camareros.json`](docs/openapi-camareros.json) y [`docs/openapi-negocio.json`](docs/openapi-negocio.json). Se regeneran con:
 
   ```bash
