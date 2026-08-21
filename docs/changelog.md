@@ -10,6 +10,12 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Web CFC (`web-cfc`)**: SPA React en `:8085` / `web.mesa.siberia.solutions`
+  para pedir desde el QR de mesa (`/m/<token>`). Mobile-first vertical, cuenta
+  de mesa, parser de voz y andamiaje Compose/CORS/`WEB_CFC_URL_BASE`. El
+  contrato de tokens e inbox sigue en ítems hermanos.
+  ([#165](https://github.com/jaminsmoke/PersonalHostel-Server/issues/165), API)
+
 - **Espejo de layout opaco**: `PUT/GET /v1/establecimientos/{id}/layout` deja de
   guardar columnas `salas`/`mesas` y persiste un documento JSONB único. El PUT
   sigue exigiendo esas dos capas (convivencia con Bar); cualquier extra (`zonas`

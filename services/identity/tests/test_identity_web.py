@@ -257,3 +257,29 @@ def test_cors_negocio_web_camareros_origen_permitido(db_ready, negocio_client):
         response.headers.get("access-control-allow-origin")
         == "https://web.camareros.siberia.solutions"
     )
+
+
+def test_cors_cfc_origen_permitido(db_ready, negocio_client):
+    response = negocio_client.options(
+        "/v1/invitaciones/dummy/aceptar",
+        headers={
+            "Origin": "http://localhost:8085",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:8085"
+
+
+def test_cors_web_mesa_origen_permitido(db_ready, negocio_client):
+    response = negocio_client.options(
+        "/v1/invitaciones/dummy/aceptar",
+        headers={
+            "Origin": "https://web.mesa.siberia.solutions",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert response.status_code == 200
+    assert (
+        response.headers.get("access-control-allow-origin") == "https://web.mesa.siberia.solutions"
+    )

@@ -52,7 +52,7 @@ _web_origins = [
     o.strip()
     for o in os.environ.get(
         "IDENTITY_WEB_ORIGIN",
-        "http://localhost:8083,http://localhost:8084,https://web.negocio.siberia.solutions,https://web.camareros.siberia.solutions",
+        "http://localhost:8083,http://localhost:8084,http://localhost:8085,https://web.negocio.siberia.solutions,https://web.camareros.siberia.solutions,https://web.mesa.siberia.solutions",
     ).split(",")
     if o.strip()
 ]

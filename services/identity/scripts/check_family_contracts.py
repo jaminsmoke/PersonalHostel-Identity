@@ -16,7 +16,8 @@ Uso:
         --bar-src path/IdentityNegocioClient.kt \\
         --commander-src path/IdentityCliente.kt \\
         --web-src services/web-camareros/static/app.js \\
-        --web-src services/web-negocio/src
+        --web-src services/web-negocio/src \\
+        --web-src services/web-cfc/src
 
     python scripts/check_family_contracts.py --selftest
 """
@@ -305,7 +306,9 @@ def comprobar(
 
     usadas_bar = _comprobar_cliente("Bar", bar, spec, fallos)
     usadas_commander = _comprobar_cliente("Commander", commander, spec, fallos)
-    usadas_web = _comprobar_cliente("Webs (web-camareros + web-negocio)", web, spec, fallos)
+    usadas_web = _comprobar_cliente(
+        "Webs (web-camareros + web-negocio + web-cfc)", web, spec, fallos
+    )
 
     usadas_por_cliente = {ruta for _, ruta in bar | commander | web}
     internas = sorted(r for r in spec if es_interna(r))
@@ -338,7 +341,7 @@ La normalización canónica es `normalize() -> *` (`{{param}}` y `$var` de segme
 
 {bullets(usadas_commander)}
 
-## Operaciones usadas por las webs (web-camareros + web-negocio)
+## Operaciones usadas por las webs (web-camareros + web-negocio + web-cfc)
 
 {bullets(usadas_web)}
 
