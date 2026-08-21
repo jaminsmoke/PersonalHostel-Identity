@@ -70,6 +70,7 @@ from app.schemas import (
     MembresiaCreateRequest,
     MembresiaResponse,
     QrMemberRequest,
+    layout_response_from_row,
 )
 from app.security import (
     get_session_secret_env,
@@ -356,9 +357,10 @@ def guardar_layout(
     payload: LayoutUpdateRequest,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
     db: Session = Depends(get_negocio_db),
-) -> LayoutEstablecimiento:
-    """Copia de respaldo del layout del mapa. Solo la cuenta dueña."""
+) -> LayoutResponse:
+    """Copia de respaldo opaca del layout del mapa. Solo la cuenta dueña."""
     _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
+    snapshot = payload.snapshot()
     if len(payload.model_dump_json().encode("utf-8")) > 1_000_000:
         raise ApiError(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -369,18 +371,18 @@ def guardar_layout(
     if layout is None:
         layout = LayoutEstablecimiento(
             establecimiento_id=establecimiento_id,
-            salas=payload.salas,
-            mesas=payload.mesas,
+            documento=snapshot,
             version=1,
         )
         db.add(layout)
     else:
-        layout.salas = payload.salas
-        layout.mesas = payload.mesas
+        layout.documento = snapshot
         layout.version += 1
     db.commit()
     db.refresh(layout)
-    return layout
+    return layout_response_from_row(
+        layout.establecimiento_id, layout.version, layout.updated_at, layout.documento
+    )
 
 
 @router.get(
@@ -396,8 +398,8 @@ def obtener_layout(
     establecimiento_id: uuid.UUID,
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
     db: Session = Depends(get_negocio_db),
-) -> LayoutEstablecimiento:
-    """Devuelve la copia de respaldo del layout del mapa. Solo la cuenta dueña."""
+) -> LayoutResponse:
+    """Devuelve la copia de respaldo opaca del layout. Solo la cuenta dueña."""
     _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     layout = db.get(LayoutEstablecimiento, establecimiento_id)
     if layout is None:
@@ -406,7 +408,9 @@ def obtener_layout(
             code=LAYOUT_NOT_FOUND,
             detail="El establecimiento no tiene un layout respaldado",
         )
-    return layout
+    return layout_response_from_row(
+        layout.establecimiento_id, layout.version, layout.updated_at, layout.documento
+    )
 
 
 @router.post(

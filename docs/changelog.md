@@ -8,6 +8,15 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Añadido
+
+- **Espejo de layout opaco**: `PUT/GET /v1/establecimientos/{id}/layout` deja de
+  guardar columnas `salas`/`mesas` y persiste un documento JSONB único. El PUT
+  sigue exigiendo esas dos capas (convivencia con Bar); cualquier extra (`zonas`
+  y capas futuras) se guarda y se devuelve sin interpretar. Migración
+  `0013_layout_documento`.
+  ([#163](https://github.com/jaminsmoke/PersonalHostel-Server/issues/163), API)
+
 ## [v0.2] - 2026-08-21
 
 Corte del servidor de identidad: cuentas de establecimiento, webs públicas,
