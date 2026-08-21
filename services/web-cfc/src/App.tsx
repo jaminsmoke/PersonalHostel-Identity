@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Route, Routes, useParams } from "react-router-dom";
-import { resolverMesa, type MesaResolveError } from "./api";
+import { cargarCuenta, enviarPedidoMesa, esErrorPedido, resolverMesa, type MesaResolveError } from "./api";
 import { euros, totalLineas, type Linea, type MesaSesion, type Producto } from "./mesa";
 import { extraerAccion, parsearComanda, parsearQuitar } from "./voz/parser";
 import { escucharUnaFrase, vozDisponible } from "./voz/reconocer";
@@ -165,20 +165,34 @@ function MesaApp({ token }: { token: string }) {
     }
   }
 
-  function enviarPedido() {
+  async function enviarPedido() {
     if (!sesion || carrito.length === 0) return;
-    if (sesion.modo !== "demo") {
-      setAviso(
-        "Bar aún no recibe pedidos desde esta web. La bandeja de mesa llega en el siguiente contrato.",
-      );
+    if (sesion.modo === "demo") {
+      setCuenta((prev) => [...prev, ...carrito]);
+      setCarrito([]);
+      setPestana("cuenta");
+      setAviso("Pedido apuntado en esta demostración. No llega a ninguna barra.");
       return;
     }
-    setCuenta((prev) => [...prev, ...carrito]);
-    setCarrito([]);
-    setPestana("cuenta");
-    setAviso(
-      "Pedido apuntado en esta demostración. Bar no lo ha recibido: falta el contrato de bandeja.",
-    );
+    setAviso(null);
+    try {
+      await enviarPedidoMesa(sesion.token, carrito);
+      const cuenta = await cargarCuenta(sesion.token);
+      setCuenta(cuenta.lineas);
+      setCarrito([]);
+      setPestana("cuenta");
+      setAviso(
+        sesion.barEnLinea
+          ? "Pedido enviado a barra."
+          : "Pedido guardado. Barra lo verá al reconectar.",
+      );
+    } catch (err: unknown) {
+      if (esErrorPedido(err) && err.tipo === "cerrado") {
+        setAviso("El local no admite pedidos ahora. Pregunta en barra.");
+        return;
+      }
+      setAviso("No se pudo enviar el pedido. Inténtalo otra vez.");
+    }
   }
 
   if (error?.tipo === "invalido") {
@@ -228,10 +242,17 @@ function MesaApp({ token }: { token: string }) {
           <p className="mt-1 text-sm text-muted">
             Demostración local. El micrófono no envía audio a nuestro servidor.
           </p>
+        ) : sesion.modo === "ok" && !sesion.admitePedidos ? (
+          <p className="mt-1 text-sm text-muted">
+            El local no admite pedidos ahora. Puedes ver la carta.
+          </p>
+        ) : sesion.modo === "ok" && !sesion.barEnLinea ? (
+          <p className="mt-1 text-sm text-muted">
+            Barra no está en línea. El pedido se guardará hasta que vuelva.
+          </p>
         ) : sesion.modo === "ok" ? (
           <p className="mt-1 text-sm text-muted">
-            Mesa identificada. La carta y el pedido llegarán cuando Bar acepte
-            comandas desde esta web.
+            Pide desde la carta o por voz. El ticket llega a barra.
           </p>
         ) : (
           <p className="mt-1 text-sm text-muted">

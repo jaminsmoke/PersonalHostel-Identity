@@ -685,6 +685,80 @@ class MesaCfcPublicaResponse(BaseModel):
     establecimiento_nombre: str
     mesa_uuid: uuid.UUID
     etiqueta: str
+    admite_pedidos: bool = False
+    bar_en_linea: bool = False
+
+
+class PedidoCfcLineaRequest(BaseModel):
+    producto_id: uuid.UUID
+    cantidad: int = Field(..., ge=1, le=99)
+
+
+class PedidoCfcCreateRequest(BaseModel):
+    idempotency_key: str = Field(..., min_length=8, max_length=64)
+    lineas: list[PedidoCfcLineaRequest] = Field(..., min_length=1, max_length=50)
+
+
+class PedidoCfcLinea(BaseModel):
+    producto_id: uuid.UUID
+    nombre: str
+    cantidad: int
+    precio_centimos: int
+    destino: str
+
+
+class PedidoCfcResponse(BaseModel):
+    id: uuid.UUID
+    mesa_uuid: uuid.UUID
+    etiqueta: str
+    estado: str
+    seq: int
+    lineas: list[PedidoCfcLinea]
+    total_centimos: int
+    creado_en: datetime
+
+
+class PedidoCfcAckRequest(BaseModel):
+    decision: Literal["aceptado", "rechazado"]
+
+
+class PedidosCfcListaResponse(BaseModel):
+    pedidos: list[PedidoCfcResponse]
+    cursor: int
+
+
+class JornadaCfcResponse(BaseModel):
+    id: uuid.UUID
+    establecimiento_id: uuid.UUID
+    abierta_en: datetime
+    ultimo_heartbeat: datetime
+    cerrada_en: datetime | None = None
+    bar_en_linea: bool = True
+
+
+class ProductoCartaCfc(BaseModel):
+    id: uuid.UUID
+    nombre: str
+    precio_centimos: int
+    categoria: str
+    destino: str
+
+
+class CartaCfcResponse(BaseModel):
+    establecimiento_id: uuid.UUID
+    nombre: str
+    admite_pedidos: bool
+    bar_en_linea: bool
+    productos: list[ProductoCartaCfc]
+
+
+class CuentaCfcResponse(BaseModel):
+    mesa_uuid: uuid.UUID
+    etiqueta: str
+    admite_pedidos: bool
+    bar_en_linea: bool
+    lineas: list[PedidoCfcLinea]
+    total_centimos: int
 
 
 class ProductoCartaPublica(BaseModel):

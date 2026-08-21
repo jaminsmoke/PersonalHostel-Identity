@@ -22,11 +22,13 @@ from app.models import (
     EmailOutbox,
     Establecimiento,
     Invitacion,
+    JornadaCfc,
     LayoutEstablecimiento,
     Membresia,
     MesaCfc,
     NotificacionNegocio,
     OperacionSync,
+    PedidoCfc,
     ProductoCatalogo,
 )
 
@@ -302,6 +304,18 @@ def audit_data(
                         MesaCfc,
                         Establecimiento,
                         MesaCfc.establecimiento_id == Establecimiento.id,
+                    ),
+                    "jornadas_cfc": _related_counts(
+                        negocio_db,
+                        JornadaCfc,
+                        Establecimiento,
+                        JornadaCfc.establecimiento_id == Establecimiento.id,
+                    ),
+                    "pedidos_cfc": _related_counts(
+                        negocio_db,
+                        PedidoCfc,
+                        Establecimiento,
+                        PedidoCfc.establecimiento_id == Establecimiento.id,
                     ),
                     "invitaciones": _related_counts(
                         negocio_db,

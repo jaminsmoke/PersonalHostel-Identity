@@ -10,6 +10,15 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Inbox CFC**: jornada de local, heartbeat, carta/cuenta/pedido por token de
+  mesa y bandeja autenticada para Bar. `POST /v1/establecimientos/{id}/cfc/jornada/abrir|cerrar`,
+  `PUT .../cfc/heartbeat`, `GET .../cfc/pedidos`, `POST .../ack`. Público:
+  `GET/POST /v1/cfc/mesa/{token}/carta|cuenta|pedidos`. Admisión = jornada +
+  heartbeat (~90 s) + horario (`409 identity.cfc_cerrado` si no admite; encola
+  si el nodo cae con el local abierto). Snapshot de precio del catálogo.
+  Migración `0015_cfc_inbox`. web-cfc envía el pedido real; `/m/demo` sigue
+  local. ([#173](https://github.com/jaminsmoke/PersonalHostel-Server/issues/173), API)
+
 - **Mesas CFC y tokens opacos**: `PUT/GET /v1/establecimientos/{id}/mesas-cfc`
   y `POST .../{mesa_uuid}/rotar` (cuenta titular). Bar envía el conjunto;
   Identity emite el token, lo busca por SHA-256 y reconstruye `url_publica`

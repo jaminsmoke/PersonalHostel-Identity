@@ -6,7 +6,6 @@ siendo un documento JSONB opaco: este módulo no lo lee.
 
 from __future__ import annotations
 
-import hashlib
 import os
 import secrets
 import uuid
@@ -16,13 +15,12 @@ from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_cuenta_negocio
+from app.cfc import admision_cfc, hash_token, mesa_activa_por_token
 from app.db import get_negocio_db
 from app.errors import (
     ESTABLECIMIENTO_NOT_FOUND,
     MEMBERSHIP_FORBIDDEN,
     MESA_CFC_NO_ENCONTRADA,
-    MESA_TOKEN_INVALIDO,
-    MESA_TOKEN_REVOCADO,
     ApiError,
 )
 from app.models import CuentaNegocio, EnlaceEstado, Establecimiento, MesaCfc
@@ -45,12 +43,11 @@ _UNAUTHORIZED = {
     "model": ErrorResponse,
     "description": "Token de sesión inválido o caducado.",
 }
-_NO_STORE = {"Cache-Control": "no-store"}
 WEB_CFC_URL_BASE_ENV = "WEB_CFC_URL_BASE"
 
 
 def _hash_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+    return hash_token(token)
 
 
 def _url_publica(token: str) -> str | None:
@@ -240,26 +237,17 @@ def resolver_mesa_cfc(
     db: Session = Depends(get_negocio_db),
 ) -> MesaCfcPublicaResponse:
     response.headers["Cache-Control"] = "no-store"
-    mesa = db.query(MesaCfc).filter_by(token_hash=_hash_token(token)).one_or_none()
-    if mesa is None:
-        raise ApiError(
-            status_code=status.HTTP_404_NOT_FOUND,
-            code=MESA_TOKEN_INVALIDO,
-            detail="El código de esta mesa no es válido",
-            headers=_NO_STORE,
-        )
-    if mesa.estado != EnlaceEstado.activo.value:
-        raise ApiError(
-            status_code=status.HTTP_410_GONE,
-            code=MESA_TOKEN_REVOCADO,
-            detail="El código de esta mesa ya no vale",
-            headers=_NO_STORE,
-        )
+    mesa = mesa_activa_por_token(db, token)
     establecimiento = db.get(Establecimiento, mesa.establecimiento_id)
     nombre = establecimiento.nombre if establecimiento is not None else ""
+    admite, en_linea = (False, False)
+    if establecimiento is not None:
+        admite, en_linea = admision_cfc(db, establecimiento)
     return MesaCfcPublicaResponse(
         establecimiento_id=mesa.establecimiento_id,
         establecimiento_nombre=nombre,
         mesa_uuid=mesa.mesa_uuid,
         etiqueta=mesa.etiqueta,
+        admite_pedidos=admite,
+        bar_en_linea=en_linea,
     )

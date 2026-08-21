@@ -9,6 +9,8 @@ from app.db import negocio_engine
 from app.http import register_error_handlers
 from app.observability import mount_access_log, mount_metrics
 from app.routes.catalogo import router as catalogo_router
+from app.routes.cfc_inbox import public_router as cfc_inbox_public_router
+from app.routes.cfc_inbox import router as cfc_inbox_router
 from app.routes.enlaces import public_router as enlaces_public_router
 from app.routes.enlaces import router as enlaces_router
 from app.routes.establecimientos import (
@@ -76,6 +78,8 @@ app.include_router(enlaces_router)
 app.include_router(enlaces_public_router)
 app.include_router(mesas_cfc_router)
 app.include_router(mesas_cfc_public_router)
+app.include_router(cfc_inbox_router)
+app.include_router(cfc_inbox_public_router)
 app.include_router(invitations_router)
 app.include_router(oficio_negocio_router)
 app.include_router(horario_router)

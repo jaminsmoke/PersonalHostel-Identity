@@ -254,10 +254,15 @@ discrimina la mesa (el comensal no elige B1). Mobile-first vertical, cuenta de
 mesa (no login de cliente) y parser de voz al estilo Commander. El origen entra
 en CORS (`IDENTITY_WEB_ORIGIN`). Identity emite `url_publica` con
 `WEB_CFC_URL_BASE` + `/m/{token}`. `GET /v1/cfc/mesa/{token}` (sin JWT) resuelve
-el token a `{ establecimiento_id, establecimiento_nombre, mesa_uuid, etiqueta }`
+el token a `{ establecimiento_id, establecimiento_nombre, mesa_uuid, etiqueta, admite_pedidos, bar_en_linea }`
 (`404` inválido, `410` revocado, `Cache-Control: no-store`). `/m/demo` sigue
-siendo un catálogo local. Carta, pedidos y cuenta de mesa: ítem de inbox, no
-este contrato. No mezclar con `web-negocio` ni `web-camareros`.
+siendo un catálogo local. Carta, pedidos y cuenta de mesa: `GET/POST
+/v1/cfc/mesa/{token}/carta|pedidos|cuenta`. La admisión es jornada de **local**
++ heartbeat (~90 s) + horario: jornada cerrada o nodo ausente fuera de horario
+→ `409 identity.cfc_cerrado` (no encola); nodo ausente con horario abierto
+encola. Bar: `POST .../cfc/jornada/abrir|cerrar`, `PUT .../cfc/heartbeat`,
+`GET .../cfc/pedidos`, `POST .../cfc/pedidos/{id}/ack`. No mezclar con
+`web-negocio` ni `web-camareros`. No reutilizar las jornadas de oficio.
 
 Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones (con invitación por magic-link sin JWT); el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar. Identity solo guarda un **espejo de respaldo** del layout de Bar (`PUT/GET /v1/establecimientos/{id}/layout`, tabla `layouts_establecimiento.documento` JSONB opaco) para restaurar el mapa en un dispositivo nuevo; no lo interpreta ni lo sirve a Commander. `salas` y `mesas` siguen requeridas en el PUT (convivencia); cualquier clave extra (`zonas`, futuras capas) se persiste y se devuelve tal cual.
 
@@ -268,6 +273,10 @@ y construye `url_publica`. `GET` lista las activas; `POST .../{mesa_uuid}/rotar`
 invalida el token anterior. Ausente del conjunto = revocación inmediata; re-alta
 = token nuevo. Cambiar la etiqueta no rota. Tabla `mesas_cfc`. No parsear el
 documento de layout para este fin.
+
+La bandeja de pedidos CFC vive en `jornadas_cfc` y `pedidos_cfc` (migración
+`0015_cfc_inbox`). Identity no crea rondas: Bar hace ACK y convierte. El
+snapshot de precio sale del catálogo canónico, no del cliente.
 
 El **directorio de camareros** para invitar (`GET /v1/establecimientos/{id}/camareros/directorio`) devuelve un DTO **sin email** (privacidad/PII). Solo aparecen camareros que han optado por ser vistos (`siempre` o `solo_libre`); **los dueños de establecimiento nunca aparecen** (pertenecen al dominio de establecimientos, dominio de Bar — otro ítem). `libre` = sin membresía activa en ningún establecimiento (computable en BD negocio). La invitación acepta `camarero_id` (el email se resuelve en servidor) o `email` (flujo clásico).
 
