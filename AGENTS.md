@@ -6,7 +6,7 @@
 
 - GitHub repo: `jaminsmoke/PersonalHostel-Server`
 - Local folder: `AndroidStudioProjects/PersonalHosteleriaServer` (sibling of `PersonalComander` and `PersonalBar`)
-- Version target: **v0.2** (latest release **v0.1**, 2026-08-13 — `gh release list`; next version must be > latest)
+- Version target: **v0.3** (latest release **v0.2**, 2026-08-21 — `gh release list`; next version must be > latest)
 - Verificación oficial: **Docker Compose en el VPS de staging**, con bases
   `identity_camareros_test` e `identity_negocio_test` aisladas. No levantar
   Docker local para validar ítems. Staging/producción: VPS de Hostinger (Caddy +
@@ -83,7 +83,7 @@ tratar el SQLite de las apps como fuente de verdad.
 
 PII: nombre, foto, identificador. GDPR, retención y borrado hay que pensarlo antes de producción. En Docker local no hay autenticación dura ni HTTPS.
 
-## Qué hay ahora (v0.1)
+## Qué hay ahora (v0.2)
 
 ```
 PersonalHosteleriaServer/
@@ -94,7 +94,7 @@ PersonalHosteleriaServer/
 ├── .gitignore
 ├── .kanbanrc.json.template
 ├── docs/
-│   ├── changelog.md          # changelog v0.1
+│   ├── changelog.md          # changelog (v0.2 actual)
 │   ├── openapi-camareros.json
 │   └── openapi-negocio.json  # contratos OpenAPI versionados
 ├── .github/workflows/        # checks requeridos quality + integration + security
@@ -180,7 +180,7 @@ checkout del VPS rompía `ruff format --check` del runner aislado porque
 - `GET /openapi.json` y `/docs` → spec del contrato `/v1`
 - La API registra camareros, emite QR, hace login y gestiona la foto de perfil (ver `README.md`).
 
-## Contrato API (implementado en v0.1)
+## Contrato API (implementado en v0.2)
 
 Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores llevan además un `code` estable (`identity.*`).
 
@@ -331,7 +331,7 @@ Detectado → Debate → Roadmap → Ejecutando → Verificando → Changelog
 
 **No skipping**: every item advances in order. Exception: `Cancelado` → Changelog.
 
-**Version always > latest release**: consult `gh release list`, pick the next one (currently **v0.1**).
+**Version always > latest release**: consult `gh release list`. Tras publicar **v0.2**, los ítems nuevos van a **v0.3**.
 
 Bodies in UTF-8. On Windows do **not** pipe PowerShell `Get-Content` into the CLI (mojibake). Prefer Python or `--body-file` / `gh issue edit --body-file`.
 
@@ -460,7 +460,7 @@ copy .kanbanrc.json.template .kanbanrc.json   # Windows
 $KANBAN config validate
 
 # Create item
-$KANBAN create --title "..." --tipo Feature --area API --priority Alta --version "v0.1"
+$KANBAN create --title "..." --tipo Feature --area API --priority Alta --version "v0.3"
 
 # List
 $KANBAN list
@@ -529,7 +529,7 @@ Each item's body evolves through the lifecycle. The CLI generates a template at 
 | Prioridad | SingleSelect | Alta, Media, Baja |
 | Tipo | SingleSelect | Bug, Feature, Mejora, Tarea |
 | Área principal | SingleSelect | API, Datos, Build/CI, Docs, Infra |
-| Versión | SingleSelect | Sin asignar, v0.1, … |
+| Versión | SingleSelect | Sin asignar, v0.1, v0.2, v0.3… |
 | Decision | SingleSelect | Pendiente, Aprobado, Diferido, Cancelado |
 | HighLighted | SingleSelect | Yes, No (for changelog highlights) |
 | Inicio exacto | Text | ISO-8601 UTC timestamp |

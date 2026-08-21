@@ -8,6 +8,22 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [v0.2] - 2026-08-21
+
+Corte del servidor de identidad: cuentas de establecimiento, webs públicas,
+catálogo, oficio y operación en el VPS. El tag GitHub es **v0.2**; FastAPI,
+OpenAPI y `web-negocio` siguen en `0.2.0`.
+
+### Destacados
+
+- Cuentas de **negocio** distintas de camareros, establecimientos, membresías e
+  invitaciones (magic-link, bandeja, directorio).
+- **Web pública Estate** (`web.negocio.siberia.solutions`) y **web del
+  profesional** (`web.camareros.siberia.solutions`: ficha, login, invitaciones).
+- Catálogo canónico, horario, espejo de layout, fondos por sección y frescura
+  ETag/304 de `GET /v1/negocio/web`.
+- Oficio (horas / rondas), observabilidad en el VPS y cadena de suministro de CI.
+
 ### Añadido
 
 - **Frescura de la web pública**: `GET /v1/negocio/web` emite `ETag` (SHA-256
@@ -67,6 +83,27 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
   y con ancla `?seccion=horario`.
   ([#110](https://github.com/jaminsmoke/PersonalHostel-Server/issues/110), API)
 
+- **Negocio, altas y webs** (resumen): cuentas de establecimiento ([#8](https://github.com/jaminsmoke/PersonalHostel-Server/issues/8),
+  [#13](https://github.com/jaminsmoke/PersonalHostel-Server/issues/13)); invitaciones
+  y bandeja ([#9](https://github.com/jaminsmoke/PersonalHostel-Server/issues/9),
+  [#34](https://github.com/jaminsmoke/PersonalHostel-Server/issues/34),
+  [#36](https://github.com/jaminsmoke/PersonalHostel-Server/issues/36),
+  [#93](https://github.com/jaminsmoke/PersonalHostel-Server/issues/93)); directorio
+  ([#69](https://github.com/jaminsmoke/PersonalHostel-Server/issues/69)); espejo de
+  layout ([#11](https://github.com/jaminsmoke/PersonalHostel-Server/issues/11));
+  ficha y visibilidad del camarero ([#45](https://github.com/jaminsmoke/PersonalHostel-Server/issues/45),
+  [#47](https://github.com/jaminsmoke/PersonalHostel-Server/issues/47),
+  [#85](https://github.com/jaminsmoke/PersonalHostel-Server/issues/85),
+  [#91](https://github.com/jaminsmoke/PersonalHostel-Server/issues/91)); enlaces
+  públicos del negocio ([#51](https://github.com/jaminsmoke/PersonalHostel-Server/issues/51),
+  [#71](https://github.com/jaminsmoke/PersonalHostel-Server/issues/71)); oficio
+  ([#102](https://github.com/jaminsmoke/PersonalHostel-Server/issues/102));
+  contraseña y dirección ([#79](https://github.com/jaminsmoke/PersonalHostel-Server/issues/79),
+  [#81](https://github.com/jaminsmoke/PersonalHostel-Server/issues/81));
+  observabilidad VPS ([#59](https://github.com/jaminsmoke/PersonalHostel-Server/issues/59),
+  [#115](https://github.com/jaminsmoke/PersonalHostel-Server/issues/115));
+  backups ([#106](https://github.com/jaminsmoke/PersonalHostel-Server/issues/106)).
+
 ### Corregido
 
 - **`If-None-Match` no enlazaba en `GET /v1/negocio/web`**: FastAPI declaraba
@@ -80,7 +117,11 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
   `__pycache__` con permisos de root en el checkout del VPS (bind mount de
   `identity-tests`). Se añade `PYTHONDONTWRITEBYTECODE=1` al Dockerfile para
   impedir la generación de `__pycache__` en runtime.
-  (ítem Detectado `PVTI_lAHOBM87Yc4BgQqZzg3DUyQ`, Build/CI)
+  ([#112](https://github.com/jaminsmoke/PersonalHostel-Server/issues/112), Build/CI)
+
+- **`/config.js` runtime en Vite 8**: el script clásico de `web-negocio` lleva
+  `vite-ignore` para no empaquetarlo (`type=module` lo rompería).
+  ([#158](https://github.com/jaminsmoke/PersonalHostel-Server/issues/158), Build/CI)
 
 ### Cambiado
 
@@ -95,6 +136,10 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
   e `integration`. Las imágenes runtime ya no incluyen pytest ni los tests y CI
   cancela ejecuciones obsoletas, publica informes durante 14 días y conserva el
   anti-drift OpenAPI y la auditoría de procedencia. ([#23](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/23), Build/CI)
+
+- **Runtime Python 3.14**, dos BD (camareros / negocio) y despliegue VPS como
+  vía oficial (Docker local deprecado). Recolector de logs: Grafana Alloy;
+  Loki 3.7.6 y Grafana 13.1.4.
 
 ## [v0.1] - 2026-08-13
 
@@ -125,5 +170,6 @@ login, revocación/renovación y foto de perfil — con contrato HTTP documentad
   estables (`identity.*`), `docs/openapi.json` en git y gate de CI anti-drift.
   ([#5](https://github.com/jaminsmoke/PersonalHostel-Identity/issues/5), `9bf6681`, Docs)
 
-[Unreleased]: https://github.com/jaminsmoke/PersonalHostel-Server/compare/v0.1...main
+[Unreleased]: https://github.com/jaminsmoke/PersonalHostel-Server/compare/v0.2...HEAD
+[v0.2]: https://github.com/jaminsmoke/PersonalHostel-Server/releases/tag/v0.2
 [v0.1]: https://github.com/jaminsmoke/PersonalHostel-Server/releases/tag/v0.1
