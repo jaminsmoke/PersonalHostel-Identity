@@ -364,7 +364,8 @@ def main() -> int:
                 "curl --fail --silent --show-error http://127.0.0.1:8080/health && "
                 "curl --fail --silent --show-error http://127.0.0.1:8080/v1/meta && "
                 "curl --fail --silent --show-error http://127.0.0.1:8082/health && "
-                "curl --fail --silent --show-error http://127.0.0.1:8082/v1/meta"
+                "curl --fail --silent --show-error http://127.0.0.1:8082/v1/meta && "
+                "curl --fail --silent --show-error --head http://127.0.0.1:8085/"
             )
     finally:
         client.close()
