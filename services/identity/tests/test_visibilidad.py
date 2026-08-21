@@ -126,7 +126,7 @@ def test_ficha_publica_por_qr_solo_campos_visibles(db_ready):
 
 def test_ficha_publica_muestra_email_si_visible(db_ready):
     email = _email()
-    telefono = "+34600111222"
+    telefono = f"+34{uuid.uuid4().hex[:9]}"
     reg = _crear(email, telefono=telefono)
     token = _login(email)["token"]
     client.put(
