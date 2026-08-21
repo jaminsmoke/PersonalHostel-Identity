@@ -47,6 +47,7 @@ docker compose up --build
 - Camareros (API profesionales): http://localhost:8080/health
 - Negocio (cuentas y establecimientos): http://localhost:8082/health
 - Web del profesional: http://localhost:8084 (ficha pública por QR, login y bandeja de invitaciones; el magic-link vive en /invitaciones/<token>)
+- CFC (pedido en mesa): http://localhost:8085 (`/m/<token>`; `/m/demo` es demostración local)
 - Postgres: `localhost:5432` (usuario `hosteleria`; bases `identity_camareros` y `identity_negocio`)
 - Esquema: aplicado por Alembic al arrancar; una cadena por BD (`alembic` para camareros, `alembic_negocio` para negocio)
 
@@ -57,7 +58,7 @@ El staging es producción en configuración (HTTPS, secretos reales, datos borra
 El cliente de despliegue usa una dependencia fijada: `pip install -r
 services/identity/requirements-deploy.txt`.
 
-- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `ficha.siberia.solutions` (histórico con 301), `web.negocio.siberia.solutions` (:8083, web pública de negocios: plantilla Estate Hospitality por slug) y `web.camareros.siberia.solutions` (:8084, web del profesional: credencial, login e invitaciones).
+- Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `ficha.siberia.solutions` (histórico con 301), `web.negocio.siberia.solutions` (:8083, web pública de negocios: plantilla Estate Hospitality por slug), `web.camareros.siberia.solutions` (:8084, web del profesional: credencial, login e invitaciones) y `web.mesa.siberia.solutions` (:8085, CFC: pedir desde el QR de mesa).
 - `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
 - El `.env` de producción vive en `/opt/identity/.env` (gitignored, `root:root`
   y modo `0600`): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
@@ -99,7 +100,7 @@ migrar y termina comprobando health/meta de los dos servicios.
   terminar. La copia externa aprobada usa Cloudflare R2 + restic, pero permanece
   apagada hasta completar el bootstrap, la descarga verificada y la custodia
   separada de la clave (ver `security/backups.md`).
-- Caddyfile: bloques `reverse_proxy` en `/etc/caddy/Caddyfile` (la landing queda intacta): `:8080` camareros, `:8082` negocio, `:8083` `web.negocio`, `:8084` `web.camareros`. Los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 (`/ficha?qr=` → `web.camareros…/camareros?qr=`; `/negocio` y `/carta` → `web.negocio`).
+- Caddyfile: bloques `reverse_proxy` en `/etc/caddy/Caddyfile` (la landing queda intacta): `:8080` camareros, `:8082` negocio, `:8083` `web.negocio`, `:8084` `web.camareros`, `:8085` `web.mesa`. Los dominios históricos `ficha.siberia.solutions` y `carta.siberia.solutions` responden 301 (`/ficha?qr=` → `web.camareros…/camareros?qr=`; `/negocio` y `/carta` → `web.negocio`). El bloque de `web.mesa` se añade en el VPS al publicar CFC; no reutilizar `carta.siberia.solutions` ni `pedir.*`.
 
 ### Observabilidad en el VPS (staging/producción)
 
@@ -400,6 +401,23 @@ La SPA carga `GET /v1/negocio/web` y refetch (polling ~60 s y
 Ficha y carta llaman al servicio de negocio (`NEGOCIO_API_URL`); el origen web se
 autoriza por CORS (`IDENTITY_WEB_ORIGIN`).
 
+### Pedido en mesa (`web-cfc`)
+
+`web-cfc` (React + Vite + Tailwind, nginx, puerto dev `:8085`) es la SPA del
+comensal en `web.mesa.siberia.solutions/m/<token>`. Una sola implementación; el
+token del QR identifica la mesa (la etiqueta B1/T3 es título, no credencial).
+Diseño mobile-first vertical (Carta / Pedido / Cuenta) y parser de voz en
+español al estilo Commander. El audio del micrófono no pasa por Identity: usa
+la Web Speech API del navegador (en Chrome suele ser el motor del sistema; iOS
+puede no tenerla — el tacto es el camino canónico).
+
+Hasta que existan los ítems de tokens e inbox, no hay literales `/v1/...` de
+CFC (family-contracts se mantendría rojo). `/m/demo` muestra un catálogo local
+de demostración; un token real muestra la cáscara y avisa de que el QR aún no
+está dado de alta. `WEB_CFC_URL_BASE` (VPS: `https://web.mesa.siberia.solutions`)
+es la base que usará el contrato de tokens para `url_publica`. CORS incluye
+`http://localhost:8085` y `https://web.mesa.siberia.solutions`.
+
 ### Foto de perfil
 
 La foto se guarda normalizada a un único avatar **256×256 WebP** en un volumen Docker (`fotos`), con la metadata en `camareros`.
@@ -543,10 +561,11 @@ ejecuciones obsoletas de la misma rama y usa permisos de solo lectura:
 - `integration`: Compose con PostgreSQL 16 + tests + cobertura de ramas +
   auditoría de procedencia. Conserva los informes 14 días.
 - `family-contracts`: comprueba que los clientes de la familia (Bar,
-  Commander, web-camareros y web-negocio) no piden operaciones (`método +
+  Commander, web-camareros, web-negocio y web-cfc) no piden operaciones (`método +
   path`) que Identity ya no expone. Sparse-checkout de los repos públicos Bar
   y Commander (refs `bar_ref`/`commander_ref`, default `main`; no ejecuta su
-  código), barrido de `app.js` y `services/web-negocio/src`, e informe en el
+  código), barrido de `app.js`, `services/web-negocio/src` y
+  `services/web-cfc/src`, e informe en el
   summary con las operaciones usadas, las públicas sin consumidor (aviso, no
   rojo) y los SHAs de la combinación. El job falla si un cliente llama un
   path ausente o un verbo no declarado. La normalización canónica es

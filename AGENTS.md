@@ -36,6 +36,7 @@ Kanban: cada app tiene el suyo. Cambio que necesite al otro lado → Detectado e
 | DB | PostgreSQL 16 |
 | Orchestration | Docker Compose |
 | API ports | **8080** (camareros) · **8082** (negocio) — dos servicios, dos BD |
+| Web ports | **8083** (web-negocio) · **8084** (web-camareros) · **8085** (web-cfc / mesa) |
 | Postgres port | **5432** (dev machine only) |
 
 El Compose local sigue siendo reproducible para desarrollo manual, pero los
@@ -120,6 +121,12 @@ PersonalHosteleriaServer/
 │   ├── nginx.conf
 │   ├── 20-web-camareros.sh   # genera config.js en runtime (CAMAREROS_API_URL, NEGOCIO_API_URL)
 │   └── static/               # index.html, style.css, app.js
+├── services/web-cfc/         # CFC: pedir desde el QR de mesa (React + Vite + Tailwind, nginx, :8085)
+│   ├── Dockerfile            # multi-stage: node build → nginx estático
+│   ├── nginx.conf
+│   ├── 20-web-cfc.sh         # genera config.js en runtime (NEGOCIO_API_URL)
+│   ├── package.json          # Vite/React/Tailwind; test = vitest; build = tsc --noEmit && vite build
+│   └── src/                  # App /m/:token, parser de voz, estilos mobile-first
 └── tools/
     ├── README.md
     ├── kanban-cli/
@@ -138,10 +145,10 @@ suprimir hallazgos directamente en el workflow. CodeQL usa default setup para
 Python y Dependabot mantiene pip, Docker, Compose y Actions.
 
 El job `family-contracts` comprueba que los clientes de la familia (Bar,
-Commander, web-camareros y web-negocio) no piden **operaciones**
+Commander, web-camareros, web-negocio y web-cfc) no piden **operaciones**
 (`método + path`) que Identity ya no expone: hace sparse-checkout de los repos
-públicos Bar y Commander (solo fuentes; no ejecuta su código), barre `app.js` y
-`services/web-negocio/src`, y publica en el summary las operaciones usadas por
+públicos Bar y Commander (solo fuentes; no ejecuta su código), barre `app.js`,
+`services/web-negocio/src` y `services/web-cfc/src`, y publica en el summary las operaciones usadas por
 cada cliente y las rutas públicas sin consumidor (aviso, no rojo). Falla si un
 cliente llama un path ausente **o** un verbo que ese path no declara. La
 normalización canónica es `normalize() → *` (cualquier `{param}`, `$var` o
@@ -161,7 +168,7 @@ de conflictos: orden invertido, duplicados con reloj atrasado, modificación vs
 borrado y decisiones repetidas.
 
 Los servicios de API y tests usan UID/GID 10001 y las webs estáticas
-(`web-negocio`, `web-camareros`) usan `nginx` (101). Las tareas Compose `fotos-permissions` y `reports-permissions` son las
+(`web-negocio`, `web-camareros`, `web-cfc`) usan `nginx` (101). Las tareas Compose `fotos-permissions` y `reports-permissions` son las
 únicas excepciones root: son efímeras e idempotentes, solo hacen `chown` de su
 volumen o bind mount heredado y deben completar antes del consumidor. La segunda
 permite que la validación Docker del VPS escriba JUnit y cobertura sin ejecutar
@@ -240,6 +247,15 @@ del local es público por diseño y el precio de la carta siempre visible.
 y `/carta` → `web.negocio`; `/ficha?qr=` → `web.camareros`), con plazo de
 convivencia 6 meses o hasta confirmar que no hay QR impresos. La SPA redirige
 `?seccion=` y hashes `#carta`/`#horario`/… a las rutas nuevas.
+
+La web de pedido en mesa es **`web-cfc`** (`web.mesa.siberia.solutions/m/<token>`,
+React + Vite + Tailwind, nginx, puerto dev `:8085`): una sola SPA; el token opaco
+discrimina la mesa (el comensal no elige B1). Mobile-first vertical, cuenta de
+mesa (no login de cliente) y parser de voz al estilo Commander. El origen entra
+en CORS (`IDENTITY_WEB_ORIGIN`); `WEB_CFC_URL_BASE` es la base que usará el ítem
+de tokens para `url_publica`. No mezclar con `web-negocio` (escaparate) ni
+`web-camareros` (JWT profesional). El contrato de resolve/pedido/cuenta aún no
+está en `/v1`; hasta entonces `/m/demo` es un catálogo local de demostración.
 
 Fuera de v1: rankings. En v0.2, Identity incorpora la entidad de establecimiento, cuenta de negocio, membresías e invitaciones (con invitación por magic-link sin JWT); el mapa, las salas y la lista blanca LAN siguen siendo responsabilidad de Bar. Identity solo guarda un **espejo de respaldo** del layout de Bar (`PUT/GET /v1/establecimientos/{id}/layout`, tabla `layouts_establecimiento.documento` JSONB opaco) para restaurar el mapa en un dispositivo nuevo; no lo interpreta ni lo sirve a Commander. `salas` y `mesas` siguen requeridas en el PUT (convivencia); cualquier clave extra (`zonas`, futuras capas) se persiste y se devuelve tal cual.
 

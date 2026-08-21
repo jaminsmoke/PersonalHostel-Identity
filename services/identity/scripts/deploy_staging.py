@@ -51,6 +51,7 @@ SAFE_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 STAGING_PUBLIC_URLS = {
     "WEB_NEGOCIO_URL_BASE": "https://web.negocio.siberia.solutions",
     "FICHA_URL_BASE": "https://web.camareros.siberia.solutions",
+    "WEB_CFC_URL_BASE": "https://web.mesa.siberia.solutions",
 }
 
 
@@ -363,7 +364,8 @@ def main() -> int:
                 "curl --fail --silent --show-error http://127.0.0.1:8080/health && "
                 "curl --fail --silent --show-error http://127.0.0.1:8080/v1/meta && "
                 "curl --fail --silent --show-error http://127.0.0.1:8082/health && "
-                "curl --fail --silent --show-error http://127.0.0.1:8082/v1/meta"
+                "curl --fail --silent --show-error http://127.0.0.1:8082/v1/meta && "
+                "curl --fail --silent --show-error --head http://127.0.0.1:8085/"
             )
     finally:
         client.close()

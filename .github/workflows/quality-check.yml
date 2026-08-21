@@ -70,3 +70,36 @@ jobs:
             echo "::error::vite-ignore leaked into dist/index.html"
             exit 1
           fi
+
+  web-cfc:
+    name: web-cfc
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/web-cfc
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: services/web-cfc/package-lock.json
+      - name: Install, test and build SPA
+        run: |
+          npm ci
+          npm test
+          set -o pipefail
+          npm run build 2>&1 | tee build.log
+          if grep -F "can't be bundled without type=\"module\"" build.log; then
+            echo "::error::Vite still warns about /config.js; keep vite-ignore on the runtime script."
+            exit 1
+          fi
+          grep -Eq '<script[^>]*src="/config.js"' dist/index.html
+          if grep -E '<script[^>]*vite-ignore' dist/index.html; then
+            echo "::error::vite-ignore leaked into dist/index.html"
+            exit 1
+          fi

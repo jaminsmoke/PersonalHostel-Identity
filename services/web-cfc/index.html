@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#111111" />
+    <title>Tu mesa</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Runtime: nginx escribe /config.js al arrancar. Vite no debe empaquetarlo. -->
+    <script src="/config.js" vite-ignore></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

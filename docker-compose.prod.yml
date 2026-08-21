@@ -46,3 +46,7 @@ services:
   web-camareros:
     ports: !override
       - "127.0.0.1:8084:8080"
+
+  web-cfc:
+    ports: !override
+      - "127.0.0.1:8085:8080"

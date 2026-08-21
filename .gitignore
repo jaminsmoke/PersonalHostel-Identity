@@ -22,4 +22,6 @@ skills-lock.json
 tools/kanban-cli/node_modules/
 services/web-negocio/node_modules/
 services/web-negocio/dist/
+services/web-cfc/node_modules/
+services/web-cfc/dist/
 data/

@@ -25,9 +25,10 @@ os.environ.setdefault(
 )
 os.environ.setdefault("ALLOW_NON_REAL_DATA", "true")
 os.environ.setdefault("WEB_NEGOCIO_URL_BASE", "http://web.test")
+os.environ.setdefault("WEB_CFC_URL_BASE", "http://cfc.test")
 os.environ.setdefault(
     "IDENTITY_WEB_ORIGIN",
-    "http://localhost:8083,http://localhost:8084,https://web.camareros.siberia.solutions,https://web.negocio.siberia.solutions",
+    "http://localhost:8083,http://localhost:8084,http://localhost:8085,https://web.camareros.siberia.solutions,https://web.negocio.siberia.solutions,https://web.mesa.siberia.solutions",
 )
 
 
