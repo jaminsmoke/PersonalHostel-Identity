@@ -5,7 +5,8 @@
 - El access log JSON emite una línea por request para que Alloy/Loki la
   parsee (método, ruta, status y latencia). Sustituye el access log plano de
   uvicorn (que se desactiva con ``--no-access-log`` en entrypoint).
-  El path ``/v1/cfc/mesa/{token}`` se registra como ``/v1/cfc/mesa/*``.
+  El path ``/v1/cfc/mesa/{token}`` (y subrutas) se registra como
+  ``/v1/cfc/mesa/*`` o ``/v1/cfc/mesa/*/carta``.
 """
 
 import json
@@ -23,9 +24,14 @@ _CFC_MESA_PREFIX = "/v1/cfc/mesa/"
 
 def redact_access_path(path: str) -> str:
     """Sustituye el token opaco de mesa por ``*`` para no filtrarlo a Loki."""
-    if path.startswith(_CFC_MESA_PREFIX) and path != _CFC_MESA_PREFIX:
-        return f"{_CFC_MESA_PREFIX}*"
-    return path
+    if not path.startswith(_CFC_MESA_PREFIX) or path == _CFC_MESA_PREFIX:
+        return path
+    resto = path[len(_CFC_MESA_PREFIX) :]
+    segmento, *cola = resto.split("/", 1)
+    if not segmento:
+        return path
+    sufijo = f"/{cola[0]}" if cola else ""
+    return f"{_CFC_MESA_PREFIX}*{sufijo}"
 
 
 def mount_metrics(app: FastAPI) -> None:

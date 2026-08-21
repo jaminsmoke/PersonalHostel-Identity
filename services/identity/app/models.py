@@ -459,6 +459,12 @@ class Establecimiento(NegocioBase):
     mesas_cfc: Mapped[list[MesaCfc]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
+    jornadas_cfc: Mapped[list[JornadaCfc]] = relationship(
+        back_populates="establecimiento", cascade="all, delete-orphan"
+    )
+    pedidos_cfc: Mapped[list[PedidoCfc]] = relationship(
+        back_populates="establecimiento", cascade="all, delete-orphan"
+    )
     horarios: Mapped[list[HorarioEstablecimiento]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
@@ -778,6 +784,81 @@ class MesaCfc(NegocioBase):
     revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     establecimiento: Mapped[Establecimiento] = relationship(back_populates="mesas_cfc")
+
+
+class JornadaCfc(NegocioBase):
+    """Jornada de admisión CFC del local (no es el oficio del camarero)."""
+
+    __tablename__ = "jornadas_cfc"
+    __table_args__ = (
+        Index(
+            "uq_jornadas_cfc_abierta",
+            "establecimiento_id",
+            unique=True,
+            postgresql_where=text("cerrada_en IS NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    abierta_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    ultimo_heartbeat: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    cerrada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    establecimiento: Mapped[Establecimiento] = relationship(back_populates="jornadas_cfc")
+    pedidos: Mapped[list[PedidoCfc]] = relationship(back_populates="jornada")
+
+
+class PedidoCfc(NegocioBase):
+    """Pedido anónimo de mesa: snapshot de líneas y cola durable para Bar."""
+
+    __tablename__ = "pedidos_cfc"
+    __table_args__ = (
+        UniqueConstraint(
+            "establecimiento_id", "idempotency_key", name="uq_pedidos_cfc_idempotencia"
+        ),
+        UniqueConstraint("establecimiento_id", "seq", name="uq_pedidos_cfc_seq"),
+        Index("ix_pedidos_cfc_establecimiento_estado", "establecimiento_id", "estado"),
+        Index("ix_pedidos_cfc_jornada_mesa", "jornada_id", "mesa_uuid"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    jornada_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("jornadas_cfc.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    mesa_uuid: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    etiqueta_snapshot: Mapped[str] = mapped_column(String(40), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    seq: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    estado: Mapped[str] = mapped_column(String(20), nullable=False, default="pendiente")
+    lineas: Mapped[list] = mapped_column(JSONB, nullable=False)
+    total_centimos: Mapped[int] = mapped_column(Integer, nullable=False)
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    actualizado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    establecimiento: Mapped[Establecimiento] = relationship(back_populates="pedidos_cfc")
+    jornada: Mapped[JornadaCfc] = relationship(back_populates="pedidos")
 
 
 class OperacionSync(NegocioBase):

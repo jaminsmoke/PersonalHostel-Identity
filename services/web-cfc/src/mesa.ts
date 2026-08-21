@@ -22,6 +22,8 @@ export type MesaSesion = {
   localNombre: string;
   carta: Producto[];
   cuenta: Linea[];
+  admitePedidos: boolean;
+  barEnLinea: boolean;
   modo: "demo" | "ok" | "pendiente_contrato";
 };
 
@@ -73,6 +75,8 @@ export function cargarMesa(token: string): MesaSesion {
       localNombre: "Demostración",
       carta: CARTA_DEMO,
       cuenta: [],
+      admitePedidos: true,
+      barEnLinea: true,
       modo: "demo",
     };
   }
@@ -82,6 +86,8 @@ export function cargarMesa(token: string): MesaSesion {
     localNombre: "",
     carta: [],
     cuenta: [],
+    admitePedidos: false,
+    barEnLinea: false,
     modo: "pendiente_contrato",
   };
 }

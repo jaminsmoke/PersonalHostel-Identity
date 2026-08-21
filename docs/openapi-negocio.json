@@ -314,6 +314,43 @@
         "title": "CambiosSyncResponse",
         "type": "object"
       },
+      "CartaCfcResponse": {
+        "properties": {
+          "admite_pedidos": {
+            "title": "Admite Pedidos",
+            "type": "boolean"
+          },
+          "bar_en_linea": {
+            "title": "Bar En Linea",
+            "type": "boolean"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "productos": {
+            "items": {
+              "$ref": "#/components/schemas/ProductoCartaCfc"
+            },
+            "title": "Productos",
+            "type": "array"
+          }
+        },
+        "required": [
+          "establecimiento_id",
+          "nombre",
+          "admite_pedidos",
+          "bar_en_linea",
+          "productos"
+        ],
+        "title": "CartaCfcResponse",
+        "type": "object"
+      },
       "CartaPublicaResponse": {
         "properties": {
           "categorias": {
@@ -584,6 +621,48 @@
           }
         },
         "title": "ContactoNegocioPublico",
+        "type": "object"
+      },
+      "CuentaCfcResponse": {
+        "properties": {
+          "admite_pedidos": {
+            "title": "Admite Pedidos",
+            "type": "boolean"
+          },
+          "bar_en_linea": {
+            "title": "Bar En Linea",
+            "type": "boolean"
+          },
+          "etiqueta": {
+            "title": "Etiqueta",
+            "type": "string"
+          },
+          "lineas": {
+            "items": {
+              "$ref": "#/components/schemas/PedidoCfcLinea"
+            },
+            "title": "Lineas",
+            "type": "array"
+          },
+          "mesa_uuid": {
+            "format": "uuid",
+            "title": "Mesa Uuid",
+            "type": "string"
+          },
+          "total_centimos": {
+            "title": "Total Centimos",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mesa_uuid",
+          "etiqueta",
+          "admite_pedidos",
+          "bar_en_linea",
+          "lineas",
+          "total_centimos"
+        ],
+        "title": "CuentaCfcResponse",
         "type": "object"
       },
       "CuentaNegocioPerfil": {
@@ -1456,6 +1535,55 @@
         "title": "InvitacionResponse",
         "type": "object"
       },
+      "JornadaCfcResponse": {
+        "properties": {
+          "abierta_en": {
+            "format": "date-time",
+            "title": "Abierta En",
+            "type": "string"
+          },
+          "bar_en_linea": {
+            "default": true,
+            "title": "Bar En Linea",
+            "type": "boolean"
+          },
+          "cerrada_en": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cerrada En"
+          },
+          "establecimiento_id": {
+            "format": "uuid",
+            "title": "Establecimiento Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "ultimo_heartbeat": {
+            "format": "date-time",
+            "title": "Ultimo Heartbeat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "establecimiento_id",
+          "abierta_en",
+          "ultimo_heartbeat"
+        ],
+        "title": "JornadaCfcResponse",
+        "type": "object"
+      },
       "LayoutResponse": {
         "additionalProperties": true,
         "description": "Copia de respaldo del layout de un establecimiento.\n\nAdemás de los campos fijos, el JSON incluye el resto del documento opaco\n(p. ej. ``zonas``) tal cual se guardó.",
@@ -1663,6 +1791,16 @@
       "MesaCfcPublicaResponse": {
         "description": "Resolución pública del token de mesa (sin carta ni pedidos).",
         "properties": {
+          "admite_pedidos": {
+            "default": false,
+            "title": "Admite Pedidos",
+            "type": "boolean"
+          },
+          "bar_en_linea": {
+            "default": false,
+            "title": "Bar En Linea",
+            "type": "boolean"
+          },
           "establecimiento_id": {
             "format": "uuid",
             "title": "Establecimiento Id",
@@ -2028,6 +2166,178 @@
         "title": "OperacionSyncResponse",
         "type": "object"
       },
+      "PedidoCfcAckRequest": {
+        "properties": {
+          "decision": {
+            "enum": [
+              "aceptado",
+              "rechazado"
+            ],
+            "title": "Decision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "PedidoCfcAckRequest",
+        "type": "object"
+      },
+      "PedidoCfcCreateRequest": {
+        "properties": {
+          "idempotency_key": {
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "lineas": {
+            "items": {
+              "$ref": "#/components/schemas/PedidoCfcLineaRequest"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Lineas",
+            "type": "array"
+          }
+        },
+        "required": [
+          "idempotency_key",
+          "lineas"
+        ],
+        "title": "PedidoCfcCreateRequest",
+        "type": "object"
+      },
+      "PedidoCfcLinea": {
+        "properties": {
+          "cantidad": {
+            "title": "Cantidad",
+            "type": "integer"
+          },
+          "destino": {
+            "title": "Destino",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "precio_centimos": {
+            "title": "Precio Centimos",
+            "type": "integer"
+          },
+          "producto_id": {
+            "format": "uuid",
+            "title": "Producto Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producto_id",
+          "nombre",
+          "cantidad",
+          "precio_centimos",
+          "destino"
+        ],
+        "title": "PedidoCfcLinea",
+        "type": "object"
+      },
+      "PedidoCfcLineaRequest": {
+        "properties": {
+          "cantidad": {
+            "maximum": 99.0,
+            "minimum": 1.0,
+            "title": "Cantidad",
+            "type": "integer"
+          },
+          "producto_id": {
+            "format": "uuid",
+            "title": "Producto Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producto_id",
+          "cantidad"
+        ],
+        "title": "PedidoCfcLineaRequest",
+        "type": "object"
+      },
+      "PedidoCfcResponse": {
+        "properties": {
+          "creado_en": {
+            "format": "date-time",
+            "title": "Creado En",
+            "type": "string"
+          },
+          "estado": {
+            "title": "Estado",
+            "type": "string"
+          },
+          "etiqueta": {
+            "title": "Etiqueta",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lineas": {
+            "items": {
+              "$ref": "#/components/schemas/PedidoCfcLinea"
+            },
+            "title": "Lineas",
+            "type": "array"
+          },
+          "mesa_uuid": {
+            "format": "uuid",
+            "title": "Mesa Uuid",
+            "type": "string"
+          },
+          "seq": {
+            "title": "Seq",
+            "type": "integer"
+          },
+          "total_centimos": {
+            "title": "Total Centimos",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "mesa_uuid",
+          "etiqueta",
+          "estado",
+          "seq",
+          "lineas",
+          "total_centimos",
+          "creado_en"
+        ],
+        "title": "PedidoCfcResponse",
+        "type": "object"
+      },
+      "PedidosCfcListaResponse": {
+        "properties": {
+          "cursor": {
+            "title": "Cursor",
+            "type": "integer"
+          },
+          "pedidos": {
+            "items": {
+              "$ref": "#/components/schemas/PedidoCfcResponse"
+            },
+            "title": "Pedidos",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pedidos",
+          "cursor"
+        ],
+        "title": "PedidosCfcListaResponse",
+        "type": "object"
+      },
       "PerfilEstablecimientoResponse": {
         "description": "Perfil público del establecimiento (gestión con la cuenta de negocio).",
         "properties": {
@@ -2378,6 +2688,40 @@
           }
         },
         "title": "PerfilNegocioPublico",
+        "type": "object"
+      },
+      "ProductoCartaCfc": {
+        "properties": {
+          "categoria": {
+            "title": "Categoria",
+            "type": "string"
+          },
+          "destino": {
+            "title": "Destino",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "nombre": {
+            "title": "Nombre",
+            "type": "string"
+          },
+          "precio_centimos": {
+            "title": "Precio Centimos",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "precio_centimos",
+          "categoria",
+          "destino"
+        ],
+        "title": "ProductoCartaCfc",
         "type": "object"
       },
       "ProductoCartaPublica": {
@@ -3729,6 +4073,212 @@
         ]
       }
     },
+    "/v1/cfc/mesa/{token}/carta": {
+      "get": {
+        "operationId": "carta_mesa_cfc_v1_cfc_mesa__token__carta_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartaCfcResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Carta Mesa Cfc",
+        "tags": [
+          "cfc-publico"
+        ]
+      }
+    },
+    "/v1/cfc/mesa/{token}/cuenta": {
+      "get": {
+        "operationId": "cuenta_mesa_cfc_v1_cfc_mesa__token__cuenta_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaCfcResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cuenta Mesa Cfc",
+        "tags": [
+          "cfc-publico"
+        ]
+      }
+    },
+    "/v1/cfc/mesa/{token}/pedidos": {
+      "post": {
+        "operationId": "crear_pedido_cfc_v1_cfc_mesa__token__pedidos_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedidoCfcCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidoCfcResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Crear Pedido Cfc",
+        "tags": [
+          "cfc-publico"
+        ]
+      }
+    },
     "/v1/enlaces/{slug}": {
       "get": {
         "operationId": "resolver_enlace_v1_enlaces__slug__get",
@@ -4326,6 +4876,447 @@
         "summary": "Obtener Catalogo",
         "tags": [
           "catálogo y sincronización"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/cfc/heartbeat": {
+      "put": {
+        "operationId": "heartbeat_jornada_cfc_v1_establecimientos__establecimiento_id__cfc_heartbeat_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JornadaCfcResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Heartbeat Jornada Cfc",
+        "tags": [
+          "cfc-inbox"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/cfc/jornada/abrir": {
+      "post": {
+        "operationId": "abrir_jornada_cfc_v1_establecimientos__establecimiento_id__cfc_jornada_abrir_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JornadaCfcResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Abrir Jornada Cfc",
+        "tags": [
+          "cfc-inbox"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/cfc/jornada/cerrar": {
+      "post": {
+        "operationId": "cerrar_jornada_cfc_v1_establecimientos__establecimiento_id__cfc_jornada_cerrar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JornadaCfcResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cerrar Jornada Cfc",
+        "tags": [
+          "cfc-inbox"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/cfc/pedidos": {
+      "get": {
+        "operationId": "listar_pedidos_cfc_v1_establecimientos__establecimiento_id__cfc_pedidos_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Cursor",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidosCfcListaResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Listar Pedidos Cfc",
+        "tags": [
+          "cfc-inbox"
+        ]
+      }
+    },
+    "/v1/establecimientos/{establecimiento_id}/cfc/pedidos/{pedido_id}/ack": {
+      "post": {
+        "operationId": "ack_pedido_cfc_v1_establecimientos__establecimiento_id__cfc_pedidos__pedido_id__ack_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "establecimiento_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Establecimiento Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "pedido_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Pedido Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedidoCfcAckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidoCfcResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Token de sesión inválido o caducado."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ack Pedido Cfc",
+        "tags": [
+          "cfc-inbox"
         ]
       }
     },
