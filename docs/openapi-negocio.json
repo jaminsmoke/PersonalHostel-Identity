@@ -1457,7 +1457,8 @@
         "type": "object"
       },
       "LayoutResponse": {
-        "description": "Copia de respaldo del layout de un establecimiento.",
+        "additionalProperties": true,
+        "description": "Copia de respaldo del layout de un establecimiento.\n\nAdemás de los campos fijos, el JSON incluye el resto del documento opaco\n(p. ej. ``zonas``) tal cual se guardó.",
         "properties": {
           "establecimiento_id": {
             "format": "uuid",
@@ -1495,7 +1496,8 @@
         "type": "object"
       },
       "LayoutUpdateRequest": {
-        "description": "Snapshot del layout que sube Bar: salas y mesas tal cual las serializa.\nEstructura interna no validada (copia de respaldo; Bar es la fuente).",
+        "additionalProperties": true,
+        "description": "Snapshot opaco del layout que sube Bar.\n\n``salas`` y ``mesas`` son las capas históricas requeridas (convivencia con\nel cliente actual). Cualquier clave adicional (p. ej. ``zonas``) se persiste\ny se devuelve sin validar la forma. Identity no interpreta el documento.",
         "properties": {
           "mesas": {
             "items": {},
@@ -6073,7 +6075,7 @@
     },
     "/v1/establecimientos/{establecimiento_id}/layout": {
       "get": {
-        "description": "Devuelve la copia de respaldo del layout del mapa. Solo la cuenta dueña.",
+        "description": "Devuelve la copia de respaldo opaca del layout. Solo la cuenta dueña.",
         "operationId": "obtener_layout_v1_establecimientos__establecimiento_id__layout_get",
         "parameters": [
           {
@@ -6150,7 +6152,7 @@
         ]
       },
       "put": {
-        "description": "Copia de respaldo del layout del mapa. Solo la cuenta dueña.",
+        "description": "Copia de respaldo opaca del layout del mapa. Solo la cuenta dueña.",
         "operationId": "guardar_layout_v1_establecimientos__establecimiento_id__layout_put",
         "parameters": [
           {

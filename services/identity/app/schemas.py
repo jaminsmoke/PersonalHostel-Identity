@@ -435,24 +435,67 @@ class InvitacionCamareroResponse(BaseModel):
     creada_en: datetime
 
 
+LAYOUT_META_KEYS = frozenset({"establecimiento_id", "version", "updated_at"})
+
+
 class LayoutUpdateRequest(BaseModel):
-    """Snapshot del layout que sube Bar: salas y mesas tal cual las serializa.
-    Estructura interna no validada (copia de respaldo; Bar es la fuente)."""
+    """Snapshot opaco del layout que sube Bar.
+
+    ``salas`` y ``mesas`` son las capas históricas requeridas (convivencia con
+    el cliente actual). Cualquier clave adicional (p. ej. ``zonas``) se persiste
+    y se devuelve sin validar la forma. Identity no interpreta el documento.
+    """
+
+    model_config = ConfigDict(extra="allow")
 
     salas: list[Any] = Field(..., min_length=0)
     mesas: list[Any] = Field(..., min_length=0)
 
+    @model_validator(mode="after")
+    def _sin_metadatos(self) -> LayoutUpdateRequest:
+        extra = self.__pydantic_extra__ or {}
+        choque = LAYOUT_META_KEYS.intersection(extra)
+        if choque:
+            nombres = ", ".join(sorted(choque))
+            raise ValueError(f"No se pueden enviar metadatos del layout ({nombres})")
+        return self
+
+    def snapshot(self) -> dict[str, Any]:
+        """Documento JSON a persistir, incluidas las claves extra."""
+        return self.model_dump(mode="json")
+
 
 class LayoutResponse(BaseModel):
-    """Copia de respaldo del layout de un establecimiento."""
+    """Copia de respaldo del layout de un establecimiento.
 
-    model_config = ConfigDict(from_attributes=True)
+    Además de los campos fijos, el JSON incluye el resto del documento opaco
+    (p. ej. ``zonas``) tal cual se guardó.
+    """
+
+    model_config = ConfigDict(extra="allow")
 
     establecimiento_id: uuid.UUID
     version: int
     salas: list[Any]
     mesas: list[Any]
     updated_at: datetime
+
+
+def layout_response_from_row(
+    establecimiento_id: uuid.UUID,
+    version: int,
+    updated_at: datetime,
+    documento: dict[str, Any] | None,
+) -> LayoutResponse:
+    """Proyecta el documento opaco sobre el DTO de respuesta (metadatos ganan)."""
+    doc = dict(documento or {})
+    fusionado = {
+        **{clave: valor for clave, valor in doc.items() if clave not in LAYOUT_META_KEYS},
+        "establecimiento_id": establecimiento_id,
+        "version": version,
+        "updated_at": updated_at,
+    }
+    return LayoutResponse.model_validate(fusionado)
 
 
 class ProductoPayload(BaseModel):

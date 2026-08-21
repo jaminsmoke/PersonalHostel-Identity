@@ -1,9 +1,13 @@
 import uuid
+from datetime import UTC, datetime
 
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from app.db import NegocioSessionLocal
+from app.schemas import LayoutResponse, layout_response_from_row
 
 _LAYOUT_SALAS = [
     {"id": "sala-barra", "nombre": "Barra", "orden": 1},
@@ -25,6 +29,19 @@ _LAYOUT_MESAS = [
         "reservaActivaId": None,
     }
 ]
+_LAYOUT_ZONAS = [
+    {
+        "id": "zona-barra-alta",
+        "salaId": "sala-barra",
+        "nombre": "Barra alta",
+        "posX": 40.0,
+        "posY": 80.0,
+        "ancho": 400.0,
+        "alto": 240.0,
+        "color": "AZUL",
+        "camareroId": "camarero-ana",
+    }
+]
 
 
 @pytest.fixture(scope="module")
@@ -36,6 +53,39 @@ def db_ready():
 
 def _email(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4()}@example.com"
+
+
+def test_layout_response_proyecta_extras_y_metadatos_ganan():
+    ahora = datetime(2026, 8, 21, 12, 0, tzinfo=UTC)
+    establecimiento_id = uuid.UUID("3fa85f64-5717-4562-b3fc-2c963f66afa6")
+    respuesta = layout_response_from_row(
+        establecimiento_id,
+        version=4,
+        updated_at=ahora,
+        documento={
+            "salas": _LAYOUT_SALAS,
+            "mesas": _LAYOUT_MESAS,
+            "zonas": _LAYOUT_ZONAS,
+            "version": 1,
+            "establecimiento_id": "ignorar",
+        },
+    )
+    dumped = respuesta.model_dump(mode="json")
+    assert dumped["establecimiento_id"] == str(establecimiento_id)
+    assert dumped["version"] == 4
+    assert dumped["salas"] == _LAYOUT_SALAS
+    assert dumped["mesas"] == _LAYOUT_MESAS
+    assert dumped["zonas"] == _LAYOUT_ZONAS
+
+    mini = FastAPI()
+
+    @mini.get("/layout", response_model=LayoutResponse)
+    def _get() -> LayoutResponse:
+        return respuesta
+
+    encoded = TestClient(mini).get("/layout").json()
+    assert encoded["zonas"] == _LAYOUT_ZONAS
+    assert encoded["version"] == 4
 
 
 def _crear_negocio_con_establecimiento(negocio_client) -> tuple[str, str, str, str]:
@@ -237,3 +287,98 @@ def test_layout_de_otro_negocio_no_se_ve(db_ready, negocio_client):
     headers_b = {"Authorization": f"Bearer {token_b}"}
     get = negocio_client.get(f"/v1/establecimientos/{establecimiento_a}/layout", headers=headers_b)
     assert get.status_code == 403
+
+
+def test_put_layout_con_zonas_round_trip(db_ready, negocio_client):
+    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS, "zonas": _LAYOUT_ZONAS}
+
+    put = negocio_client.put(
+        f"/v1/establecimientos/{establecimiento_id}/layout",
+        headers=headers,
+        json=payload,
+    )
+    assert put.status_code == 200
+    assert put.json()["salas"] == _LAYOUT_SALAS
+    assert put.json()["mesas"] == _LAYOUT_MESAS
+    assert put.json()["zonas"] == _LAYOUT_ZONAS
+
+    get = negocio_client.get(f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers)
+    assert get.status_code == 200
+    assert get.json()["zonas"] == _LAYOUT_ZONAS
+
+
+def test_put_layout_clave_extra_opaca_round_trip(db_ready, negocio_client):
+    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
+    headers = {"Authorization": f"Bearer {token}"}
+    decoracion = [{"id": "neon-1", "tipo": "rotulo"}]
+
+    put = negocio_client.put(
+        f"/v1/establecimientos/{establecimiento_id}/layout",
+        headers=headers,
+        json={"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS, "decoracion": decoracion},
+    )
+    assert put.status_code == 200
+    assert put.json()["decoracion"] == decoracion
+
+    get = negocio_client.get(f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers)
+    assert get.json()["decoracion"] == decoracion
+
+
+def test_put_layout_sin_zonas_no_inventa_la_clave(db_ready, negocio_client):
+    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    put = negocio_client.put(
+        f"/v1/establecimientos/{establecimiento_id}/layout",
+        headers=headers,
+        json={"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS},
+    )
+    assert put.status_code == 200
+    assert "zonas" not in put.json()
+
+    get = negocio_client.get(f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers)
+    assert "zonas" not in get.json()
+
+
+def test_put_layout_sin_extras_sustituye_el_documento(db_ready, negocio_client):
+    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    first = negocio_client.put(
+        f"/v1/establecimientos/{establecimiento_id}/layout",
+        headers=headers,
+        json={"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS, "zonas": _LAYOUT_ZONAS},
+    )
+    assert first.status_code == 200
+    assert first.json()["zonas"] == _LAYOUT_ZONAS
+
+    second = negocio_client.put(
+        f"/v1/establecimientos/{establecimiento_id}/layout",
+        headers=headers,
+        json={"salas": _LAYOUT_SALAS, "mesas": _LAYOUT_MESAS},
+    )
+    assert second.status_code == 200
+    assert "zonas" not in second.json()
+
+    get = negocio_client.get(f"/v1/establecimientos/{establecimiento_id}/layout", headers=headers)
+    assert "zonas" not in get.json()
+
+
+def test_put_layout_metadatos_reservados_422(db_ready, negocio_client):
+    _, token, establecimiento_id, _ = _crear_negocio_con_establecimiento(negocio_client)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    put = negocio_client.put(
+        f"/v1/establecimientos/{establecimiento_id}/layout",
+        headers=headers,
+        json={
+            "salas": _LAYOUT_SALAS,
+            "mesas": _LAYOUT_MESAS,
+            "establecimiento_id": establecimiento_id,
+            "version": 99,
+        },
+    )
+    assert put.status_code == 422
+    assert put.json()["code"] == "identity.validation_error"

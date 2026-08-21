@@ -843,9 +843,9 @@ class NotificacionNegocio(NegocioBase):
 
 
 class LayoutEstablecimiento(NegocioBase):
-    """Copia de respaldo (DR) del layout del mapa: salas y mesas tal cual las
-    serializa Bar. Identity no interpreta el layout; solo lo guarda y lo devuelve.
-    Fuente de verdad: Bar. Una fila por establecimiento.
+    """Copia de respaldo (DR) del layout del mapa: documento JSON opaco tal cual
+    lo serializa Bar. Identity no interpreta el layout; solo lo guarda y lo
+    devuelve. Fuente de verdad: Bar. Una fila por establecimiento.
     """
 
     __tablename__ = "layouts_establecimiento"
@@ -855,8 +855,9 @@ class LayoutEstablecimiento(NegocioBase):
         ForeignKey("establecimientos.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    salas: Mapped[list] = mapped_column(JSONB, nullable=False)
-    mesas: Mapped[list] = mapped_column(JSONB, nullable=False)
+    documento: Mapped[dict] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
+    )
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
