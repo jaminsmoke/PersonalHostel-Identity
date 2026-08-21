@@ -639,6 +639,54 @@ class EnlacePublicoResolucion(BaseModel):
     establecimiento_id: uuid.UUID
 
 
+MAX_MESAS_CFC = 500
+
+
+class MesaCfcItemRequest(BaseModel):
+    """Una mesa del conjunto que Bar envía (UUID estable + etiqueta UX)."""
+
+    mesa_uuid: uuid.UUID
+    etiqueta: str = Field(..., min_length=1, max_length=40)
+
+    @field_validator("etiqueta")
+    @classmethod
+    def _etiqueta_no_vacia(cls, value: str) -> str:
+        limpio = value.strip()
+        if not limpio:
+            raise ValueError("etiqueta vacía")
+        return limpio
+
+
+class MesasCfcSyncRequest(BaseModel):
+    """Conjunto completo de mesas públicas del establecimiento."""
+
+    mesas: list[MesaCfcItemRequest] = Field(..., max_length=MAX_MESAS_CFC)
+
+    @field_validator("mesas")
+    @classmethod
+    def _uuids_unicos(cls, value: list[MesaCfcItemRequest]) -> list[MesaCfcItemRequest]:
+        ids = [item.mesa_uuid for item in value]
+        if len(ids) != len(set(ids)):
+            raise ValueError("mesa_uuid duplicado en el conjunto")
+        return value
+
+
+class MesaCfcResponse(BaseModel):
+    mesa_uuid: uuid.UUID
+    etiqueta: str
+    estado: str
+    url_publica: str | None = None
+
+
+class MesaCfcPublicaResponse(BaseModel):
+    """Resolución pública del token de mesa (sin carta ni pedidos)."""
+
+    establecimiento_id: uuid.UUID
+    establecimiento_nombre: str
+    mesa_uuid: uuid.UUID
+    etiqueta: str
+
+
 class ProductoCartaPublica(BaseModel):
     """Producto visible en la carta pública (sin revisión ni procedencia)."""
 

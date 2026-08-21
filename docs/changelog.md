@@ -10,6 +10,14 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Mesas CFC y tokens opacos**: `PUT/GET /v1/establecimientos/{id}/mesas-cfc`
+  y `POST .../{mesa_uuid}/rotar` (cuenta titular). Bar envía el conjunto;
+  Identity emite el token, lo busca por SHA-256 y reconstruye `url_publica`
+  con SecretBox. `GET /v1/cfc/mesa/{token}` identifica la mesa (`404`/`410`,
+  `no-store`). web-cfc consume ese GET; `/m/demo` sigue local. Migración
+  `0014_mesas_cfc`. No se parsea el layout.
+  ([#171](https://github.com/jaminsmoke/PersonalHostel-Server/issues/171), API)
+
 - **Web CFC (`web-cfc`)**: SPA React en `:8085` / `web.mesa.siberia.solutions`
   para pedir desde el QR de mesa (`/m/<token>`). Mobile-first vertical, cuenta
   de mesa, parser de voz y andamiaje Compose/CORS/`WEB_CFC_URL_BASE`. El

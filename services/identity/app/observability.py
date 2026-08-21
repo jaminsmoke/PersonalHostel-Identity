@@ -5,6 +5,7 @@
 - El access log JSON emite una línea por request para que Alloy/Loki la
   parsee (método, ruta, status y latencia). Sustituye el access log plano de
   uvicorn (que se desactiva con ``--no-access-log`` en entrypoint).
+  El path ``/v1/cfc/mesa/{token}`` se registra como ``/v1/cfc/mesa/*``.
 """
 
 import json
@@ -16,6 +17,15 @@ from fastapi import FastAPI, Request
 from prometheus_fastapi_instrumentator import Instrumentator
 
 access_logger = logging.getLogger("app.access")
+
+_CFC_MESA_PREFIX = "/v1/cfc/mesa/"
+
+
+def redact_access_path(path: str) -> str:
+    """Sustituye el token opaco de mesa por ``*`` para no filtrarlo a Loki."""
+    if path.startswith(_CFC_MESA_PREFIX) and path != _CFC_MESA_PREFIX:
+        return f"{_CFC_MESA_PREFIX}*"
+    return path
 
 
 def mount_metrics(app: FastAPI) -> None:
@@ -50,7 +60,7 @@ def mount_access_log(app: FastAPI) -> None:
                     {
                         "service": os.environ.get("SERVICE", "camareros"),
                         "method": request.method,
-                        "path": request.url.path,
+                        "path": redact_access_path(request.url.path),
                         "status": status_code,
                         "duration_ms": duration_ms,
                     }

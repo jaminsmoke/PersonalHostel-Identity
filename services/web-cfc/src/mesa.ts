@@ -22,7 +22,7 @@ export type MesaSesion = {
   localNombre: string;
   carta: Producto[];
   cuenta: Linea[];
-  modo: "demo" | "pendiente_contrato";
+  modo: "demo" | "ok" | "pendiente_contrato";
 };
 
 /** Catálogo local solo para el token `demo`. No simula aceptación de Bar. */

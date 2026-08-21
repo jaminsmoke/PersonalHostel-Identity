@@ -456,6 +456,9 @@ class Establecimiento(NegocioBase):
     enlaces: Mapped[list[EnlacePublico]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
+    mesas_cfc: Mapped[list[MesaCfc]] = relationship(
+        back_populates="establecimiento", cascade="all, delete-orphan"
+    )
     horarios: Mapped[list[HorarioEstablecimiento]] = relationship(
         back_populates="establecimiento", cascade="all, delete-orphan"
     )
@@ -731,6 +734,50 @@ class EnlacePublico(NegocioBase):
     revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     establecimiento: Mapped[Establecimiento] = relationship(back_populates="enlaces")
+
+
+class MesaCfc(NegocioBase):
+    """Mesa pública CFC: UUID familiar + token opaco (hash + SecretBox)."""
+
+    __tablename__ = "mesas_cfc"
+    __table_args__ = (
+        UniqueConstraint("token_hash", name="uq_mesas_cfc_token_hash"),
+        Index(
+            "uq_mesas_cfc_activa",
+            "establecimiento_id",
+            "mesa_uuid",
+            unique=True,
+            postgresql_where=text("estado = 'activo'"),
+        ),
+        Index("ix_mesas_cfc_establecimiento_estado", "establecimiento_id", "estado"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    establecimiento_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("establecimientos.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    mesa_uuid: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    etiqueta: Mapped[str] = mapped_column(String(40), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    token_protegido: Mapped[str] = mapped_column(Text, nullable=False)
+    estado: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=EnlaceEstado.activo.value,
+        server_default=EnlaceEstado.activo.value,
+    )
+    creada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    actualizada_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    establecimiento: Mapped[Establecimiento] = relationship(back_populates="mesas_cfc")
 
 
 class OperacionSync(NegocioBase):
