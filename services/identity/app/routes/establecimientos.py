@@ -53,6 +53,7 @@ from app.models import (
     MembresiaRol,
     VisibleOtrosEstablecimientos,
 )
+from app.rate_limit import OPENAPI_RATE_LIMIT, enforce_upload_cuenta
 from app.schemas import (
     CamareroDirectorioResponse,
     CamareroSearchResponse,
@@ -186,6 +187,7 @@ def actualizar_establecimiento(
         status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
         status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
         status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse},
+        **OPENAPI_RATE_LIMIT,
     },
 )
 async def subir_logo_establecimiento(
@@ -194,6 +196,7 @@ async def subir_logo_establecimiento(
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
     db: Session = Depends(get_negocio_db),
 ) -> LogoNegocioResponse:
+    enforce_upload_cuenta(cuenta.id)
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     data = await logo.read(MAX_INPUT_BYTES + 1)
     try:

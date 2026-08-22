@@ -30,6 +30,7 @@ python services/identity/scripts/deploy_staging.py --preflight-only
 | `POSTGRES_PASSWORD` | PostgreSQL, APIs, worker, exporter y tests remotos | Una rotación descoordinada corta toda persistencia | Añadir credencial nueva/ventana, actualizar consumidores, comprobar health y retirar la anterior |
 | `EMAIL_PASSWORD` | Worker y Alertmanager | Detiene invitaciones y alertas por correo | Rotar en proveedor, actualizar ambos consumidores y enviar pruebas sintéticas |
 | `GRAFANA_ADMIN_PASSWORD` | Grafana | Afecta acceso administrativo | Confirmar segundo acceso/basic auth, cambiar y verificar login antes de cerrar sesión |
+| `REDIS_PASSWORD` | Redis y APIs | Sin él las APIs no arrancan (cuotas fail-closed) | Cambiar en `.env`, recrear el servicio `redis` y las APIs, comprobar login y un POST CFC |
 | Clave SSH de deploy | Operador y `sshd` | Puede bloquear administración del VPS | Instalar clave nueva, probar una segunda sesión y solo después retirar la anterior |
 | `HOSTINGER_API_KEY` | Herramientas locales | Afecta operaciones del proveedor | Mantener fuera del VPS, crear/restringir nueva, probar y revocar anterior |
 

@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, File, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,12 @@ from app.errors import (
 from app.images import MAX_INPUT_BYTES, FotoInvalida, normalizar_foto
 from app.internal import get_camareros_internal
 from app.models import CuentaNegocio
+from app.rate_limit import (
+    OPENAPI_RATE_LIMIT,
+    enforce_login_limits,
+    enforce_registro_ip,
+    enforce_upload_cuenta,
+)
 from app.schemas import (
     CambioPasswordRequest,
     CambioPasswordResponse,
@@ -48,10 +54,14 @@ router = APIRouter(prefix="/v1/auth/negocio", tags=["negocio"])
     "/registro",
     response_model=RegistroNegocioResponse,
     status_code=status.HTTP_201_CREATED,
+    responses=OPENAPI_RATE_LIMIT,
 )
 def registrar_negocio(
-    payload: RegistroNegocioRequest, db: Session = Depends(get_negocio_db)
+    request: Request,
+    payload: RegistroNegocioRequest,
+    db: Session = Depends(get_negocio_db),
 ) -> RegistroNegocioResponse:
+    enforce_registro_ip(request)
     ensure_data_origin_allowed(payload.data_origin)
     if payload.camarero_vinculado_id is not None:
         linked_waiter = get_camareros_internal().perfil(payload.camarero_vinculado_id)
@@ -91,10 +101,17 @@ def registrar_negocio(
     return RegistroNegocioResponse(id=cuenta.id, data_origin=cuenta.data_origin)
 
 
-@router.post("/login", response_model=LoginNegocioResponse)
+@router.post(
+    "/login",
+    response_model=LoginNegocioResponse,
+    responses=OPENAPI_RATE_LIMIT,
+)
 def login_negocio(
-    payload: LoginRequest, db: Session = Depends(get_negocio_db)
+    request: Request,
+    payload: LoginRequest,
+    db: Session = Depends(get_negocio_db),
 ) -> LoginNegocioResponse:
+    enforce_login_limits(request, payload.email)
     cuenta = db.query(CuentaNegocio).filter_by(email=payload.email.lower()).one_or_none()
     if cuenta is None or not verify_password(payload.password, cuenta.password_hash):
         raise ApiError(
@@ -181,6 +198,7 @@ def cambiar_password_negocio(
     responses={
         status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse},
         status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse},
+        **OPENAPI_RATE_LIMIT,
     },
 )
 async def subir_logo(
@@ -188,6 +206,7 @@ async def subir_logo(
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
     db: Session = Depends(get_negocio_db),
 ) -> LogoNegocioResponse:
+    enforce_upload_cuenta(cuenta.id)
     data = await logo.read(MAX_INPUT_BYTES + 1)
     try:
         payload, mimetype, size = normalizar_foto(data)

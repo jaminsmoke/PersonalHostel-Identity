@@ -19,6 +19,8 @@ def _config(app, port: int) -> uvicorn.Config:
         port=port,
         access_log=False,
         lifespan="on",
+        proxy_headers=True,
+        forwarded_allow_ips=os.environ.get("FORWARDED_ALLOW_IPS", "127.0.0.1"),
     )
 
 

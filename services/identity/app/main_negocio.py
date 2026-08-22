@@ -8,6 +8,7 @@ from sqlalchemy import text
 from app.db import negocio_engine
 from app.http import register_error_handlers
 from app.observability import mount_access_log
+from app.rate_limit import ping_redis
 from app.routes.catalogo import router as catalogo_router
 from app.routes.cfc_inbox import public_router as cfc_inbox_public_router
 from app.routes.cfc_inbox import router as cfc_inbox_router
@@ -34,6 +35,7 @@ from app.routes.perfil_web import router as perfil_web_router
 async def lifespan(app: FastAPI):
     with negocio_engine.connect() as conn:
         conn.execute(text("SELECT 1"))
+    ping_redis()
     yield
 
 

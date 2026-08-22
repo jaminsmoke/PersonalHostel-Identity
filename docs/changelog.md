@@ -8,6 +8,16 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Añadido
+
+- **Límites de abuso**: Redis en Compose (sin persistencia ni puerto público en
+  prod) y cuotas en la API. Login por IP+email, registro por IP, uploads por
+  cuenta JWT, POST CFC por hash del token de mesa. `429 identity.rate_limited`
+  + `Retry-After`; Redis caído → `503 identity.rate_limit_unavailable` en esas
+  rutas (`/health` no depende de Redis). Recorte grosero por IP en Caddy:
+  `deploy/caddy/`. web-cfc y web-camareros muestran el 429.
+  ([#177](https://github.com/jaminsmoke/PersonalHostel-Server/issues/177), API)
+
 ### Corregido
 
 - **Listener interno `:8081`**: `/internal/*` y `/metrics` salen de la app que

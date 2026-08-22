@@ -8,6 +8,7 @@ from sqlalchemy import text
 from app.db import camarero_engine
 from app.http import register_error_handlers
 from app.observability import mount_access_log
+from app.rate_limit import ping_redis
 from app.routes.auth import router as auth_router
 from app.routes.camareros import router as camareros_router
 from app.routes.keys import router as keys_router
@@ -18,6 +19,7 @@ from app.routes.oficio import router as oficio_router
 async def lifespan(app: FastAPI):
     with camarero_engine.connect() as conn:
         conn.execute(text("SELECT 1"))
+    ping_redis()
     yield
 
 

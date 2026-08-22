@@ -4,7 +4,7 @@
 # Diferencias con dev:
 #   - Las APIs y la web publican SOLO en 127.0.0.1 (Caddy las expone por 80/443).
 #     Esto evita que Docker eluda UFW publicando en 0.0.0.0.
-#   - Postgres NO publica puerto (solo red interna Docker).
+#   - Postgres y Redis NO publican puerto (solo red interna Docker).
 #   - El resto (secretos, ALLOW_NON_REAL_DATA=false, URLs públicas) se controla
 #     con el `.env` del VPS, no aquí.
 services:
@@ -12,6 +12,19 @@ services:
     ports: !reset []
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatorio en producción}
+
+  redis:
+    ports: !reset []
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?REDIS_PASSWORD es obligatorio en producción}
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD es obligatorio en producción}
+      - --save
+      - ""
+      - --appendonly
+      - "no"
 
   identity-camareros:
     ports: !override
@@ -22,6 +35,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET es obligatorio en producción}
       QR_SIGNING_KEY: ${QR_SIGNING_KEY:?QR_SIGNING_KEY es obligatorio en producción}
       ALLOW_NON_REAL_DATA: "false"
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD es obligatorio en producción}@redis:6379/0
 
   identity-negocio:
     ports: !override
@@ -32,6 +46,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET es obligatorio en producción}
       QR_SIGNING_KEY: ${QR_SIGNING_KEY:?QR_SIGNING_KEY es obligatorio en producción}
       ALLOW_NON_REAL_DATA: "false"
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD es obligatorio en producción}@redis:6379/0
 
   email-worker:
     environment:

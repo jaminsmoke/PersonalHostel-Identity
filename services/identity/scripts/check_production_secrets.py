@@ -16,6 +16,7 @@ KNOWN_DEFAULTS = {
     "SESSION_SECRET": {"BdZh-Awc4rEhsHCtzyUoufxqf7mT97y68QhilC9fxVnszS4CFmICrNRncw7vVeN2"},
     "QR_SIGNING_KEY": {"osYIdBW7fkucKVqY9St5yQKpLpDuAzJ4PeRaFMXbtDI="},
     "GRAFANA_ADMIN_PASSWORD": {"admin"},
+    "REDIS_PASSWORD": {"devlocal"},
 }
 REQUIRED_SECRETS = {
     "POSTGRES_PASSWORD": 16,
@@ -23,6 +24,7 @@ REQUIRED_SECRETS = {
     "QR_SIGNING_KEY": 44,
     "EMAIL_PASSWORD": 8,
     "GRAFANA_ADMIN_PASSWORD": 12,
+    "REDIS_PASSWORD": 16,
 }
 
 
@@ -47,6 +49,10 @@ class SecretError(StrEnum):
     GRAFANA_DUPLICATE = "GRAFANA_ADMIN_PASSWORD: definición duplicada"
     GRAFANA_DEFAULT = "GRAFANA_ADMIN_PASSWORD: coincide con un default conocido"
     GRAFANA_SHORT = "GRAFANA_ADMIN_PASSWORD: longitud insuficiente"
+    REDIS_MISSING = "REDIS_PASSWORD: ausente o vacío"
+    REDIS_DUPLICATE = "REDIS_PASSWORD: definición duplicada"
+    REDIS_DEFAULT = "REDIS_PASSWORD: coincide con un default conocido"
+    REDIS_SHORT = "REDIS_PASSWORD: longitud insuficiente"
     NON_REAL_DATA = "ALLOW_NON_REAL_DATA: debe ser false en producción"
     R2_ACCOUNT_MISSING = "R2_ACCOUNT_ID: requerido cuando el backup externo está activo"
     R2_BUCKET_MISSING = "R2_BUCKET: requerido cuando el backup externo está activo"
@@ -63,6 +69,7 @@ MISSING_ERRORS = {
     "QR_SIGNING_KEY": SecretError.QR_MISSING,
     "EMAIL_PASSWORD": SecretError.EMAIL_MISSING,
     "GRAFANA_ADMIN_PASSWORD": SecretError.GRAFANA_MISSING,
+    "REDIS_PASSWORD": SecretError.REDIS_MISSING,
 }
 DUPLICATE_ERRORS = {
     "POSTGRES_PASSWORD": SecretError.POSTGRES_DUPLICATE,
@@ -70,12 +77,14 @@ DUPLICATE_ERRORS = {
     "QR_SIGNING_KEY": SecretError.QR_DUPLICATE,
     "EMAIL_PASSWORD": SecretError.EMAIL_DUPLICATE,
     "GRAFANA_ADMIN_PASSWORD": SecretError.GRAFANA_DUPLICATE,
+    "REDIS_PASSWORD": SecretError.REDIS_DUPLICATE,
 }
 DEFAULT_ERRORS = {
     "POSTGRES_PASSWORD": SecretError.POSTGRES_DEFAULT,
     "SESSION_SECRET": SecretError.SESSION_DEFAULT,
     "QR_SIGNING_KEY": SecretError.QR_DEFAULT,
     "GRAFANA_ADMIN_PASSWORD": SecretError.GRAFANA_DEFAULT,
+    "REDIS_PASSWORD": SecretError.REDIS_DEFAULT,
 }
 SHORT_ERRORS = {
     "POSTGRES_PASSWORD": SecretError.POSTGRES_SHORT,
@@ -83,6 +92,7 @@ SHORT_ERRORS = {
     "QR_SIGNING_KEY": SecretError.QR_SHORT,
     "EMAIL_PASSWORD": SecretError.EMAIL_SHORT,
     "GRAFANA_ADMIN_PASSWORD": SecretError.GRAFANA_SHORT,
+    "REDIS_PASSWORD": SecretError.REDIS_SHORT,
 }
 
 
