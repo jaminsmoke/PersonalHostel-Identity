@@ -7,10 +7,9 @@ from sqlalchemy import text
 
 from app.db import camarero_engine
 from app.http import register_error_handlers
-from app.observability import mount_access_log, mount_metrics
+from app.observability import mount_access_log
 from app.routes.auth import router as auth_router
 from app.routes.camareros import router as camareros_router
-from app.routes.internal import camareros_internal_router
 from app.routes.keys import router as keys_router
 from app.routes.oficio import router as oficio_router
 
@@ -30,7 +29,6 @@ app = FastAPI(
 )
 
 register_error_handlers(app)
-mount_metrics(app)
 mount_access_log(app)
 
 _web_origins = [
@@ -53,7 +51,6 @@ app.include_router(camareros_router)
 app.include_router(oficio_router)
 app.include_router(auth_router)
 app.include_router(keys_router)
-app.include_router(camareros_internal_router)
 
 
 @app.get("/health")

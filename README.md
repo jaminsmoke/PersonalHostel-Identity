@@ -22,7 +22,7 @@ Desde el split de dominios, Identity se despliega como **dos servicios** con **b
 Ambos comparten dos secretos inyectados por la orquestación (`SESSION_SECRET` y
 `QR_SIGNING_KEY`) para que los JWT y el QR `phid1` funcionen entre servicios. Las
 consultas que cruzan la frontera (buscar/verificar camarero, establecimientos de
-un camarero) van por un **cliente interno** (`/internal/*`) con dos transportes:
+un camarero) van por un **cliente interno** (`/internal/*` en `:8081`) con dos transportes:
 `direct` (tests) y `http` (Compose/VPS).
 
 - Camareros (identidad profesional): rutas `/v1/camareros/*`, `/v1/auth/login`, `/v1/keys/qr` → `:8080`.
@@ -104,7 +104,8 @@ migrar y termina comprobando health/meta de los dos servicios.
 
 ### Observabilidad en el VPS (staging/producción)
 
-Las APIs exponen `/metrics` (formato Prometheus, no público: Prometheus lo raspa por la red interna) y un access log JSON por request. El stack de observabilidad se levanta **solo** en el VPS, apilando un tercer fichero. El deploy (`deploy_staging.py` sin `--validate-only`) lo restaura al final con el wrapper; `validate-only` **no** lo toca.
+Las APIs exponen `/metrics` en el listener interno `:8081` (Prometheus lo raspa
+por la red Docker; Caddy no publica ese puerto) y un access log JSON por request. El stack de observabilidad se levanta **solo** en el VPS, apilando un tercer fichero. El deploy (`deploy_staging.py` sin `--validate-only`) lo restaura al final con el wrapper; `validate-only` **no** lo toca.
 
 ```bash
 # En el VPS (/opt/identity) — preferir el wrapper (anti-orphan)

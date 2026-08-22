@@ -44,7 +44,7 @@ COPY --from=runtime-files / /
 WORKDIR /app
 USER 10001:10001
 
-EXPOSE 8080
+EXPOSE 8080 8081
 CMD ["sh", "/app/scripts/entrypoint.sh"]
 
 FROM runtime AS production

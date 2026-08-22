@@ -35,7 +35,7 @@ Kanban: cada app tiene el suyo. Cambio que necesite al otro lado → Detectado e
 | API | Python 3.14 + FastAPI + Uvicorn |
 | DB | PostgreSQL 16 |
 | Orchestration | Docker Compose |
-| API ports | **8080** (camareros) · **8082** (negocio) — dos servicios, dos BD |
+| API ports | **8080** (camareros, público) · **8082** (negocio, público) · **8081** interno de cada contenedor (`/internal`, `/metrics`; no Caddy) |
 | Web ports | **8083** (web-negocio) · **8084** (web-camareros) · **8085** (web-cfc / mesa) |
 | Postgres port | **5432** (dev machine only) |
 
@@ -282,7 +282,7 @@ El **directorio de camareros** para invitar (`GET /v1/establecimientos/{id}/cama
 
 Bar y Commander **no** copian usuarios a SQLite como fuente de verdad. Cachean la sesión. La verdad está aquí.
 
-El transporte interno entre servicios (`INTERNAL_TRANSPORT=http`, rutas `/internal/*`) usa **`httpx2`** (fork mantenido por Pydantic; `httpx` quedó sin mantenimiento en 2024). No reintroducir `httpx`. El status 422 se referencia como `HTTP_422_UNPROCESSABLE_CONTENT` (el nombre anterior está deprecado).
+El transporte interno entre servicios (`INTERNAL_TRANSPORT=http`, rutas `/internal/*` en el listener `:8081`) usa **`httpx2`** (fork mantenido por Pydantic; `httpx` quedó sin mantenimiento en 2024). No reintroducir `httpx`. El status 422 se referencia como `HTTP_422_UNPROCESSABLE_CONTENT` (el nombre anterior está deprecado).
 
 La procedencia de datos también es canónica aquí: camareros y cuentas aceptan
 `data_origin = real|test|demo` al registrarse (`real` por defecto); establecimiento
@@ -660,7 +660,7 @@ por `__pycache__` root: la guarda `PYTHONDONTWRITEBYTECODE` está completa
 
 ## Observabilidad (solo staging/producción)
 
-Las APIs exponen `/metrics` (Prometheus, solo red interna) y un access log JSON.
+Las APIs exponen `/metrics` en `:8081` (Prometheus, red Docker; Caddy no lo publica) y un access log JSON.
 El stack de observabilidad vive en `docker-compose.observability.yml` (Prometheus,
 Grafana, Loki, Alloy, node_exporter, postgres_exporter y Alertmanager) y **no**
 forma parte del `up` de desarrollo. En el VPS se gestiona con

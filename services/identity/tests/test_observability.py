@@ -5,16 +5,16 @@ from app.main_negocio import app as negocio_app
 from app.observability import access_logger
 
 
-def test_metrics_camareros_expone_formato_prometheus(camarero_client):
-    resp = camarero_client.get("/metrics")
+def test_metrics_camareros_expone_formato_prometheus(camarero_internal_client):
+    resp = camarero_internal_client.get("/metrics")
     assert resp.status_code == 200
     body = resp.text
     assert "http_requests_total" in body
     assert "http_request_duration_seconds" in body
 
 
-def test_metrics_negocio_expone_formato_prometheus(negocio_client):
-    resp = negocio_client.get("/metrics")
+def test_metrics_negocio_expone_formato_prometheus(negocio_internal_client):
+    resp = negocio_internal_client.get("/metrics")
     assert resp.status_code == 200
     assert "http_requests_total" in resp.text
 

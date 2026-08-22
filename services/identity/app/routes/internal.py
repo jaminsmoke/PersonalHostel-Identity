@@ -1,8 +1,8 @@
 """Rutas internas servicio-a-servicio (sin auth; red de confianza).
 
 El servicio de negocio llama a ``/internal/camareros/*`` y el de profesionales a
-``/internal/camareros/{id}/establecimientos``. Solo se alcanzan desde el otro
-servicio vía ``CAMAREROS_INTERNAL_URL`` / ``NEGOCIO_INTERNAL_URL``.
+``/internal/camareros/{id}/establecimientos``. Solo se alcanzan en el listener
+interno (``:8081``), vía ``CAMAREROS_INTERNAL_URL`` / ``NEGOCIO_INTERNAL_URL``.
 """
 
 import uuid

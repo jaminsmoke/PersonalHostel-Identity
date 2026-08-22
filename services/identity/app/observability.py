@@ -1,7 +1,8 @@
 """Observabilidad mínima de las APIs: métricas Prometheus y access log JSON.
 
 - ``/metrics`` (formato Prometheus) lo expone ``prometheus-fastapi-instrumentator``.
-  No se sirve por Caddy; Prometheus lo raspa por la red interna de Docker.
+  No se sirve por Caddy: vive en el listener interno ``:8081``.
+  Prometheus lo raspa por la red Docker (``identity-*:8081``).
 - El access log JSON emite una línea por request para que Alloy/Loki la
   parsee (método, ruta, status y latencia). Sustituye el access log plano de
   uvicorn (que se desactiva con ``--no-access-log`` en entrypoint).
