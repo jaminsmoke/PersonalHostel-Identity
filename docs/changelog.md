@@ -8,6 +8,14 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Corregido
+
+- **Listener interno `:8081`**: `/internal/*` y `/metrics` salen de la app que
+  Caddy publica (`:8080`). Un proceso, dos sockets; Prometheus y el HTTP entre
+  servicios usan `:8081` (no se publica en el host). OpenAPI público ya no
+  documenta `/internal`.
+  ([#175](https://github.com/jaminsmoke/PersonalHostel-Server/issues/175), Infra)
+
 ### Añadido
 
 - **Inbox CFC**: jornada de local, heartbeat, carta/cuenta/pedido por token de

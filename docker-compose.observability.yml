@@ -11,8 +11,8 @@
 # Piezas: Prometheus (métricas + reglas), Alertmanager (email), Grafana
 # (dashboards), Loki + Alloy (logs de contenedores), node_exporter (host) y
 # postgres_exporter (BD). Todo bind a 127.0.0.1; solo Grafana se expone por
-# Caddy (con basic_auth). Las APIs no exponen /metrics por Caddy: Prometheus
-# las raspa por la red interna de Docker.
+# Caddy (con basic_auth). Las APIs no publican /metrics por Caddy: viven en
+# el listener interno `:8081` y Prometheus las raspa por la red Docker.
 #
 # Nota de alcance: sin cadvisor (evita montar /var/run/docker.sock en el VPS);
 # las métricas de host las da node_exporter y las de contenedor las /metrics de

@@ -9,7 +9,7 @@ cliente, con dos transportes:
 - ``direct`` (default, tests y ejecución en un solo proceso): consulta la BD del
   otro servicio directamente, sin red.
 - ``http`` (Docker Compose / VPS): llama a las rutas ``/internal/*`` del otro
-  servicio mediante httpx.
+  servicio en el listener interno (``:8081``) mediante httpx.
 
 El transporte se elige con la variable ``INTERNAL_TRANSPORT`` (``direct`` por
 defecto). En ``http`` se requieren ``CAMAREROS_INTERNAL_URL`` y

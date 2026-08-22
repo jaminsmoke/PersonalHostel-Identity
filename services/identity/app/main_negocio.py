@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from app.db import negocio_engine
 from app.http import register_error_handlers
-from app.observability import mount_access_log, mount_metrics
+from app.observability import mount_access_log
 from app.routes.catalogo import router as catalogo_router
 from app.routes.cfc_inbox import public_router as cfc_inbox_public_router
 from app.routes.cfc_inbox import router as cfc_inbox_router
@@ -21,7 +21,6 @@ from app.routes.establecimientos import (
 )
 from app.routes.fondos import router as fondos_router
 from app.routes.horario import router as horario_router
-from app.routes.internal import negocio_internal_router
 from app.routes.mesas_cfc import public_router as mesas_cfc_public_router
 from app.routes.mesas_cfc import router as mesas_cfc_router
 from app.routes.negocio_auth import router as negocio_auth_router
@@ -49,7 +48,6 @@ app = FastAPI(
 )
 
 register_error_handlers(app)
-mount_metrics(app)
 mount_access_log(app)
 
 _web_origins = [
@@ -85,7 +83,6 @@ app.include_router(oficio_negocio_router)
 app.include_router(horario_router)
 app.include_router(perfil_web_router)
 app.include_router(fondos_router)
-app.include_router(negocio_internal_router)
 
 
 @app.get("/health")

@@ -74,3 +74,19 @@ def negocio_client() -> TestClient:
 
     with TestClient(app) as client:
         yield client
+
+
+@pytest.fixture(scope="session")
+def camarero_internal_client() -> TestClient:
+    from app.main_internal import app
+
+    with TestClient(app) as client:
+        yield client
+
+
+@pytest.fixture(scope="session")
+def negocio_internal_client() -> TestClient:
+    from app.main_negocio_internal import app
+
+    with TestClient(app) as client:
+        yield client

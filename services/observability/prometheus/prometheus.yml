@@ -14,12 +14,12 @@ scrape_configs:
   - job_name: identity-camareros
     metrics_path: /metrics
     static_configs:
-      - targets: ["identity-camareros:8080"]
+      - targets: ["identity-camareros:8081"]
 
   - job_name: identity-negocio
     metrics_path: /metrics
     static_configs:
-      - targets: ["identity-negocio:8080"]
+      - targets: ["identity-negocio:8081"]
 
   - job_name: node
     static_configs:

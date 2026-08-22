@@ -70,6 +70,8 @@ def test_openapi_camareros_documenta_rutas_y_version(camarero_client):
     for ruta in CAMAREROS_RUTAS:
         assert ruta in paths, f"Falta {ruta} en el spec de camareros"
     assert "ErrorResponse" in spec["components"]["schemas"]
+    assert not any(ruta.startswith("/internal") for ruta in paths)
+    assert "/metrics" not in paths
 
 
 def test_openapi_negocio_documenta_rutas_y_version(negocio_client):
@@ -80,6 +82,8 @@ def test_openapi_negocio_documenta_rutas_y_version(negocio_client):
     paths = spec["paths"]
     for ruta in NEGOCIO_RUTAS:
         assert ruta in paths, f"Falta {ruta} en el spec de negocio"
+    assert not any(ruta.startswith("/internal") for ruta in paths)
+    assert "/metrics" not in paths
     assert "/v1/negocio/ficha" not in paths
     assert "/v1/negocio/ficha/logo" not in paths
     assert "get" in paths["/v1/auth/negocio/me"]
