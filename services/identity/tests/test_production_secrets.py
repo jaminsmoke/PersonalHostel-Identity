@@ -16,6 +16,7 @@ def valid_values():
         "QR_SIGNING_KEY": base64.b64encode(b"q" * 32).decode(),
         "EMAIL_PASSWORD": "smtp-password-123",
         "GRAFANA_ADMIN_PASSWORD": "grafana-password-123",
+        "REDIS_PASSWORD": "redis-password-strong",
         "ALLOW_NON_REAL_DATA": "false",
     }
 

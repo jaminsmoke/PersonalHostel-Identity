@@ -6,7 +6,7 @@ export type MesaResolveError = {
 };
 
 export type PedidoError = {
-  tipo: "cerrado" | "red";
+  tipo: "cerrado" | "limite" | "red";
 };
 
 type MesaPublica = {
@@ -50,7 +50,7 @@ export function esErrorPedido(err: unknown): err is PedidoError {
     typeof err === "object" &&
     err !== null &&
     "tipo" in err &&
-    (err.tipo === "cerrado" || err.tipo === "red")
+    (err.tipo === "cerrado" || err.tipo === "limite" || err.tipo === "red")
   );
 }
 
@@ -138,6 +138,10 @@ export async function enviarPedidoMesa(
   );
   if (resp.status === 409) {
     const err: PedidoError = { tipo: "cerrado" };
+    throw err;
+  }
+  if (resp.status === 429) {
+    const err: PedidoError = { tipo: "limite" };
     throw err;
   }
   if (!resp.ok) {

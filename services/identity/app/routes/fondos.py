@@ -27,6 +27,7 @@ from app.fondos import (
 )
 from app.images import IMAGEN_WEB_MAX_INPUT_BYTES, FotoInvalida, normalizar_imagen_web
 from app.models import CuentaNegocio, ImagenEstablecimiento
+from app.rate_limit import OPENAPI_RATE_LIMIT, enforce_upload_cuenta
 from app.routes.establecimientos import _establecimiento_de_cuenta
 from app.routes.perfil_web import get_perfil
 from app.schemas import (
@@ -170,6 +171,7 @@ def obtener_fondo_upload(
         status.HTTP_403_FORBIDDEN: _FORBIDDEN,
         status.HTTP_404_NOT_FOUND: _NOT_FOUND,
         status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
+        **OPENAPI_RATE_LIMIT,
     },
 )
 async def subir_fondo(
@@ -179,6 +181,7 @@ async def subir_fondo(
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
     db: Session = Depends(get_negocio_db),
 ) -> dict:
+    enforce_upload_cuenta(cuenta.id)
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     exigir_seccion(slot)
     perfil = get_perfil(db, establecimiento)

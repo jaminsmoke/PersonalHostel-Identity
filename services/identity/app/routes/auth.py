@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -13,6 +13,7 @@ from app.errors import (
     ApiError,
 )
 from app.models import Camarero
+from app.rate_limit import OPENAPI_RATE_LIMIT, enforce_login_limits
 from app.schemas import ErrorResponse, LoginRequest, LoginResponse
 from app.security import build_qr_payload, ficha_url, get_session_secret, get_signing_key
 
@@ -41,9 +42,15 @@ _LOGIN_422 = {
         status.HTTP_401_UNAUTHORIZED: _LOGIN_401,
         status.HTTP_409_CONFLICT: _LOGIN_409,
         status.HTTP_422_UNPROCESSABLE_CONTENT: _LOGIN_422,
+        **OPENAPI_RATE_LIMIT,
     },
 )
-def login(payload: LoginRequest, db: Session = Depends(get_camarero_db)) -> LoginResponse:
+def login(
+    request: Request,
+    payload: LoginRequest,
+    db: Session = Depends(get_camarero_db),
+) -> LoginResponse:
+    enforce_login_limits(request, payload.email)
     camarero = db.query(Camarero).filter_by(email=payload.email.lower()).one_or_none()
 
     if camarero is None or camarero.password_hash is None:

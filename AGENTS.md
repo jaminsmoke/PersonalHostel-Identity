@@ -34,10 +34,12 @@ Kanban: cada app tiene el suyo. Cambio que necesite al otro lado → Detectado e
 |---|---|
 | API | Python 3.14 + FastAPI + Uvicorn |
 | DB | PostgreSQL 16 |
+| Cuotas | Redis 7 (sin persistencia; no se publica en prod) |
 | Orchestration | Docker Compose |
 | API ports | **8080** (camareros, público) · **8082** (negocio, público) · **8081** interno de cada contenedor (`/internal`, `/metrics`; no Caddy) |
 | Web ports | **8083** (web-negocio) · **8084** (web-camareros) · **8085** (web-cfc / mesa) |
 | Postgres port | **5432** (dev machine only) |
+| Redis port | **6379** (dev machine only; prod solo red Docker) |
 
 El Compose local sigue siendo reproducible para desarrollo manual, pero los
 agentes validan mediante `deploy_staging.py --validate-only` en el VPS.
@@ -91,6 +93,7 @@ PersonalHosteleriaServer/
 ├── AGENTS.md                 # este archivo (léelo primero)
 ├── README.md                 # cómo verificar en el VPS y contrato /v1
 ├── docker-compose.yml
+├── deploy/caddy/             # snippet de rate_limit para el Caddyfile del VPS
 ├── .env.example
 ├── .gitignore
 ├── .kanbanrc.json.template
@@ -189,7 +192,7 @@ checkout del VPS rompía `ruff format --check` del runner aislado porque
 
 ## Contrato API (implementado en v0.2)
 
-Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores llevan además un `code` estable (`identity.*`).
+Prefijo `/v1`. JSON. Español en mensajes de error de cara a apps. Los errores llevan además un `code` estable (`identity.*`). Login, registro, uploads y `POST /v1/cfc/mesa/{token}/pedidos` aplican cuotas en Redis: **429** `identity.rate_limited` + `Retry-After`, o **503** `identity.rate_limit_unavailable` si el contador no responde. Claves: IP (tras `X-Forwarded-For` de Caddy), email, cuenta JWT y SHA-256 del token de mesa. Recorte grosero por IP en Caddy: `deploy/caddy/`.
 
 | Método | Ruta | Qué hace |
 |---|---|---|

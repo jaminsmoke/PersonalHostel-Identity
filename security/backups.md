@@ -6,6 +6,7 @@
 - Cada conjunto válido contiene `camareros.dump`, `negocio.dump`,
   `fotos.tar.gz` y `manifest.json` con checksums, tamaños, commit, versión de
   PostgreSQL, revisiones Alembic y ventana UTC.
+- Redis **no** entra en el conjunto: solo guarda cuotas efímeras de abuso.
 - Los conjuntos se construyen en un directorio `.partial` con `umask 077` y
   solo se publican al completarse. Un fallo no cambia el puntero `latest`.
 - Retención local: siete días, conservando siempre el último conjunto válido.

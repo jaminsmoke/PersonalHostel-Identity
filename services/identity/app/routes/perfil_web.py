@@ -22,6 +22,7 @@ from app.models import (
     ImagenEstablecimiento,
     PerfilEstablecimiento,
 )
+from app.rate_limit import OPENAPI_RATE_LIMIT, enforce_upload_cuenta
 from app.routes.establecimientos import _establecimiento_de_cuenta
 from app.schemas import (
     ErrorResponse,
@@ -165,6 +166,7 @@ def actualizar_perfil_web(
         status.HTTP_403_FORBIDDEN: _FORBIDDEN,
         status.HTTP_404_NOT_FOUND: _NOT_FOUND,
         status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
+        **OPENAPI_RATE_LIMIT,
     },
 )
 async def subir_hero(
@@ -173,6 +175,7 @@ async def subir_hero(
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
     db: Session = Depends(get_negocio_db),
 ) -> dict:
+    enforce_upload_cuenta(cuenta.id)
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     data = await hero.read(IMAGEN_WEB_MAX_INPUT_BYTES + 1)
     try:
@@ -286,6 +289,7 @@ def listar_galeria(
         status.HTTP_403_FORBIDDEN: _FORBIDDEN,
         status.HTTP_404_NOT_FOUND: _NOT_FOUND,
         status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
+        **OPENAPI_RATE_LIMIT,
     },
 )
 async def anadir_galeria(
@@ -294,6 +298,7 @@ async def anadir_galeria(
     cuenta: CuentaNegocio = Depends(get_current_cuenta_negocio),
     db: Session = Depends(get_negocio_db),
 ) -> dict:
+    enforce_upload_cuenta(cuenta.id)
     establecimiento = _establecimiento_de_cuenta(establecimiento_id, cuenta, db)
     data = await imagen.read(IMAGEN_WEB_MAX_INPUT_BYTES + 1)
     try:

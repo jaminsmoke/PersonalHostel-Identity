@@ -39,6 +39,7 @@ from app.models import (
     PedidoCfc,
     ProductoCatalogo,
 )
+from app.rate_limit import OPENAPI_RATE_LIMIT, enforce_cfc_mesa
 from app.schemas import (
     CartaCfcResponse,
     CuentaCfcResponse,
@@ -388,6 +389,7 @@ def cuenta_mesa_cfc(
         status.HTTP_409_CONFLICT: {"model": ErrorResponse},
         status.HTTP_410_GONE: {"model": ErrorResponse},
         status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse},
+        **OPENAPI_RATE_LIMIT,
     },
 )
 def crear_pedido_cfc(
@@ -432,6 +434,8 @@ def crear_pedido_cfc(
     )
     if previo is not None:
         return _pedido_response(previo)
+
+    enforce_cfc_mesa(token)
 
     snapshot: list[dict] = []
     total = 0

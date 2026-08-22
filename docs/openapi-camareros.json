@@ -1390,6 +1390,26 @@
               }
             },
             "description": "Cuerpo de la petición inválido."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Demasiadas peticiones; reintenta tras Retry-After."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "El contador de cuotas no está disponible."
           }
         },
         "summary": "Login",
@@ -1880,6 +1900,26 @@
               }
             },
             "description": "Cuerpo de la petición inválido."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Demasiadas peticiones; reintenta tras Retry-After."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "El contador de cuotas no está disponible."
           }
         },
         "security": [
@@ -2877,6 +2917,26 @@
               }
             },
             "description": "Cuerpo de la petición inválido."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Demasiadas peticiones; reintenta tras Retry-After."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "El contador de cuotas no está disponible."
           }
         },
         "summary": "Registrar Camarero",

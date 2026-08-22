@@ -30,6 +30,12 @@ os.environ.setdefault(
     "IDENTITY_WEB_ORIGIN",
     "http://localhost:8083,http://localhost:8084,http://localhost:8085,https://web.camareros.siberia.solutions,https://web.negocio.siberia.solutions,https://web.mesa.siberia.solutions",
 )
+os.environ.setdefault("REDIS_URL", "redis://:devlocal@localhost:6379/0")
+os.environ.setdefault("RATE_LIMIT_LOGIN_IP", "10000")
+os.environ.setdefault("RATE_LIMIT_LOGIN_EMAIL", "10000")
+os.environ.setdefault("RATE_LIMIT_REGISTRO_IP", "10000")
+os.environ.setdefault("RATE_LIMIT_UPLOAD_CUENTA", "10000")
+os.environ.setdefault("RATE_LIMIT_CFC_MESA", "10000")
 
 
 # Los tests NO tocan las BD de desarrollo: usan BD de prueba separadas.

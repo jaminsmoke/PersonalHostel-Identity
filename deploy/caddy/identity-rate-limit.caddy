@@ -1,0 +1,42 @@
+# Recorte de borde para las APIs Identity.
+# Pegar dentro de los site blocks de camareros.* y negocio.* (no en la landing).
+# Requiere el módulo github.com/mholt/caddy-ratelimit.
+
+request_body {
+	max_size 5MB
+}
+
+@identity_login {
+	path /v1/auth/login /v1/auth/negocio/login
+}
+@identity_registro {
+	path /v1/camareros/registro /v1/auth/negocio/registro
+}
+@identity_cfc_pedidos {
+	path /v1/cfc/mesa/*/pedidos
+	method POST
+}
+
+rate_limit @identity_login {
+	zone identity_login {
+		key {remote_host}
+		events 20
+		window 1m
+	}
+}
+
+rate_limit @identity_registro {
+	zone identity_registro {
+		key {remote_host}
+		events 10
+		window 1m
+	}
+}
+
+rate_limit @identity_cfc_pedidos {
+	zone identity_cfc {
+		key {remote_host}
+		events 60
+		window 1m
+	}
+}

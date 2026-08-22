@@ -191,6 +191,10 @@ function MesaApp({ token }: { token: string }) {
         setAviso("El local no admite pedidos ahora. Pregunta en barra.");
         return;
       }
+      if (esErrorPedido(err) && err.tipo === "limite") {
+        setAviso("Demasiados pedidos desde esta mesa. Espera un momento.");
+        return;
+      }
       setAviso("No se pudo enviar el pedido. Inténtalo otra vez.");
     }
   }

@@ -3,7 +3,7 @@ import uuid
 from datetime import UTC, datetime
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -34,6 +34,7 @@ from app.models import (
     Credencial,
     CredencialEstado,
 )
+from app.rate_limit import OPENAPI_RATE_LIMIT, enforce_registro_ip, enforce_upload_cuenta
 from app.schemas import (
     CamareroFichaPublica,
     CamareroPerfil,
@@ -103,11 +104,15 @@ def _visibilidad_actual(camarero: Camarero) -> dict:
             "description": "Ya existe un camarero con ese email.",
         },
         status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
+        **OPENAPI_RATE_LIMIT,
     },
 )
 def registrar_camarero(
-    payload: RegistroRequest, db: Session = Depends(get_camarero_db)
+    request: Request,
+    payload: RegistroRequest,
+    db: Session = Depends(get_camarero_db),
 ) -> RegistroResponse:
+    enforce_registro_ip(request)
     ensure_data_origin_allowed(payload.data_origin)
     camarero = Camarero(
         nombre=payload.nombre.strip(),
@@ -475,6 +480,7 @@ _NOT_FOUND = {
     responses={
         status.HTTP_401_UNAUTHORIZED: _UNAUTHORIZED,
         status.HTTP_422_UNPROCESSABLE_CONTENT: _VALIDATION,
+        **OPENAPI_RATE_LIMIT,
     },
 )
 async def subir_foto(
@@ -482,6 +488,7 @@ async def subir_foto(
     camarero: Camarero = Depends(get_current_camarero),
     db: Session = Depends(get_camarero_db),
 ) -> FotoResponse:
+    enforce_upload_cuenta(camarero.id)
     data = await foto.read(MAX_INPUT_BYTES + 1)
     try:
         payload, mimetype, size = normalizar_foto(data)

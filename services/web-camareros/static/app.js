@@ -258,6 +258,8 @@
           const code = (out.body && out.body.code) || "";
           if (code === "identity.credential_revoked" || out.status === 409) {
             renderLogin("Tu cuenta no tiene una clave activa. Renueva la clave desde tu app (Personal Comander).");
+          } else if (code === "identity.rate_limited" || out.status === 429) {
+            renderLogin((out.body && out.body.detail) || "Demasiados intentos. Espera un momento e inténtalo de nuevo.");
           } else {
             renderLogin("Email o contraseña incorrectos.");
           }

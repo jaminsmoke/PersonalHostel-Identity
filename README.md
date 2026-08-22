@@ -49,6 +49,7 @@ docker compose up --build
 - Web del profesional: http://localhost:8084 (ficha pública por QR, login y bandeja de invitaciones; el magic-link vive en /invitaciones/<token>)
 - CFC (pedido en mesa): http://localhost:8085 (`/m/<token>`; `/m/demo` es demostración local)
 - Postgres: `localhost:5432` (usuario `hosteleria`; bases `identity_camareros` y `identity_negocio`)
+- Redis: `localhost:6379` (cuotas; en prod no se publica)
 - Esquema: aplicado por Alembic al arrancar; una cadena por BD (`alembic` para camareros, `alembic_negocio` para negocio)
 
 ## Despliegue en staging (VPS)
@@ -59,7 +60,8 @@ El cliente de despliegue usa una dependencia fijada: `pip install -r
 services/identity/requirements-deploy.txt`.
 
 - Subdominios: `camareros.siberia.solutions` (:8080), `negocio.siberia.solutions` (:8082), `ficha.siberia.solutions` (histórico con 301), `web.negocio.siberia.solutions` (:8083, web pública de negocios: plantilla Estate Hospitality por slug), `web.camareros.siberia.solutions` (:8084, web del profesional: credencial, login e invitaciones) y `web.mesa.siberia.solutions` (:8085, CFC: pedir desde el QR de mesa).
-- `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
+- `docker-compose.prod.yml` es un override que publica las APIs/web solo en `127.0.0.1` y deja Postgres y Redis sin puerto externo (Caddy expone 80/443; UFW solo abre 22/80/443).
+- Recorte de abuso en Caddy: snippet versionado en [`deploy/caddy/`](deploy/caddy/rate-limit.md) (módulo `rate_limit`; se aplica en el deploy real, no en `--validate-only`).
 - El `.env` de producción vive en `/opt/identity/.env` (gitignored, `root:root`
   y modo `0600`): secretos reales + `ALLOW_NON_REAL_DATA=false` + URLs públicas.
   El override productivo no admite fallbacks secretos y el despliegue ejecuta
@@ -216,6 +218,8 @@ Toda respuesta de error lleva `detail` (mensaje en español) y `code` (código e
 | 422 | `identity.validation_error` | Cuerpo inválido (`detail` es lista de mensajes) |
 | 422 | `identity.procedencia_no_permitida` | El entorno bloquea altas `test/demo` |
 | 422 | `identity.procedencia_incompatible` | Un vínculo mezclaría raíces de distinta procedencia |
+| 429 | `identity.rate_limited` | Cuota de login, registro, upload o POST CFC superada (`Retry-After`) |
+| 503 | `identity.rate_limit_unavailable` | Redis caído en una ruta con cuota |
 
 ### Registro de profesional
 
@@ -286,6 +290,7 @@ Respuesta `200`:
 - El `qr` es el de la **credencial activa**: tras reinstalar (sin renovar), login → misma identidad y mismo QR. `ficha_url` acompaña siempre al `qr`.
 - `401` con `Email o contraseña incorrectos` si el email no existe, la password no cuadra o el camarero aún no tiene password.
 - `409` con `Clave revocada. Renueva la clave` si la cuenta no tiene credencial activa.
+- `429` `identity.rate_limited` si se supera el cupo por IP o por email (`Retry-After`).
 - JWT HS256, TTL 30 días por defecto (`SESSION_TTL_DAYS`); secreto `SESSION_SECRET` (env) o generado y persistido en `app_config` (local).
 
 ### Perfil y QR de la sesión
